@@ -1,0 +1,7 @@
+.venv
+/**/**/__pycache__
+dist
+driver
+.env.devel
+.env.prod
+tasks.txt
