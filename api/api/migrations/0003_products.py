@@ -96,6 +96,8 @@ class Migration(migrations.Migration):
                         to="ProductCategory",
                         on_delete=models.CASCADE,
                         db_column="product_category_id",
+                        null=True,
+                        blank=True,
                     ),
                 ),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
@@ -175,8 +177,6 @@ class Migration(migrations.Migration):
                         to="Product",
                         on_delete=models.CASCADE,
                         db_column="product_id",
-                        primary_key=True,
-                        serialize=False,
                     ),
                 ),
                 (

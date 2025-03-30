@@ -131,8 +131,6 @@ class Migration(migrations.Migration):
                         to="Vendor",
                         on_delete=models.RESTRICT,
                         db_column="vendor_id",
-                        primary_key=True,
-                        serialize=False,
                     ),
                 ),
                 (

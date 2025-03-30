@@ -1,4 +1,5 @@
 from django.db import migrations, models
+from django.core.validators import MinValueValidator
 
 
 class Migration(migrations.Migration):
@@ -11,7 +12,18 @@ class Migration(migrations.Migration):
             name="WalletTransaction",
             fields=[
                 ("id", models.AutoField(primary_key=True)),
-                ("amount", models.FloatField(null=False, blank=False)),
+                (
+                    "amount",
+                    models.FloatField(
+                        null=False,
+                        blank=False,
+                        validators=[
+                            MinValueValidator(
+                                0, message="Transaction amount cannot be less than 0"
+                            )
+                        ],
+                    ),
+                ),
                 (
                     "tx_type",
                     models.CharField(max_length=20, null=False, blank=False),

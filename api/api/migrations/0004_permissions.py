@@ -33,8 +33,6 @@ class Migration(migrations.Migration):
                         to="Role",
                         on_delete=models.CASCADE,
                         db_column="role_id",
-                        primary_key=True,
-                        serialize=False,
                     ),
                 ),
                 (
@@ -57,7 +55,7 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(primary_key=True)),
                 (
                     "resource",
-                    models.CharField(max_length=20, null=False, blank=False),
+                    models.CharField(max_length=63, null=False, blank=False),
                 ),  # resources enum
                 ("description", models.TextField(null=True, blank=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),
@@ -86,7 +84,7 @@ class Migration(migrations.Migration):
                 ("id", models.AutoField(primary_key=True)),
                 (
                     "action",
-                    models.CharField(max_length=20, null=False, blank=False),
+                    models.CharField(max_length=63, null=False, blank=False),
                 ),  # actions enum
                 ("description", models.TextField(null=True, blank=True)),
                 ("created_at", models.DateTimeField(auto_now_add=True)),

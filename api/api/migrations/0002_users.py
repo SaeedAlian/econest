@@ -1,4 +1,4 @@
-from django.core.validators import RegexValidator
+from django.core.validators import RegexValidator, MinValueValidator
 from django.db import migrations, models
 
 
@@ -219,7 +219,19 @@ class Migration(migrations.Migration):
             name="Wallet",
             fields=[
                 ("id", models.AutoField(primary_key=True)),
-                ("balance", models.FloatField(default=0, null=False, blank=False)),  # type: ignore
+                (
+                    "balance",
+                    models.FloatField(
+                        default=0,  # type: ignore
+                        null=False,
+                        blank=False,
+                        validators=[
+                            MinValueValidator(
+                                0, message="Wallet balance cannot be less than 0"
+                            )
+                        ],
+                    ),
+                ),
                 (
                     "user",
                     models.ForeignKey(

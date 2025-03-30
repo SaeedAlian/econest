@@ -36,9 +36,8 @@ class Migration(migrations.Migration):
                 ),
                 (
                     "transaction",
-                    models.ForeignKey(
+                    models.OneToOneField(
                         to="WalletTransaction",
-                        unique=True,
                         on_delete=models.RESTRICT,
                         db_column="transaction_id",
                     ),
