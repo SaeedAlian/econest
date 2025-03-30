@@ -5,3 +5,4 @@ driver
 .env.devel
 .env.prod
 tasks.txt
+db.sqlite3
