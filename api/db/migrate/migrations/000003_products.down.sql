@@ -1,0 +1,11 @@
+DROP TABLE product_comments;
+DROP TABLE product_specs;
+DROP TABLE product_variant_options;
+DROP TABLE product_tag_assignments;
+DROP TABLE product_attribute_options;
+DROP TABLE product_variants;
+DROP TABLE product_attributes;
+DROP TABLE product_tags;
+DROP TABLE product_images;
+DROP TABLE products;
+DROP TABLE product_categories;
