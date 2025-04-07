@@ -1,3 +1,4 @@
+.env
 .env.devel
 .env.prod
 tasks.txt
