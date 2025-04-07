@@ -1,8 +1,4 @@
-.venv
-/**/**/__pycache__
-dist
-driver
 .env.devel
 .env.prod
 tasks.txt
-db.sqlite3
+bin/
