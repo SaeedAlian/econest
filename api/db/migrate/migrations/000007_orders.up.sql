@@ -1,6 +1,6 @@
 CREATE TABLE orders (
     id SERIAL PRIMARY KEY,
-    total_price FLOAT NOT NULL,
+    total_price FLOAT8 NOT NULL,
     delivery_date DATE NOT NULL,
     verified BOOLEAN NOT NULL DEFAULT FALSE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -13,6 +13,7 @@ CREATE TABLE orders (
 CREATE TABLE order_product_variants (
     id SERIAL PRIMARY KEY,
     quantity INTEGER NOT NULL CHECK (quantity >= 1),
+
     order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
     variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE
 );

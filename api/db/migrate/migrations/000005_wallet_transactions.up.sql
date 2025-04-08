@@ -1,6 +1,6 @@
 CREATE TABLE wallet_transactions (
     id SERIAL PRIMARY KEY,
-    amount FLOAT NOT NULL CHECK (amount >= 0),
+    amount FLOAT8 NOT NULL CHECK (amount >= 0),
     tx_type VARCHAR(20) NOT NULL,
     status VARCHAR(20) NOT NULL,
     created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
