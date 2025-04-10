@@ -15,7 +15,7 @@ ALTER TABLE orders
   ALTER COLUMN status TYPE order_status USING status::order_status;
 
 ALTER TABLE orders 
-  ALTER COLUMN status SET DEFAULT 'pending'::order_status;
+  ALTER COLUMN status SET DEFAULT 'pending_payment'::order_status;
 
 CREATE TABLE order_product_variants (
   id SERIAL PRIMARY KEY,
