@@ -22,3 +22,4 @@ CREATE TYPE "actions" AS ENUM (
 CREATE TYPE "resources" AS ENUM ('products', 'orders', 'users', 'permissions');
 CREATE TYPE "transaction_types" AS ENUM ('deposit', 'withdraw', 'purchase', 'sale');
 CREATE TYPE "transaction_status" AS ENUM ('pending', 'successful', 'failed');
+CREATE TYPE "order_status" AS ENUM ('pending_payment', 'pending_delivery', 'delivered', 'cancelled');
