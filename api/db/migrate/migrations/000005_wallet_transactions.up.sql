@@ -3,7 +3,7 @@ CREATE TABLE wallet_transactions (
   amount FLOAT8 NOT NULL CHECK (amount >= 0),
   tx_type VARCHAR(20) NOT NULL,
   status VARCHAR(20) NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   wallet_id INTEGER NOT NULL REFERENCES wallets(id) ON DELETE CASCADE
 );
