@@ -1,4 +1,4 @@
-package role_store
+package role_db_manager
 
 import "time"
 

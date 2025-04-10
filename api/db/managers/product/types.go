@@ -1,4 +1,4 @@
-package product_store
+package product_db_manager
 
 import "time"
 

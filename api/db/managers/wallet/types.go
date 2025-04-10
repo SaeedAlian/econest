@@ -1,4 +1,4 @@
-package wallet_store
+package wallet_db_manager
 
 import "time"
 

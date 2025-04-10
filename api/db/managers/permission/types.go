@@ -1,4 +1,4 @@
-package permission_store
+package permission_db_manager
 
 import "time"
 

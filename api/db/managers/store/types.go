@@ -1,4 +1,4 @@
-package store_store
+package store_db_manager
 
 import "time"
 

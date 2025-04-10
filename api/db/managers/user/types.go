@@ -1,4 +1,4 @@
-package user_store
+package user_db_manager
 
 import "time"
 
