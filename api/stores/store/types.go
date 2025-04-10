@@ -1,8 +1,8 @@
-package vendor_store
+package store_store
 
 import "time"
 
-type Vendor struct {
+type Store struct {
 	Id          int
 	Name        string
 	Description string
@@ -12,29 +12,31 @@ type Vendor struct {
 	OwnerId     int
 }
 
-type VendorPhoneNumber struct {
+type StorePhoneNumber struct {
 	Id          int
 	CountryCode string
 	Number      string
+	IsPublic    bool
 	Verified    bool
 	CreatedAt   time.Time
 	UpdatedAt   time.Time
-	VendorId    int
+	StoreId     int
 }
 
-type VendorAddress struct {
+type StoreAddress struct {
 	Id        int
 	State     string
 	City      string
 	Street    string
 	Zipcode   string
 	Details   string
+	IsPublic  bool
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	VendorId  int
+	StoreId   int
 }
 
-type VendorProduct struct {
-	VendorId  int
+type StoreProduct struct {
+	StoreId   int
 	ProductId int
 }

@@ -15,6 +15,15 @@ type User struct {
 	RoleId        int
 }
 
+type UserSettings struct {
+	Id               int
+	PublicEmail      bool
+	PublicBirthDate  bool
+	IsUsingDarkTheme bool
+	Language         string
+	UserId           int
+}
+
 type UserPhoneNumber struct {
 	Id          int
 	CountryCode string
