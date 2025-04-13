@@ -10,7 +10,7 @@ CREATE TABLE wallet_transactions (
 
 ALTER TABLE wallet_transactions 
   ALTER COLUMN tx_type TYPE transaction_types USING tx_type::transaction_types,
-  ALTER COLUMN status TYPE transaction_status USING status::transaction_status;
+  ALTER COLUMN status TYPE transaction_statuses USING status::transaction_statuses;
 
 ALTER TABLE wallet_transactions 
-  ALTER COLUMN status SET DEFAULT 'pending'::transaction_status;
+  ALTER COLUMN status SET DEFAULT 'pending'::transaction_statuses;

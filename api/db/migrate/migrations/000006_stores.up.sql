@@ -12,6 +12,7 @@ CREATE TABLE stores (
 CREATE TABLE stores_settings (
   id SERIAL PRIMARY KEY,
   public_owner BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE CASCADE
 );
@@ -40,7 +41,7 @@ ALTER TABLE phonenumbers
     (user_id IS NULL AND store_id IS NOT NULL)
   );
 
-CREATE TABLE store_products (
+CREATE TABLE store_owned_products (
   store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE RESTRICT,
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
   PRIMARY KEY (store_id, product_id)

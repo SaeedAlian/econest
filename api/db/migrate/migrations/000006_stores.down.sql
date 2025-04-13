@@ -17,5 +17,5 @@ ALTER TABLE phonenumbers
   ALTER COLUMN user_id SET NOT NULL;
 
 DROP TABLE stores_settings;
-DROP TABLE store_products;
+DROP TABLE store_owned_products;
 DROP TABLE stores;

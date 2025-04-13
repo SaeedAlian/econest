@@ -19,6 +19,16 @@ CREATE TABLE products (
   subcategory_id INTEGER NOT NULL REFERENCES product_categories(id) ON DELETE RESTRICT
 );
 
+CREATE TABLE product_offers (
+  id SERIAL PRIMARY KEY,
+  discount FLOAT8 NOT NULL,
+  expire_at TIMESTAMP NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+  product_id INTEGER NOT NULL UNIQUE REFERENCES products(id) ON DELETE CASCADE
+);
+
 CREATE TABLE product_images (
   id SERIAL PRIMARY KEY,
   image_name VARCHAR(255) NOT NULL UNIQUE,
@@ -42,7 +52,7 @@ CREATE TABLE product_tags (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE product_tag_assignments (
+CREATE TABLE product_assigned_tags (
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   tag_id INTEGER NOT NULL REFERENCES product_tags(id) ON DELETE CASCADE,
   PRIMARY KEY (product_id, tag_id)
@@ -70,11 +80,10 @@ CREATE TABLE product_variants (
 );
 
 CREATE TABLE product_variant_options (
-  id SERIAL PRIMARY KEY,
   variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
   attribute_id INTEGER NOT NULL REFERENCES product_attributes(id) ON DELETE CASCADE,
   option_id INTEGER NOT NULL REFERENCES product_attribute_options(id) ON DELETE CASCADE,
-  UNIQUE (variant_id, attribute_id)
+  PRIMARY KEY (variant_id, attribute_id)
 );
 
 CREATE TABLE product_comments (

@@ -5,12 +5,18 @@ CREATE TYPE "actions" AS ENUM (
   'can_unban_user',
 
   'can_add_store',
-  'can_update_store'
+  'can_update_store',
   'can_delete_store',
 
   'can_create_order',
-  'can_change_order_status',
-  'can_verify_order',
+  'can_modify_order',
+
+  'can_create_order_shipment',
+  'can_modify_order_shipment',
+
+  'can_define_product_offer',
+  'can_modify_product_offer',
+  'can_cancel_product_offer',
 
   'can_add_role',
   'can_delete_role',
@@ -53,5 +59,7 @@ CREATE TYPE "resources" AS ENUM (
   'orders_full_access' -- access to all orders with their transactions
 );
 CREATE TYPE "transaction_types" AS ENUM ('deposit', 'withdraw', 'purchase', 'sale');
-CREATE TYPE "transaction_status" AS ENUM ('pending', 'successful', 'failed');
-CREATE TYPE "order_status" AS ENUM ('pending_payment', 'pending_delivery', 'delivered', 'cancelled');
+CREATE TYPE "transaction_statuses" AS ENUM ('pending', 'successful', 'failed');
+CREATE TYPE "order_statuses" AS ENUM ('pending_payment', 'payment_paid', 'cancelled');
+CREATE TYPE "shipment_types" AS ENUM ('shipping', 'returning');
+CREATE TYPE "shipment_statuses" AS ENUM ('on_the_way', 'delivered', 'cancelled');
