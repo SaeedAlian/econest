@@ -41,35 +41,33 @@ type RoleGroupAssignment struct {
 }
 
 type GroupResourcePermission struct {
-	Id        int       `json:"id"        exposure:"needPermission"`
-	Resource  Resource  `json:"resource"  exposure:"needPermission"`
 	CreatedAt time.Time `json:"createdAt" exposure:"needPermission"`
+	Resource  Resource  `json:"resource"  exposure:"needPermission"`
 	GroupId   int       `json:"groupId"   exposure:"needPermission"`
 }
 
 type GroupActionPermission struct {
-	Id        int       `json:"id"        exposure:"needPermission"`
-	Action    Action    `json:"action"    exposure:"needPermission"`
 	CreatedAt time.Time `json:"createdAt" exposure:"needPermission"`
+	Action    Action    `json:"action"    exposure:"needPermission"`
 	GroupId   int       `json:"groupId"   exposure:"needPermission"`
 }
 
 type GroupResourcePermissionInfo struct {
-	Id       int      `json:"id"       exposure:"needPermission"`
 	Resource Resource `json:"resource" exposure:"needPermission"`
 }
 
 type GroupActionPermissionInfo struct {
-	Id     int    `json:"id"     exposure:"needPermission"`
 	Action Action `json:"action" exposure:"needPermission"`
 }
 
 type CreateRolePayload struct {
-	Name string `json:"name"`
+	Name        string `json:"name"        validate:"required"`
+	Description string `json:"description"`
 }
 
 type UpdateRolePayload struct {
-	Name *string `json:"name"`
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
 }
 
 type RolesSearchQuery struct {
@@ -77,7 +75,7 @@ type RolesSearchQuery struct {
 }
 
 type CreatePermissionGroupPayload struct {
-	Name        string `json:"name"`
+	Name        string `json:"name"        validate:"required"`
 	Description string `json:"description"`
 }
 
