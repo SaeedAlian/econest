@@ -52,7 +52,7 @@ CREATE TABLE product_tags (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE product_assigned_tags (
+CREATE TABLE product_tag_assignments (
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   tag_id INTEGER NOT NULL REFERENCES product_tags(id) ON DELETE CASCADE,
   PRIMARY KEY (product_id, tag_id)
