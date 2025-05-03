@@ -1330,6 +1330,7 @@ func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVari
 		if err != nil {
 			return nil, err
 		}
+		defer optionRows.Close()
 
 		var options []types.ProductVariantOptionInfo
 		for optionRows.Next() {
@@ -1343,7 +1344,6 @@ func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVari
 				OptionId:    opt.OptionId,
 			})
 		}
-		optionRows.Close()
 
 		variants = append(variants, types.ProductVariantInfo{
 			Id:       variant.Id,
