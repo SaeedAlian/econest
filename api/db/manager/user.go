@@ -23,8 +23,8 @@ func (m *Manager) CreateUser(p types.CreateUserPayload) (int, error) {
       (username, email, password, full_name, birth_date, role_id) VALUES 
       ($1, $2, $3, $4, $5, $6) RETURNING id;
     `,
-		strings.ToLower(p.Username),
-		strings.ToLower(p.Email),
+		p.Username,
+		p.Email,
 		p.Password,
 		p.FullName,
 		p.BirthDate,
@@ -42,6 +42,12 @@ func (m *Manager) CreateUser(p types.CreateUserPayload) (int, error) {
 		return -1, err
 	}
 
+	_, err = tx.Exec("INSERT INTO wallets (user_id) VALUES ($1);", rowId)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		tx.Rollback()
@@ -51,7 +57,7 @@ func (m *Manager) CreateUser(p types.CreateUserPayload) (int, error) {
 	return rowId, nil
 }
 
-func (m *Manager) CreatePhoneNumber(p types.CreatePhoneNumberPayload) (int, error) {
+func (m *Manager) CreatePhoneNumber(p types.CreateUserPhoneNumberPayload) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
 		"INSERT INTO phonenumbers (country_code, number, user_id) VALUES ($1, $2, $3) RETURNING id;",
@@ -67,7 +73,7 @@ func (m *Manager) CreatePhoneNumber(p types.CreatePhoneNumberPayload) (int, erro
 	return rowId, nil
 }
 
-func (m *Manager) CreateAddress(p types.CreateAddressPayload) (int, error) {
+func (m *Manager) CreateAddress(p types.CreateUserAddressPayload) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
 		`INSERT INTO addresses (state, city, street, zipcode, details, user_id)
@@ -104,7 +110,7 @@ func (m *Manager) GetUsers(query types.UserSearchQuery) ([]types.User, error) {
 	if len(clauses) == 0 {
 		q = "SELECT * FROM users"
 	} else {
-		q = fmt.Sprintf("SELECT * FROM users WHERE %s", strings.Join(clauses, ", "))
+		q = fmt.Sprintf("SELECT * FROM users WHERE %s", strings.Join(clauses, " AND "))
 	}
 
 	if query.Offset != nil {
@@ -138,6 +144,49 @@ func (m *Manager) GetUsers(query types.UserSearchQuery) ([]types.User, error) {
 	}
 
 	return users, nil
+}
+
+func (m *Manager) GetUsersCount(query types.UserSearchQuery) (int, error) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.FullName != nil {
+		clauses = append(clauses, fmt.Sprintf("full_name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.FullName))
+		argsPos++
+	}
+
+	if query.RoleId != nil {
+		clauses = append(clauses, fmt.Sprintf("role_id = $%d", argsPos))
+		args = append(args, *query.RoleId)
+		argsPos++
+	}
+
+	var q string
+
+	if len(clauses) == 0 {
+		q = "SELECT COUNT(*) as count FROM users"
+	} else {
+		q = fmt.Sprintf("SELECT COUNT(*) as count FROM users WHERE %s", strings.Join(clauses, " AND "))
+	}
+
+	q = fmt.Sprintf("%s;", q)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return -1, err
+	}
+
+	count := 0
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	return count, nil
 }
 
 func (m *Manager) GetUserById(id int) (*types.User, error) {
@@ -232,7 +281,7 @@ func (m *Manager) GetUsersWithSettings(
       s.language, s.updated_at 
 
       FROM users u LEFT JOIN users_settings s ON u.id = s.user_id WHERE %s`,
-			strings.Join(clauses, ", "),
+			strings.Join(clauses, " AND "),
 		)
 	}
 
@@ -543,6 +592,12 @@ func (m *Manager) UpdateUser(id int, p types.UpdateUserPayload) error {
 		argsPos++
 	}
 
+	if p.IsBanned != nil {
+		clauses = append(clauses, fmt.Sprintf("is_banned = $%d", argsPos))
+		args = append(args, *p.IsBanned)
+		argsPos++
+	}
+
 	if len(clauses) == 0 {
 		return fmt.Errorf("No fields received to update")
 	}
@@ -795,6 +850,7 @@ func scanUserRow(rows *sql.Rows) (*types.User, error) {
 		&n.Password,
 		&n.FullName,
 		&n.BirthDate,
+		&n.IsBanned,
 		&n.CreatedAt,
 		&n.UpdatedAt,
 		&n.RoleId,
@@ -817,6 +873,7 @@ func scanUserWithSettingsRow(rows *sql.Rows) (*types.UserWithSettings, error) {
 		&n.Password,
 		&n.FullName,
 		&n.BirthDate,
+		&n.IsBanned,
 		&n.CreatedAt,
 		&n.UpdatedAt,
 		&n.RoleId,
