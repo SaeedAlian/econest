@@ -116,7 +116,7 @@ func (m *Manager) UpdateWallet(id int, p types.UpdateWalletPayload) error {
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -150,7 +150,7 @@ func (m *Manager) UpdateWalletTransaction(id int, p types.UpdateWalletTransactio
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))

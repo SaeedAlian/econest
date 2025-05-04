@@ -1611,7 +1611,7 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	}
 
 	if product.Id == -1 {
-		return nil, fmt.Errorf("Product not found")
+		return nil, types.ErrProductNotFound
 	}
 
 	return product, nil
@@ -1628,7 +1628,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	defer productRows.Close()
 
 	if !productRows.Next() {
-		return nil, fmt.Errorf("Product not found")
+		return nil, types.ErrProductNotFound
 	}
 
 	product, err := scanProductRow(productRows)
@@ -1656,7 +1656,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	defer subcategoryRows.Close()
 
 	if !subcategoryRows.Next() {
-		return nil, fmt.Errorf("Subcategory not found")
+		return nil, types.ErrSubcategoryNotFound
 	}
 
 	cat, err := scanProductCategoryRow(subcategoryRows)
@@ -1907,7 +1907,7 @@ func (m *Manager) GetProductCategoryById(id int) (*types.ProductCategory, error)
 	}
 
 	if cat.Id == -1 {
-		return nil, fmt.Errorf("Product category not found")
+		return nil, types.ErrProductCategoryNotFound
 	}
 
 	return cat, nil
@@ -1926,7 +1926,7 @@ func (m *Manager) GetProductCategoryWithParentsById(
 	defer rows.Close()
 
 	if !rows.Next() {
-		return nil, fmt.Errorf("Product category not found")
+		return nil, types.ErrProductCategoryNotFound
 	}
 
 	cat, err := scanProductCategoryRow(rows)
@@ -2004,7 +2004,7 @@ func (m *Manager) GetProductTagById(id int) (*types.ProductTag, error) {
 	}
 
 	if tag.Id == -1 {
-		return nil, fmt.Errorf("Product tag not found")
+		return nil, types.ErrProductTagNotFound
 	}
 
 	return tag, nil
@@ -2030,7 +2030,7 @@ func (m *Manager) GetProductOfferById(id int) (*types.ProductOffer, error) {
 	}
 
 	if offer.Id == -1 {
-		return nil, fmt.Errorf("Product offer not found")
+		return nil, types.ErrProductOfferNotFound
 	}
 
 	return offer, nil
@@ -2056,7 +2056,7 @@ func (m *Manager) GetProductOfferByProductId(productId int) (*types.ProductOffer
 	}
 
 	if offer.Id == -1 {
-		return nil, fmt.Errorf("Product offer not found")
+		return nil, types.ErrProductOfferNotFound
 	}
 
 	return offer, nil
@@ -2082,7 +2082,7 @@ func (m *Manager) GetProductImageById(id int) (*types.ProductImage, error) {
 	}
 
 	if img.Id == -1 {
-		return nil, fmt.Errorf("Product image not found")
+		return nil, types.ErrProductImageNotFound
 	}
 
 	return img, nil
@@ -2108,7 +2108,7 @@ func (m *Manager) GetProductSpecById(id int) (*types.ProductSpec, error) {
 	}
 
 	if spec.Id == -1 {
-		return nil, fmt.Errorf("Product spec not found")
+		return nil, types.ErrProductSpecNotFound
 	}
 
 	return spec, nil
@@ -2135,7 +2135,7 @@ func (m *Manager) GetProductVariantById(id int) (*types.ProductVariant, error) {
 	}
 
 	if variant.Id == -1 {
-		return nil, fmt.Errorf("Product variant not found")
+		return nil, types.ErrProductVariantNotFound
 	}
 
 	return variant, nil
@@ -2174,7 +2174,7 @@ func (m *Manager) GetProductCommentById(id int) (*types.ProductComment, error) {
 	}
 
 	if comment.Id == -1 {
-		return nil, fmt.Errorf("Product comment not found")
+		return nil, types.ErrProductCommentNotFound
 	}
 
 	return comment, nil
@@ -2192,7 +2192,7 @@ func (m *Manager) UpdateProductTag(id int, p types.UpdateProductTagPayload) erro
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -2226,7 +2226,7 @@ func (m *Manager) UpdateProductCategory(id int, p types.UpdateProductCategoryPay
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -2284,7 +2284,7 @@ func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -2324,7 +2324,7 @@ func (m *Manager) UpdateProductOffer(id int, p types.UpdateProductOfferPayload) 
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -2358,7 +2358,7 @@ func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) 
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	args = append(args, id)
@@ -2394,7 +2394,7 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	args = append(args, id)
@@ -2424,7 +2424,7 @@ func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributeP
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	args = append(args, id)
@@ -2457,7 +2457,7 @@ func (m *Manager) UpdateProductAttributeOption(
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	args = append(args, id)
@@ -2496,7 +2496,7 @@ func (m *Manager) UpdateProductComment(
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	args = append(args, id)
@@ -2951,7 +2951,8 @@ func allOrNoneHaveAttribute(pvos []types.ProductVariantOption, attributeId int) 
 		return false, nil
 	default:
 		return false, fmt.Errorf(
-			"Inconsistent attribute presence: Some but not all pvos have attribute_id %d",
+			"%w %d",
+			types.ErrInconsistentAttributePresence,
 			attributeId,
 		)
 	}

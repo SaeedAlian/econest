@@ -98,7 +98,7 @@ func (m *Manager) GetRoleById(id int) (*types.Role, error) {
 	}
 
 	if role.Id == -1 {
-		return nil, fmt.Errorf("Role not found")
+		return nil, types.ErrRoleNotFound
 	}
 
 	return role, nil
@@ -124,7 +124,7 @@ func (m *Manager) GetRoleByName(name string) (*types.Role, error) {
 	}
 
 	if role.Id == -1 {
-		return nil, fmt.Errorf("Role not found")
+		return nil, types.ErrRoleNotFound
 	}
 
 	return role, nil
@@ -197,7 +197,7 @@ func (m *Manager) GetPermissionGroupById(id int) (*types.PermissionGroup, error)
 	}
 
 	if group.Id == -1 {
-		return nil, fmt.Errorf("Permission group not found")
+		return nil, types.ErrPermissionGroupNotFound
 	}
 
 	return group, nil
@@ -223,7 +223,7 @@ func (m *Manager) GetPermissionGroupByName(name string) (*types.PermissionGroup,
 	}
 
 	if group.Id == -1 {
-		return nil, fmt.Errorf("Permission group not found")
+		return nil, types.ErrPermissionGroupNotFound
 	}
 
 	return group, nil
@@ -602,7 +602,7 @@ func (m *Manager) UpdateRole(id int, p types.UpdateRolePayload) error {
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -636,7 +636,7 @@ func (m *Manager) UpdatePermissionGroup(id int, p types.UpdatePermissionGroupPay
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))

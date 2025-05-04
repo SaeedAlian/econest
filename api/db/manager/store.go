@@ -187,7 +187,7 @@ func (m *Manager) GetStoreById(id int) (*types.Store, error) {
 	}
 
 	if store.Id == -1 {
-		return nil, fmt.Errorf("Store not found")
+		return nil, types.ErrStoreNotFound
 	}
 
 	return store, nil
@@ -287,7 +287,7 @@ func (m *Manager) GetStoreWithSettingsById(id int) (*types.StoreWithSettings, er
 	}
 
 	if store.Id == -1 {
-		return nil, fmt.Errorf("Store not found")
+		return nil, types.ErrStoreNotFound
 	}
 
 	return store, nil
@@ -307,7 +307,7 @@ func (m *Manager) GetStorePhoneNumbers(
 
 	if query.VisibilityStatus != nil {
 		if !(*query.VisibilityStatus).IsValid() {
-			return nil, fmt.Errorf("Invalid visibility status option")
+			return nil, types.ErrInvalidVisibilityStatusOption
 		}
 
 		if *query.VisibilityStatus != types.SettingVisibilityStatusBoth {
@@ -333,7 +333,7 @@ func (m *Manager) GetStorePhoneNumbers(
 
 	if query.VerificationStatus != nil {
 		if !(*query.VerificationStatus).IsValid() {
-			return nil, fmt.Errorf("Invalid verification status option")
+			return nil, types.ErrInvalidVerificationStatusOption
 		}
 
 		if *query.VerificationStatus != types.CredentialVerificationStatusBoth {
@@ -392,7 +392,7 @@ func (m *Manager) GetStoreAddresses(
 
 	if query.VisibilityStatus != nil {
 		if !(*query.VisibilityStatus).IsValid() {
-			return nil, fmt.Errorf("Invalid visibility status option")
+			return nil, types.ErrInvalidVisibilityStatusOption
 		}
 
 		if *query.VisibilityStatus != types.SettingVisibilityStatusBoth {
@@ -456,7 +456,7 @@ func (m *Manager) GetStoreSettings(storeId int) (*types.StoreSettings, error) {
 	}
 
 	if settings.Id == -1 {
-		return nil, fmt.Errorf("Store settings not found")
+		return nil, types.ErrStoreSettingsNotFound
 	}
 
 	return settings, nil
@@ -508,7 +508,7 @@ func (m *Manager) UpdateStore(id int, p types.UpdateStorePayload) error {
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -542,7 +542,7 @@ func (m *Manager) UpdateStoreSettings(storeId int, p types.UpdateStoreSettingsPa
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -598,7 +598,7 @@ func (m *Manager) UpdateStorePhoneNumber(
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -668,7 +668,7 @@ func (m *Manager) UpdateStoreAddress(
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))

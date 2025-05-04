@@ -209,7 +209,7 @@ func (m *Manager) GetUserById(id int) (*types.User, error) {
 	}
 
 	if user.Id == -1 {
-		return nil, fmt.Errorf("User not found")
+		return nil, types.ErrUserNotFound
 	}
 
 	return user, nil
@@ -235,7 +235,7 @@ func (m *Manager) GetUserByUsername(username string) (*types.User, error) {
 	}
 
 	if user.Id == -1 {
-		return nil, fmt.Errorf("User not found")
+		return nil, types.ErrUserNotFound
 	}
 
 	return user, nil
@@ -344,7 +344,7 @@ func (m *Manager) GetUserWithSettingsById(id int) (*types.UserWithSettings, erro
 	}
 
 	if user.Id == -1 {
-		return nil, fmt.Errorf("User not found")
+		return nil, types.ErrUserNotFound
 	}
 
 	return user, nil
@@ -376,7 +376,7 @@ func (m *Manager) GetUserWithSettingsByUsername(username string) (*types.UserWit
 	}
 
 	if user.Id == -1 {
-		return nil, fmt.Errorf("User not found")
+		return nil, types.ErrUserNotFound
 	}
 
 	return user, nil
@@ -396,7 +396,7 @@ func (m *Manager) GetUserPhoneNumbers(
 
 	if query.VisibilityStatus != nil {
 		if !(*query.VisibilityStatus).IsValid() {
-			return nil, fmt.Errorf("Invalid visibility status option")
+			return nil, types.ErrInvalidVisibilityStatusOption
 		}
 
 		if *query.VisibilityStatus != types.SettingVisibilityStatusBoth {
@@ -422,7 +422,7 @@ func (m *Manager) GetUserPhoneNumbers(
 
 	if query.VerificationStatus != nil {
 		if !(*query.VerificationStatus).IsValid() {
-			return nil, fmt.Errorf("Invalid verification status option")
+			return nil, types.ErrInvalidVerificationStatusOption
 		}
 
 		if *query.VerificationStatus != types.CredentialVerificationStatusBoth {
@@ -481,7 +481,7 @@ func (m *Manager) GetUserAddresses(
 
 	if query.VisibilityStatus != nil {
 		if !(*query.VisibilityStatus).IsValid() {
-			return nil, fmt.Errorf("Invalid visibility status option")
+			return nil, types.ErrInvalidVisibilityStatusOption
 		}
 
 		if *query.VisibilityStatus != types.SettingVisibilityStatusBoth {
@@ -545,7 +545,7 @@ func (m *Manager) GetUserSettings(userId int) (*types.UserSettings, error) {
 	}
 
 	if settings.Id == -1 {
-		return nil, fmt.Errorf("User settings not found")
+		return nil, types.ErrUserSettingsNotFound
 	}
 
 	return settings, nil
@@ -599,7 +599,7 @@ func (m *Manager) UpdateUser(id int, p types.UpdateUserPayload) error {
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -651,7 +651,7 @@ func (m *Manager) UpdateUserSettings(userId int, p types.UpdateUserSettingsPaylo
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -707,7 +707,7 @@ func (m *Manager) UpdateUserPhoneNumber(
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
@@ -777,7 +777,7 @@ func (m *Manager) UpdateUserAddress(
 	}
 
 	if len(clauses) == 0 {
-		return fmt.Errorf("No fields received to update")
+		return types.ErrNoFieldsReceivedToUpdate
 	}
 
 	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
