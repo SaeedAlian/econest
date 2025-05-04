@@ -116,8 +116,3 @@ type UpdateStorePayload struct {
 type UpdateStoreSettingsPayload struct {
 	PublicOwner *bool `json:"publicOwner"`
 }
-
-type AssignProductToStorePayload struct {
-	StoreId   int `json:"storeId"   validate:"required"`
-	ProductId int `json:"productId" validate:"required"`
-}
