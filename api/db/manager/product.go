@@ -411,7 +411,7 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
         WHERE pt.name ILIKE $%d
       ) 
     `, argsPos))
-		args = append(args, *query.TagName)
+		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
 		argsPos++
 	}
 
@@ -444,9 +444,9 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
 	var q string
 
 	if len(clauses) == 0 {
-		q = "SELECT * FROM products"
+		q = "SELECT p.* FROM products p"
 	} else {
-		q = fmt.Sprintf("SELECT * FROM products WHERE %s", strings.Join(clauses, " AND "))
+		q = fmt.Sprintf("SELECT p.* FROM products p WHERE %s", strings.Join(clauses, " AND "))
 	}
 
 	if query.Offset != nil {
@@ -545,7 +545,7 @@ func (m *Manager) GetProductsWithMainInfo(
         WHERE pt.name ILIKE $%d
       ) 
     `, argsPos))
-		args = append(args, *query.TagName)
+		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
 		argsPos++
 	}
 
@@ -725,7 +725,7 @@ func (m *Manager) GetProductsCount(query types.ProductSearchQuery) (int, error) 
         WHERE pt.name ILIKE $%d
       ) 
     `, argsPos))
-		args = append(args, *query.TagName)
+		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
 		argsPos++
 	}
 
@@ -758,9 +758,9 @@ func (m *Manager) GetProductsCount(query types.ProductSearchQuery) (int, error) 
 	var q string
 
 	if len(clauses) == 0 {
-		q = "SELECT COUNT(*) as count FROM products"
+		q = "SELECT COUNT(*) as count FROM products p"
 	} else {
-		q = fmt.Sprintf("SELECT COUNT(*) as count FROM products WHERE %s", strings.Join(clauses, " AND "))
+		q = fmt.Sprintf("SELECT COUNT(*) as count FROM products p WHERE %s", strings.Join(clauses, " AND "))
 	}
 
 	q = fmt.Sprintf("%s;", q)
