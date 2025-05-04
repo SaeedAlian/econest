@@ -26,7 +26,11 @@ type CreateWalletTransactionPayload struct {
 }
 
 type UpdateWalletTransactionPayload struct {
-	Status *TransactionStatus `json:"status" validate:"required"`
+	Status *TransactionStatus `json:"status"`
+}
+
+type UpdateWalletPayload struct {
+	Balance *float64 `json:"balance"`
 }
 
 type WalletTransactionSearchQuery struct {
