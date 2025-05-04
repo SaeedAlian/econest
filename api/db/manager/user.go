@@ -57,7 +57,7 @@ func (m *Manager) CreateUser(p types.CreateUserPayload) (int, error) {
 	return rowId, nil
 }
 
-func (m *Manager) CreatePhoneNumber(p types.CreateUserPhoneNumberPayload) (int, error) {
+func (m *Manager) CreateUserPhoneNumber(p types.CreateUserPhoneNumberPayload) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
 		"INSERT INTO phonenumbers (country_code, number, user_id) VALUES ($1, $2, $3) RETURNING id;",
@@ -73,7 +73,7 @@ func (m *Manager) CreatePhoneNumber(p types.CreateUserPhoneNumberPayload) (int, 
 	return rowId, nil
 }
 
-func (m *Manager) CreateAddress(p types.CreateUserAddressPayload) (int, error) {
+func (m *Manager) CreateUserAddress(p types.CreateUserAddressPayload) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
 		`INSERT INTO addresses (state, city, street, zipcode, details, user_id)
