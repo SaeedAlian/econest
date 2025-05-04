@@ -246,7 +246,7 @@ func (m *Manager) CreateProductAttributeOption(
 
 	pvos := []types.ProductVariantOption{}
 	for pvoRows.Next() {
-		pvo, err := scanProductVariantOption(pvoRows)
+		pvo, err := scanProductVariantOptionRow(pvoRows)
 		if err != nil {
 			tx.Rollback()
 			return -1, err
@@ -451,7 +451,7 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
 	products := []types.Product{}
 
 	for rows.Next() {
-		product, err := scanProduct(rows)
+		product, err := scanProductRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -575,7 +575,7 @@ func (m *Manager) GetProductsWithMainInfo(
 	products := []types.ProductWithMainInfo{}
 
 	for rows.Next() {
-		product, err := scanProduct(rows)
+		product, err := scanProductRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -598,7 +598,7 @@ func (m *Manager) GetProductsWithMainInfo(
 			return nil, err
 		}
 		if offerRows.Next() {
-			offer, err = scanProductOffer(offerRows)
+			offer, err = scanProductOfferRow(offerRows)
 			if err != nil {
 				offerRows.Close()
 				return nil, err
@@ -615,7 +615,7 @@ func (m *Manager) GetProductsWithMainInfo(
 			return nil, err
 		}
 		if imageRows.Next() {
-			mainImage, err = scanProductImage(imageRows)
+			mainImage, err = scanProductImageRow(imageRows)
 			if err != nil {
 				imageRows.Close()
 				return nil, err
@@ -790,7 +790,7 @@ func (m *Manager) GetProductCategories(
 	categories := []types.ProductCategory{}
 
 	for rows.Next() {
-		category, err := scanProductCategory(rows)
+		category, err := scanProductCategoryRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -849,7 +849,7 @@ func (m *Manager) GetProductCategoriesWithParents(
 
 	allCategories := make(map[int]*types.ProductCategory)
 	for rows.Next() {
-		cat, err := scanProductCategory(rows)
+		cat, err := scanProductCategoryRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -884,7 +884,7 @@ func (m *Manager) GetProductCategoriesWithParents(
 					break
 				}
 
-				parentCat, err = scanProductCategory(parentRows)
+				parentCat, err = scanProductCategoryRow(parentRows)
 				parentRows.Close()
 				if err != nil {
 					return nil, err
@@ -1013,7 +1013,7 @@ func (m *Manager) GetProductTags(
 	tags := []types.ProductTag{}
 
 	for rows.Next() {
-		tag, err := scanProductTag(rows)
+		tag, err := scanProductTagRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1124,7 +1124,7 @@ func (m *Manager) GetProductOffers(
 	offers := []types.ProductOffer{}
 
 	for rows.Next() {
-		offer, err := scanProductOffer(rows)
+		offer, err := scanProductOfferRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1201,7 +1201,7 @@ func (m *Manager) GetProductImages(productId int) ([]types.ProductImage, error) 
 	images := []types.ProductImage{}
 
 	for rows.Next() {
-		img, err := scanProductImage(rows)
+		img, err := scanProductImageRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1221,7 +1221,7 @@ func (m *Manager) GetProductSpecs(productId int) ([]types.ProductSpec, error) {
 	specs := []types.ProductSpec{}
 
 	for rows.Next() {
-		spec, err := scanProductSpec(rows)
+		spec, err := scanProductSpecRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1245,7 +1245,7 @@ func (m *Manager) GetProductAttributes(productId int) ([]types.ProductAttributeW
 	var attributes []types.ProductAttributeWithOptions
 
 	for attrRows.Next() {
-		attr, err := scanProductAttribute(attrRows)
+		attr, err := scanProductAttributeRow(attrRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1260,7 +1260,7 @@ func (m *Manager) GetProductAttributes(productId int) ([]types.ProductAttributeW
 
 		var options []types.ProductAttributeOptionInfo
 		for optionRows.Next() {
-			opt, err := scanProductAttributeOption(optionRows)
+			opt, err := scanProductAttributeOptionRow(optionRows)
 			if err != nil {
 				optionRows.Close()
 				return nil, err
@@ -1295,7 +1295,7 @@ func (m *Manager) GetProductVariants(productId int) ([]types.ProductVariant, err
 	variants := []types.ProductVariant{}
 
 	for rows.Next() {
-		variant, err := scanProductVariant(rows)
+		variant, err := scanProductVariantRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1318,7 +1318,7 @@ func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVari
 	var variants []types.ProductVariantInfo
 
 	for variantRows.Next() {
-		variant, err := scanProductVariant(variantRows)
+		variant, err := scanProductVariantRow(variantRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1334,7 +1334,7 @@ func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVari
 
 		var options []types.ProductVariantOptionInfo
 		for optionRows.Next() {
-			opt, err := scanProductVariantOption(optionRows)
+			opt, err := scanProductVariantOptionRow(optionRows)
 			if err != nil {
 				optionRows.Close()
 				return nil, err
@@ -1400,7 +1400,7 @@ func (m *Manager) GetProductCommentsByProductId(
 	comments := []types.ProductComment{}
 
 	for rows.Next() {
-		comment, err := scanProductComment(rows)
+		comment, err := scanProductCommentRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1498,7 +1498,7 @@ func (m *Manager) GetProductCommentsByUserId(
 	comments := []types.ProductComment{}
 
 	for rows.Next() {
-		comment, err := scanProductComment(rows)
+		comment, err := scanProductCommentRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1564,7 +1564,7 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	product.Id = -1
 
 	for rows.Next() {
-		product, err = scanProduct(rows)
+		product, err = scanProductRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1591,7 +1591,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		return nil, fmt.Errorf("Product not found")
 	}
 
-	product, err := scanProduct(productRows)
+	product, err := scanProductRow(productRows)
 	if err != nil {
 		return nil, err
 	}
@@ -1619,7 +1619,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		return nil, fmt.Errorf("Subcategory not found")
 	}
 
-	cat, err := scanProductCategory(subcategoryRows)
+	cat, err := scanProductCategoryRow(subcategoryRows)
 	if err != nil {
 		return nil, err
 	}
@@ -1646,7 +1646,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 			break
 		}
 
-		parentCat, err := scanProductCategory(parentRows)
+		parentCat, err := scanProductCategoryRow(parentRows)
 		parentRows.Close()
 		if err != nil {
 			return nil, err
@@ -1680,7 +1680,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 	specInfos := make([]types.ProductSpecInfo, 0)
 	for specRows.Next() {
-		spec, err := scanProductSpec(specRows)
+		spec, err := scanProductSpecRow(specRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1703,7 +1703,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 	tags := make([]types.ProductTag, 0)
 	for tagRows.Next() {
-		tag, err := scanProductTag(tagRows)
+		tag, err := scanProductTagRow(tagRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1721,7 +1721,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 	attributeInfos := make([]types.ProductAttributeWithOptions, 0)
 	for attrRows.Next() {
-		attr, err := scanProductAttribute(attrRows)
+		attr, err := scanProductAttributeRow(attrRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1736,7 +1736,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 		optionInfos := make([]types.ProductAttributeOptionInfo, 0)
 		for optionRows.Next() {
-			opt, err := scanProductAttributeOption(optionRows)
+			opt, err := scanProductAttributeOptionRow(optionRows)
 			if err != nil {
 				optionRows.Close()
 				return nil, err
@@ -1766,7 +1766,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 	variantInfos := make([]types.ProductVariantInfo, 0)
 	for variantRows.Next() {
-		variant, err := scanProductVariant(variantRows)
+		variant, err := scanProductVariantRow(variantRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1781,7 +1781,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 		optionInfos := make([]types.ProductVariantOptionInfo, 0)
 		for optionRows.Next() {
-			opt, err := scanProductVariantOption(optionRows)
+			opt, err := scanProductVariantOptionRow(optionRows)
 			if err != nil {
 				optionRows.Close()
 				return nil, err
@@ -1809,7 +1809,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		return nil, err
 	}
 	if offerRows.Next() {
-		offer, err = scanProductOffer(offerRows)
+		offer, err = scanProductOfferRow(offerRows)
 		if err != nil {
 			offerRows.Close()
 			return nil, err
@@ -1828,7 +1828,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 
 	images := make([]types.ProductImage, 0)
 	for imageRows.Next() {
-		img, err := scanProductImage(imageRows)
+		img, err := scanProductImageRow(imageRows)
 		if err != nil {
 			return nil, err
 		}
@@ -1860,7 +1860,7 @@ func (m *Manager) GetProductCategoryById(id int) (*types.ProductCategory, error)
 	cat.Id = -1
 
 	for rows.Next() {
-		cat, err = scanProductCategory(rows)
+		cat, err = scanProductCategoryRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1889,7 +1889,7 @@ func (m *Manager) GetProductCategoryWithParentsById(
 		return nil, fmt.Errorf("Product category not found")
 	}
 
-	cat, err := scanProductCategory(rows)
+	cat, err := scanProductCategoryRow(rows)
 	if err != nil {
 		return nil, err
 	}
@@ -1918,7 +1918,7 @@ func (m *Manager) GetProductCategoryWithParentsById(
 			break
 		}
 
-		parentCat, err := scanProductCategory(parentRows)
+		parentCat, err := scanProductCategoryRow(parentRows)
 		parentRows.Close()
 		if err != nil {
 			return nil, err
@@ -1957,7 +1957,7 @@ func (m *Manager) GetProductTagById(id int) (*types.ProductTag, error) {
 	tag.Id = -1
 
 	for rows.Next() {
-		tag, err = scanProductTag(rows)
+		tag, err = scanProductTagRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1983,7 +1983,7 @@ func (m *Manager) GetProductOfferById(id int) (*types.ProductOffer, error) {
 	offer.Id = -1
 
 	for rows.Next() {
-		offer, err = scanProductOffer(rows)
+		offer, err = scanProductOfferRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2009,7 +2009,7 @@ func (m *Manager) GetProductOfferByProductId(productId int) (*types.ProductOffer
 	offer.Id = -1
 
 	for rows.Next() {
-		offer, err = scanProductOffer(rows)
+		offer, err = scanProductOfferRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2035,7 +2035,7 @@ func (m *Manager) GetProductImageById(id int) (*types.ProductImage, error) {
 	img.Id = -1
 
 	for rows.Next() {
-		img, err = scanProductImage(rows)
+		img, err = scanProductImageRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2061,7 +2061,7 @@ func (m *Manager) GetProductSpecById(id int) (*types.ProductSpec, error) {
 	spec.Id = -1
 
 	for rows.Next() {
-		spec, err = scanProductSpec(rows)
+		spec, err = scanProductSpecRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2088,7 +2088,7 @@ func (m *Manager) GetProductVariantById(id int) (*types.ProductVariant, error) {
 	variant.Id = -1
 
 	if rows.Next() {
-		variant, err = scanProductVariant(rows)
+		variant, err = scanProductVariantRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2127,7 +2127,7 @@ func (m *Manager) GetProductCommentById(id int) (*types.ProductComment, error) {
 	comment.Id = -1
 
 	for rows.Next() {
-		comment, err = scanProductComment(rows)
+		comment, err = scanProductCommentRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2695,7 +2695,7 @@ func (m *Manager) DeleteProductComment(id int) error {
 	return nil
 }
 
-func scanProductCategory(rows *sql.Rows) (*types.ProductCategory, error) {
+func scanProductCategoryRow(rows *sql.Rows) (*types.ProductCategory, error) {
 	n := new(types.ProductCategory)
 
 	err := rows.Scan(
@@ -2713,7 +2713,7 @@ func scanProductCategory(rows *sql.Rows) (*types.ProductCategory, error) {
 	return n, nil
 }
 
-func scanProduct(rows *sql.Rows) (*types.Product, error) {
+func scanProductRow(rows *sql.Rows) (*types.Product, error) {
 	n := new(types.Product)
 
 	err := rows.Scan(
@@ -2733,7 +2733,7 @@ func scanProduct(rows *sql.Rows) (*types.Product, error) {
 	return n, nil
 }
 
-func scanProductOffer(rows *sql.Rows) (*types.ProductOffer, error) {
+func scanProductOfferRow(rows *sql.Rows) (*types.ProductOffer, error) {
 	n := new(types.ProductOffer)
 
 	err := rows.Scan(
@@ -2751,7 +2751,7 @@ func scanProductOffer(rows *sql.Rows) (*types.ProductOffer, error) {
 	return n, nil
 }
 
-func scanProductImage(rows *sql.Rows) (*types.ProductImage, error) {
+func scanProductImageRow(rows *sql.Rows) (*types.ProductImage, error) {
 	n := new(types.ProductImage)
 
 	err := rows.Scan(
@@ -2767,7 +2767,7 @@ func scanProductImage(rows *sql.Rows) (*types.ProductImage, error) {
 	return n, nil
 }
 
-func scanProductSpec(rows *sql.Rows) (*types.ProductSpec, error) {
+func scanProductSpecRow(rows *sql.Rows) (*types.ProductSpec, error) {
 	n := new(types.ProductSpec)
 
 	err := rows.Scan(
@@ -2783,7 +2783,7 @@ func scanProductSpec(rows *sql.Rows) (*types.ProductSpec, error) {
 	return n, nil
 }
 
-func scanProductTag(rows *sql.Rows) (*types.ProductTag, error) {
+func scanProductTagRow(rows *sql.Rows) (*types.ProductTag, error) {
 	n := new(types.ProductTag)
 
 	err := rows.Scan(
@@ -2799,7 +2799,7 @@ func scanProductTag(rows *sql.Rows) (*types.ProductTag, error) {
 	return n, nil
 }
 
-func scanProductTagAssignment(rows *sql.Rows) (*types.ProductTagAssignment, error) {
+func scanProductTagAssignmentRow(rows *sql.Rows) (*types.ProductTagAssignment, error) {
 	n := new(types.ProductTagAssignment)
 
 	err := rows.Scan(
@@ -2813,7 +2813,7 @@ func scanProductTagAssignment(rows *sql.Rows) (*types.ProductTagAssignment, erro
 	return n, nil
 }
 
-func scanProductAttribute(rows *sql.Rows) (*types.ProductAttribute, error) {
+func scanProductAttributeRow(rows *sql.Rows) (*types.ProductAttribute, error) {
 	n := new(types.ProductAttribute)
 
 	err := rows.Scan(
@@ -2828,7 +2828,7 @@ func scanProductAttribute(rows *sql.Rows) (*types.ProductAttribute, error) {
 	return n, nil
 }
 
-func scanProductAttributeOption(rows *sql.Rows) (*types.ProductAttributeOption, error) {
+func scanProductAttributeOptionRow(rows *sql.Rows) (*types.ProductAttributeOption, error) {
 	n := new(types.ProductAttributeOption)
 
 	err := rows.Scan(
@@ -2843,7 +2843,7 @@ func scanProductAttributeOption(rows *sql.Rows) (*types.ProductAttributeOption, 
 	return n, nil
 }
 
-func scanProductVariant(rows *sql.Rows) (*types.ProductVariant, error) {
+func scanProductVariantRow(rows *sql.Rows) (*types.ProductVariant, error) {
 	n := new(types.ProductVariant)
 
 	err := rows.Scan(
@@ -2858,7 +2858,7 @@ func scanProductVariant(rows *sql.Rows) (*types.ProductVariant, error) {
 	return n, nil
 }
 
-func scanProductVariantOption(rows *sql.Rows) (*types.ProductVariantOption, error) {
+func scanProductVariantOptionRow(rows *sql.Rows) (*types.ProductVariantOption, error) {
 	n := new(types.ProductVariantOption)
 
 	err := rows.Scan(
@@ -2873,7 +2873,7 @@ func scanProductVariantOption(rows *sql.Rows) (*types.ProductVariantOption, erro
 	return n, nil
 }
 
-func scanProductComment(rows *sql.Rows) (*types.ProductComment, error) {
+func scanProductCommentRow(rows *sql.Rows) (*types.ProductComment, error) {
 	n := new(types.ProductComment)
 
 	err := rows.Scan(

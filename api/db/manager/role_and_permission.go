@@ -368,7 +368,7 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 		resources := []types.GroupResourcePermissionInfo{}
 
 		for actionRows.Next() {
-			action, err := scanActionPermissionInfo(actionRows)
+			action, err := scanActionPermissionInfoRow(actionRows)
 			if err != nil {
 				return nil, err
 			}
@@ -377,7 +377,7 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 		}
 
 		for resourceRows.Next() {
-			resource, err := scanResourcePermissionInfo(resourceRows)
+			resource, err := scanResourcePermissionInfoRow(resourceRows)
 			if err != nil {
 				return nil, err
 			}
@@ -715,7 +715,7 @@ func scanPermissionGroupRow(rows *sql.Rows) (*types.PermissionGroup, error) {
 	return n, nil
 }
 
-func scanResourcePermission(rows *sql.Rows) (*types.GroupResourcePermission, error) {
+func scanResourcePermissionRow(rows *sql.Rows) (*types.GroupResourcePermission, error) {
 	n := new(types.GroupResourcePermission)
 
 	err := rows.Scan(
@@ -730,7 +730,7 @@ func scanResourcePermission(rows *sql.Rows) (*types.GroupResourcePermission, err
 	return n, nil
 }
 
-func scanActionPermission(rows *sql.Rows) (*types.GroupActionPermission, error) {
+func scanActionPermissionRow(rows *sql.Rows) (*types.GroupActionPermission, error) {
 	n := new(types.GroupActionPermission)
 
 	err := rows.Scan(
@@ -745,7 +745,7 @@ func scanActionPermission(rows *sql.Rows) (*types.GroupActionPermission, error) 
 	return n, nil
 }
 
-func scanResourcePermissionInfo(rows *sql.Rows) (*types.GroupResourcePermissionInfo, error) {
+func scanResourcePermissionInfoRow(rows *sql.Rows) (*types.GroupResourcePermissionInfo, error) {
 	n := new(types.GroupResourcePermissionInfo)
 
 	err := rows.Scan(
@@ -758,7 +758,7 @@ func scanResourcePermissionInfo(rows *sql.Rows) (*types.GroupResourcePermissionI
 	return n, nil
 }
 
-func scanActionPermissionInfo(rows *sql.Rows) (*types.GroupActionPermissionInfo, error) {
+func scanActionPermissionInfoRow(rows *sql.Rows) (*types.GroupActionPermissionInfo, error) {
 	n := new(types.GroupActionPermissionInfo)
 
 	err := rows.Scan(
