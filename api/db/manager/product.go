@@ -71,7 +71,7 @@ func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
 	return rowId, nil
 }
 
-func (m *Manager) CreateProductTagPayload(p types.CreateProductTagPayload) (int, error) {
+func (m *Manager) CreateProductTag(p types.CreateProductTagPayload) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow("INSERT INTO product_tags (name) VALUES ($1) RETURNING id;",
 		p.Name,
