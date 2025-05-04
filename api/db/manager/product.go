@@ -58,6 +58,16 @@ func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
 		return -1, err
 	}
 
+	_, err = tx.Exec(
+		"INSERT INTO store_owned_products (store_id, product_id) VALUES ($1, $2);",
+		p.StoreId,
+		rowId,
+	)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
 	return rowId, nil
 }
 
@@ -405,6 +415,16 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
 		argsPos++
 	}
 
+	if query.StoreId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM store_owned_products sop 
+        WHERE sop.store_id = $%d AND sop.product_id = p.id
+      )
+    `, argsPos))
+		args = append(args, *query.StoreId)
+		argsPos++
+	}
+
 	if query.CategoryId != nil {
 		clauses = append(clauses, fmt.Sprintf(`
       p.subcategory_id = $%d
@@ -526,6 +546,16 @@ func (m *Manager) GetProductsWithMainInfo(
       ) 
     `, argsPos))
 		args = append(args, *query.TagName)
+		argsPos++
+	}
+
+	if query.StoreId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM store_owned_products sop 
+        WHERE sop.store_id = $%d AND sop.product_id = p.id
+      )
+    `, argsPos))
+		args = append(args, *query.StoreId)
 		argsPos++
 	}
 
@@ -696,6 +726,16 @@ func (m *Manager) GetProductsCount(query types.ProductSearchQuery) (int, error) 
       ) 
     `, argsPos))
 		args = append(args, *query.TagName)
+		argsPos++
+	}
+
+	if query.StoreId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM store_owned_products sop 
+        WHERE sop.store_id = $%d AND sop.product_id = p.id
+      )
+    `, argsPos))
+		args = append(args, *query.StoreId)
 		argsPos++
 	}
 

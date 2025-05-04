@@ -189,6 +189,7 @@ type CreateProductPayload struct {
 	Description   string  `json:"description"`
 	SubcategoryId int     `json:"subcategoryId" validate:"required"`
 	Quantity      int     `json:"quantity"      validate:"min=0,required"`
+	StoreId       int     `json:"storeId"       validate:"required"`
 }
 
 type UpdateProductPayload struct {
@@ -209,6 +210,7 @@ type ProductSearchQuery struct {
 	TagId         *int    `json:"tagId"`
 	PriceLessThan *int    `json:"priceLessThan"`
 	PriceMoreThan *int    `json:"priceMoreThan"`
+	StoreId       *int    `json:"storeId"`
 	Limit         *int    `json:"limit"`
 	Offset        *int    `json:"offset"`
 }
