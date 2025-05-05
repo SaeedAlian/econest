@@ -29,61 +29,10 @@ func (m *Manager) CreateWalletTransaction(p types.CreateWalletTransactionPayload
 func (m *Manager) GetWalletTransactions(
 	query types.WalletTransactionSearchQuery,
 ) ([]types.WalletTransaction, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM wallet_transactions"
 
-	if query.TxType != nil {
-		clauses = append(clauses, fmt.Sprintf("tx_type = $%d", argsPos))
-		args = append(args, *query.TxType)
-		argsPos++
-	}
-
-	if query.Status != nil {
-		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
-		args = append(args, *query.Status)
-		argsPos++
-	}
-
-	if query.BeforeDate != nil {
-		clauses = append(clauses, fmt.Sprintf("created_at <= $%d", argsPos))
-		args = append(args, *query.BeforeDate)
-		argsPos++
-	}
-
-	if query.AfterDate != nil {
-		clauses = append(clauses, fmt.Sprintf("created_at >= $%d", argsPos))
-		args = append(args, *query.AfterDate)
-		argsPos++
-	}
-
-	if query.UserId != nil {
-		clauses = append(clauses, fmt.Sprintf("user_id = $%d", argsPos))
-		args = append(args, *query.UserId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM wallet_transactions"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM wallet_transactions WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildWalletTransactionSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -102,6 +51,30 @@ func (m *Manager) GetWalletTransactions(
 	}
 
 	return txs, nil
+}
+
+func (m *Manager) GetWalletTransactionsCount(
+	query types.WalletTransactionSearchQuery,
+) (int, error) {
+	var base string
+	base = "SELECT COUNT(*) as count FROM wallet_transactions"
+
+	q, args := buildWalletTransactionSearchQuery(query, base)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return -1, err
+	}
+
+	count := 0
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	return count, nil
 }
 
 func (m *Manager) UpdateWallet(id int, p types.UpdateWalletPayload) error {
@@ -188,4 +161,63 @@ func scanWalletTransactionRow(rows *sql.Rows) (*types.WalletTransaction, error) 
 	}
 
 	return n, nil
+}
+
+func buildWalletTransactionSearchQuery(
+	query types.WalletTransactionSearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.TxType != nil {
+		clauses = append(clauses, fmt.Sprintf("tx_type = $%d", argsPos))
+		args = append(args, *query.TxType)
+		argsPos++
+	}
+
+	if query.Status != nil {
+		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
+		args = append(args, *query.Status)
+		argsPos++
+	}
+
+	if query.BeforeDate != nil {
+		clauses = append(clauses, fmt.Sprintf("created_at <= $%d", argsPos))
+		args = append(args, *query.BeforeDate)
+		argsPos++
+	}
+
+	if query.AfterDate != nil {
+		clauses = append(clauses, fmt.Sprintf("created_at >= $%d", argsPos))
+		args = append(args, *query.AfterDate)
+		argsPos++
+	}
+
+	if query.UserId != nil {
+		clauses = append(clauses, fmt.Sprintf("user_id = $%d", argsPos))
+		args = append(args, *query.UserId)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
 }

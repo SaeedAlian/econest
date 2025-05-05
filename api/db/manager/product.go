@@ -351,117 +351,10 @@ func (m *Manager) CreateProductComment(p types.CreateProductCommentPayload) (int
 }
 
 func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT p.* FROM products p"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.Slug != nil {
-		clauses = append(clauses, fmt.Sprintf("slug ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Slug))
-		argsPos++
-	}
-
-	if query.PriceLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("price <= $%d", argsPos))
-		args = append(args, *query.PriceLessThan)
-		argsPos++
-	}
-
-	if query.PriceMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("price >= $%d", argsPos))
-		args = append(args, *query.PriceMoreThan)
-		argsPos++
-	}
-
-	if query.MinQuantity != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      (SELECT COALESCE(SUM(quantity), 0) FROM product_variants pv WHERE pv.product_id = p.id) >= $%d
-    `, argsPos))
-		args = append(args, *query.MinQuantity)
-		argsPos++
-	}
-
-	if query.HasOffer != nil && *query.HasOffer {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_offers po WHERE po.product_id = p.id)
-    `))
-	}
-
-	if query.TagId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (
-        SELECT 1 FROM product_tag_assignments pta
-        WHERE pta.product_id = p.id AND pta.tag_id = $%d
-      )
-    `, argsPos))
-		args = append(args, *query.TagId)
-		argsPos++
-	}
-
-	if query.TagName != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_tag_assignments pta 
-        JOIN product_tags pt ON pta.tag_id = pt.id
-        WHERE pt.name ILIKE $%d
-      ) 
-    `, argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
-		argsPos++
-	}
-
-	if query.StoreId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM store_owned_products sop 
-        WHERE sop.store_id = $%d AND sop.product_id = p.id
-      )
-    `, argsPos))
-		args = append(args, *query.StoreId)
-		argsPos++
-	}
-
-	if query.CategoryId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      p.subcategory_id = $%d
-      OR p.subcategory_id IN (
-        WITH RECURSIVE cat_tree AS (
-          SELECT id, parent_category_id FROM product_categories WHERE id = $%d
-          UNION ALL SELECT pc.id, pc.parent_category_id FROM product_categories pc
-          JOIN cat_tree ct ON pc.id = ct.parent_category_id
-        )
-        SELECT id FROM cat_tree
-      )
-    `, argsPos, argsPos))
-		args = append(args, *query.CategoryId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT p.* FROM products p"
-	} else {
-		q = fmt.Sprintf("SELECT p.* FROM products p WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -485,117 +378,10 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
 func (m *Manager) GetProductsWithMainInfo(
 	query types.ProductSearchQuery,
 ) ([]types.ProductWithMainInfo, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT p.* FROM products p"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.Slug != nil {
-		clauses = append(clauses, fmt.Sprintf("slug ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Slug))
-		argsPos++
-	}
-
-	if query.PriceLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("price <= $%d", argsPos))
-		args = append(args, *query.PriceLessThan)
-		argsPos++
-	}
-
-	if query.PriceMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("price >= $%d", argsPos))
-		args = append(args, *query.PriceMoreThan)
-		argsPos++
-	}
-
-	if query.MinQuantity != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      (SELECT COALESCE(SUM(quantity), 0) FROM product_variants pv WHERE pv.product_id = p.id) >= $%d
-    `, argsPos))
-		args = append(args, *query.MinQuantity)
-		argsPos++
-	}
-
-	if query.HasOffer != nil && *query.HasOffer {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_offers po WHERE po.product_id = p.id)
-    `))
-	}
-
-	if query.TagId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (
-        SELECT 1 FROM product_tag_assignments pta
-        WHERE pta.product_id = p.id AND pta.tag_id = $%d
-      )
-    `, argsPos))
-		args = append(args, *query.TagId)
-		argsPos++
-	}
-
-	if query.TagName != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_tag_assignments pta 
-        JOIN product_tags pt ON pta.tag_id = pt.id
-        WHERE pt.name ILIKE $%d
-      ) 
-    `, argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
-		argsPos++
-	}
-
-	if query.StoreId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM store_owned_products sop 
-        WHERE sop.store_id = $%d AND sop.product_id = p.id
-      )
-    `, argsPos))
-		args = append(args, *query.StoreId)
-		argsPos++
-	}
-
-	if query.CategoryId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      p.subcategory_id = $%d
-      OR p.subcategory_id IN (
-        WITH RECURSIVE cat_tree AS (
-          SELECT id, parent_category_id FROM product_categories WHERE id = $%d
-          UNION ALL SELECT pc.id, pc.parent_category_id FROM product_categories pc
-          JOIN cat_tree ct ON pc.id = ct.parent_category_id
-        )
-        SELECT id FROM cat_tree
-      )
-    `, argsPos, argsPos))
-		args = append(args, *query.CategoryId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT p.* FROM products p"
-	} else {
-		q = fmt.Sprintf("SELECT p.* FROM products p WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -665,105 +451,10 @@ func (m *Manager) GetProductsWithMainInfo(
 }
 
 func (m *Manager) GetProductsCount(query types.ProductSearchQuery) (int, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT COUNT(*) as count FROM products p"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.Slug != nil {
-		clauses = append(clauses, fmt.Sprintf("slug ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Slug))
-		argsPos++
-	}
-
-	if query.PriceLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("price <= $%d", argsPos))
-		args = append(args, *query.PriceLessThan)
-		argsPos++
-	}
-
-	if query.PriceMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("price >= $%d", argsPos))
-		args = append(args, *query.PriceMoreThan)
-		argsPos++
-	}
-
-	if query.MinQuantity != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      (SELECT COALESCE(SUM(quantity), 0) FROM product_variants pv WHERE pv.product_id = p.id) >= $%d
-    `, argsPos))
-		args = append(args, *query.MinQuantity)
-		argsPos++
-	}
-
-	if query.HasOffer != nil && *query.HasOffer {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_offers po WHERE po.product_id = p.id)
-    `))
-	}
-
-	if query.TagId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (
-        SELECT 1 FROM product_tag_assignments pta
-        WHERE pta.product_id = p.id AND pta.tag_id = $%d
-      )
-    `, argsPos))
-		args = append(args, *query.TagId)
-		argsPos++
-	}
-
-	if query.TagName != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_tag_assignments pta 
-        JOIN product_tags pt ON pta.tag_id = pt.id
-        WHERE pt.name ILIKE $%d
-      ) 
-    `, argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
-		argsPos++
-	}
-
-	if query.StoreId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM store_owned_products sop 
-        WHERE sop.store_id = $%d AND sop.product_id = p.id
-      )
-    `, argsPos))
-		args = append(args, *query.StoreId)
-		argsPos++
-	}
-
-	if query.CategoryId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      p.subcategory_id = $%d
-      OR p.subcategory_id IN (
-        WITH RECURSIVE cat_tree AS (
-          SELECT id, parent_category_id FROM product_categories WHERE id = $%d
-          UNION ALL SELECT pc.id, pc.parent_category_id FROM product_categories pc
-          JOIN cat_tree ct ON pc.id = ct.parent_category_id
-        )
-        SELECT id FROM cat_tree
-      )
-    `, argsPos, argsPos))
-		args = append(args, *query.CategoryId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT COUNT(*) as count FROM products p"
-	} else {
-		q = fmt.Sprintf("SELECT COUNT(*) as count FROM products p WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -784,43 +475,10 @@ func (m *Manager) GetProductsCount(query types.ProductSearchQuery) (int, error) 
 func (m *Manager) GetProductCategories(
 	query types.ProductCategorySearchQuery,
 ) ([]types.ProductCategory, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM product_categories"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.ParentCategoryId != nil {
-		clauses = append(clauses, fmt.Sprintf("parent_category_id = $%d", argsPos))
-		args = append(args, *query.ParentCategoryId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM product_categories"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM product_categories WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCategorySearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -844,42 +502,10 @@ func (m *Manager) GetProductCategories(
 func (m *Manager) GetProductCategoriesWithParents(
 	query types.ProductCategorySearchQuery,
 ) ([]types.ProductCategoryWithParents, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM product_categories"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.ParentCategoryId != nil {
-		clauses = append(clauses, fmt.Sprintf("parent_category_id = $%d", argsPos))
-		args = append(args, *query.ParentCategoryId)
-		argsPos++
-	}
-
-	var q string
-	if len(clauses) == 0 {
-		q = "SELECT * FROM product_categories"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM product_categories WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCategorySearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -958,31 +584,10 @@ func (m *Manager) GetProductCategoriesWithParents(
 func (m *Manager) GetProductCategoriesCount(
 	query types.ProductCategorySearchQuery,
 ) (int, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT COUNT(*) as count FROM product_categories"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.ParentCategoryId != nil {
-		clauses = append(clauses, fmt.Sprintf("parent_category_id = $%d", argsPos))
-		args = append(args, *query.ParentCategoryId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT COUNT(*) as count FROM product_categories"
-	} else {
-		q = fmt.Sprintf("SELECT COUNT(*) as count FROM product_categories WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCategorySearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1003,47 +608,10 @@ func (m *Manager) GetProductCategoriesCount(
 func (m *Manager) GetProductTags(
 	query types.ProductTagSearchQuery,
 ) ([]types.ProductTag, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM product_tags pt"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	if query.ProductId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (SELECT 1 FROM product_tag_assignments pta
-        WHERE pta.tag_id = product_tags.id AND pta.product_id = $%d
-      )
-    `, argsPos))
-		args = append(args, *query.ProductId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM product_tags"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM product_tags WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductTagSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1067,25 +635,10 @@ func (m *Manager) GetProductTags(
 func (m *Manager) GetProductTagsCount(
 	query types.ProductTagSearchQuery,
 ) (int, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT COUNT(*) as count FROM product_tags"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT COUNT(*) as count FROM product_tags"
-	} else {
-		q = fmt.Sprintf("SELECT COUNT(*) as count FROM product_tags WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductTagSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1106,55 +659,10 @@ func (m *Manager) GetProductTagsCount(
 func (m *Manager) GetProductOffers(
 	query types.ProductOfferSearchQuery,
 ) ([]types.ProductOffer, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM product_offers"
 
-	if query.DiscountLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("discount <= $%d", argsPos))
-		args = append(args, *query.DiscountLessThan)
-		argsPos++
-	}
-
-	if query.DiscountMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("discount >= $%d", argsPos))
-		args = append(args, *query.DiscountMoreThan)
-		argsPos++
-	}
-
-	if query.ExpireAtLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("expire_at <= $%d", argsPos))
-		args = append(args, *query.ExpireAtLessThan)
-		argsPos++
-	}
-
-	if query.ExpireAtMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("expire_at >= $%d", argsPos))
-		args = append(args, *query.ExpireAtMoreThan)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM product_offers"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM product_offers WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductOfferSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1178,43 +686,10 @@ func (m *Manager) GetProductOffers(
 func (m *Manager) GetProductOffersCount(
 	query types.ProductOfferSearchQuery,
 ) (int, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT COUNT(*) as count FROM product_offers"
 
-	if query.DiscountLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("discount <= $%d", argsPos))
-		args = append(args, *query.DiscountLessThan)
-		argsPos++
-	}
-
-	if query.DiscountMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("discount >= $%d", argsPos))
-		args = append(args, *query.DiscountMoreThan)
-		argsPos++
-	}
-
-	if query.ExpireAtLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("expire_at <= $%d", argsPos))
-		args = append(args, *query.ExpireAtLessThan)
-		argsPos++
-	}
-
-	if query.ExpireAtMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("expire_at >= $%d", argsPos))
-		args = append(args, *query.ExpireAtMoreThan)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT COUNT(*) as count FROM product_offers"
-	} else {
-		q = fmt.Sprintf("SELECT COUNT(*) as count FROM product_offers WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductOfferSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1399,38 +874,10 @@ func (m *Manager) GetProductCommentsByProductId(
 	productId int,
 	query types.ProductCommentSearchQuery,
 ) ([]types.ProductComment, error) {
-	clauses := []string{"product_id = $1"}
-	args := []interface{}{productId}
-	argsPos := 2
+	var base string
+	base = "SELECT * FROM product_comments"
 
-	if query.ScoringLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
-		args = append(args, *query.ScoringLessThan)
-		argsPos++
-	}
-
-	if query.ScoringMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
-		args = append(args, *query.ScoringMoreThan)
-		argsPos++
-	}
-
-	var q string
-	q = fmt.Sprintf("SELECT * FROM product_comments WHERE %s", strings.Join(clauses, " AND "))
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCommentSearchQueryByProductId(query, base, productId)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1455,27 +902,10 @@ func (m *Manager) GetProductCommentsCountByProductId(
 	productId int,
 	query types.ProductCommentSearchQuery,
 ) (int, error) {
-	clauses := []string{"product_id = $1"}
-	args := []interface{}{productId}
-	argsPos := 2
+	var base string
+	base = "SELECT COUNT(*) as count FROM product_comments"
 
-	if query.ScoringLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
-		args = append(args, *query.ScoringLessThan)
-		argsPos++
-	}
-
-	if query.ScoringMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
-		args = append(args, *query.ScoringMoreThan)
-		argsPos++
-	}
-
-	q := fmt.Sprintf(
-		"SELECT COUNT(*) as count FROM product_comments WHERE %s",
-		strings.Join(clauses, " AND "),
-	)
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCommentSearchQueryByProductId(query, base, productId)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1497,38 +927,10 @@ func (m *Manager) GetProductCommentsByUserId(
 	userId int,
 	query types.ProductCommentSearchQuery,
 ) ([]types.ProductComment, error) {
-	clauses := []string{"user_id = $1"}
-	args := []interface{}{userId}
-	argsPos := 2
+	var base string
+	base = "SELECT * FROM product_comments"
 
-	if query.ScoringLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
-		args = append(args, *query.ScoringLessThan)
-		argsPos++
-	}
-
-	if query.ScoringMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
-		args = append(args, *query.ScoringMoreThan)
-		argsPos++
-	}
-
-	var q string
-	q = fmt.Sprintf("SELECT * FROM product_comments WHERE %s", strings.Join(clauses, " AND "))
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCommentSearchQueryByUserId(query, base, userId)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -1553,27 +955,10 @@ func (m *Manager) GetProductCommentsCountByUserId(
 	userId int,
 	query types.ProductCommentSearchQuery,
 ) (int, error) {
-	clauses := []string{"user_id = $1"}
-	args := []interface{}{userId}
-	argsPos := 2
+	var base string
+	base = "SELECT COUNT(*) as count FROM product_comments"
 
-	if query.ScoringLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
-		args = append(args, *query.ScoringLessThan)
-		argsPos++
-	}
-
-	if query.ScoringMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
-		args = append(args, *query.ScoringMoreThan)
-		argsPos++
-	}
-
-	q := fmt.Sprintf(
-		"SELECT COUNT(*) as count FROM product_comments WHERE %s",
-		strings.Join(clauses, " AND "),
-	)
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildProductCommentSearchQueryByUserId(query, base, userId)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -2995,4 +2380,342 @@ func createAttributeCombinations(attributeOptionsMap map[int][]int) [][]map[int]
 
 	backtrack(0, []map[int]int{})
 	return res
+}
+
+func buildProductSearchQuery(
+	query types.ProductSearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("p.name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
+		argsPos++
+	}
+
+	if query.Slug != nil {
+		clauses = append(clauses, fmt.Sprintf("p.slug ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Slug))
+		argsPos++
+	}
+
+	if query.PriceLessThan != nil {
+		clauses = append(clauses, fmt.Sprintf("p.price <= $%d", argsPos))
+		args = append(args, *query.PriceLessThan)
+		argsPos++
+	}
+
+	if query.PriceMoreThan != nil {
+		clauses = append(clauses, fmt.Sprintf("p.price >= $%d", argsPos))
+		args = append(args, *query.PriceMoreThan)
+		argsPos++
+	}
+
+	if query.MinQuantity != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      (SELECT COALESCE(SUM(quantity), 0) FROM product_variants pv WHERE pv.product_id = p.id) >= $%d
+    `, argsPos))
+		args = append(args, *query.MinQuantity)
+		argsPos++
+	}
+
+	if query.HasOffer != nil && *query.HasOffer {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM product_offers po WHERE po.product_id = p.id)
+    `))
+	}
+
+	if query.TagId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (
+        SELECT 1 FROM product_tag_assignments pta
+        WHERE pta.product_id = p.id AND pta.tag_id = $%d
+      )
+    `, argsPos))
+		args = append(args, *query.TagId)
+		argsPos++
+	}
+
+	if query.TagName != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM product_tag_assignments pta 
+        JOIN product_tags pt ON pta.tag_id = pt.id
+        WHERE pt.name ILIKE $%d AND pta.product_id = p.id
+      ) 
+    `, argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.TagName))
+		argsPos++
+	}
+
+	if query.StoreId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM store_owned_products sop 
+        WHERE sop.store_id = $%d AND sop.product_id = p.id
+      )
+    `, argsPos))
+		args = append(args, *query.StoreId)
+		argsPos++
+	}
+
+	if query.CategoryId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      p.subcategory_id = $%d
+      OR p.subcategory_id IN (
+        WITH RECURSIVE cat_tree AS (
+          SELECT id, parent_category_id FROM product_categories WHERE id = $%d
+          UNION ALL SELECT pc.id, pc.parent_category_id FROM product_categories pc
+          JOIN cat_tree ct ON pc.id = ct.parent_category_id
+        )
+        SELECT id FROM cat_tree
+      )
+    `, argsPos, argsPos))
+		args = append(args, *query.CategoryId)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
+}
+
+func buildProductCategorySearchQuery(
+	query types.ProductCategorySearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
+		argsPos++
+	}
+
+	if query.ParentCategoryId != nil {
+		clauses = append(clauses, fmt.Sprintf("parent_category_id = $%d", argsPos))
+		args = append(args, *query.ParentCategoryId)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
+}
+
+func buildProductTagSearchQuery(
+	query types.ProductTagSearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("pt.name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
+		argsPos++
+	}
+
+	if query.ProductId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (SELECT 1 FROM product_tag_assignments pta
+        WHERE pta.tag_id = pt.id AND pta.product_id = $%d
+      )
+    `, argsPos))
+		args = append(args, *query.ProductId)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
+}
+
+func buildProductOfferSearchQuery(
+	query types.ProductOfferSearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.DiscountLessThan != nil {
+		clauses = append(clauses, fmt.Sprintf("discount <= $%d", argsPos))
+		args = append(args, *query.DiscountLessThan)
+		argsPos++
+	}
+
+	if query.DiscountMoreThan != nil {
+		clauses = append(clauses, fmt.Sprintf("discount >= $%d", argsPos))
+		args = append(args, *query.DiscountMoreThan)
+		argsPos++
+	}
+
+	if query.ExpireAtLessThan != nil {
+		clauses = append(clauses, fmt.Sprintf("expire_at <= $%d", argsPos))
+		args = append(args, *query.ExpireAtLessThan)
+		argsPos++
+	}
+
+	if query.ExpireAtMoreThan != nil {
+		clauses = append(clauses, fmt.Sprintf("expire_at >= $%d", argsPos))
+		args = append(args, *query.ExpireAtMoreThan)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
+}
+
+func buildProductCommentSearchQueryByProductId(
+	query types.ProductCommentSearchQuery,
+	base string,
+	productId int,
+) (string, []interface{}) {
+	clauses := []string{"product_id = $1"}
+	args := []interface{}{productId}
+	argsPos := 2
+
+	if query.ScoringLessThan != nil {
+		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
+		args = append(args, *query.ScoringLessThan)
+		argsPos++
+	}
+
+	if query.ScoringMoreThan != nil {
+		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
+		args = append(args, *query.ScoringMoreThan)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
+}
+
+func buildProductCommentSearchQueryByUserId(
+	query types.ProductCommentSearchQuery,
+	base string,
+	userId int,
+) (string, []interface{}) {
+	clauses := []string{"user_id = $1"}
+	args := []interface{}{userId}
+	argsPos := 2
+
+	if query.ScoringLessThan != nil {
+		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
+		args = append(args, *query.ScoringLessThan)
+		argsPos++
+	}
+
+	if query.ScoringMoreThan != nil {
+		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
+		args = append(args, *query.ScoringMoreThan)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
 }

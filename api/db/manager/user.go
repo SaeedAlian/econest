@@ -89,43 +89,10 @@ func (m *Manager) CreateUserAddress(p types.CreateUserAddressPayload) (int, erro
 }
 
 func (m *Manager) GetUsers(query types.UserSearchQuery) ([]types.User, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM users"
 
-	if query.FullName != nil {
-		clauses = append(clauses, fmt.Sprintf("full_name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.FullName))
-		argsPos++
-	}
-
-	if query.RoleId != nil {
-		clauses = append(clauses, fmt.Sprintf("role_id = $%d", argsPos))
-		args = append(args, *query.RoleId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM users"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM users WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildUserSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -147,31 +114,10 @@ func (m *Manager) GetUsers(query types.UserSearchQuery) ([]types.User, error) {
 }
 
 func (m *Manager) GetUsersCount(query types.UserSearchQuery) (int, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT COUNT(*) as count FROM users"
 
-	if query.FullName != nil {
-		clauses = append(clauses, fmt.Sprintf("full_name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.FullName))
-		argsPos++
-	}
-
-	if query.RoleId != nil {
-		clauses = append(clauses, fmt.Sprintf("role_id = $%d", argsPos))
-		args = append(args, *query.RoleId)
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT COUNT(*) as count FROM users"
-	} else {
-		q = fmt.Sprintf("SELECT COUNT(*) as count FROM users WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildUserSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -244,60 +190,18 @@ func (m *Manager) GetUserByUsername(username string) (*types.User, error) {
 func (m *Manager) GetUsersWithSettings(
 	query types.UserSearchQuery,
 ) ([]types.UserWithSettings, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = `SELECT 
+    u.id, u.username, u.email, u.email_verified, u.password, u.full_name,
+    u.birth_date, u.created_at, u.updated_at, u.role_id,
 
-	if query.FullName != nil {
-		clauses = append(clauses, fmt.Sprintf("full_name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.FullName))
-		argsPos++
-	}
+    s.id, s.public_email, s.public_birth_date, s.is_using_dark_theme,
+    s.language, s.updated_at 
 
-	if query.RoleId != nil {
-		clauses = append(clauses, fmt.Sprintf("role_id = $%d", argsPos))
-		args = append(args, *query.RoleId)
-		argsPos++
-	}
+    FROM users u LEFT JOIN users_settings s ON u.id = s.user_id
+  `
 
-	var q string
-
-	if len(clauses) == 0 {
-		q = `SELECT 
-      u.id, u.username, u.email, u.email_verified, u.password, u.full_name,
-      u.birth_date, u.created_at, u.updated_at, u.role_id,
-
-      s.id, s.public_email, s.public_birth_date, s.is_using_dark_theme,
-      s.language, s.updated_at 
-
-      FROM users u LEFT JOIN users_settings s ON u.id = s.user_id
-    `
-	} else {
-		q = fmt.Sprintf(`SELECT 
-      u.id, u.username, u.email, u.email_verified, u.password, u.full_name,
-      u.birth_date, u.created_at, u.updated_at, u.role_id,
-
-      s.id, s.public_email, s.public_birth_date, s.is_using_dark_theme,
-      s.language, s.updated_at 
-
-      FROM users u LEFT JOIN users_settings s ON u.id = s.user_id WHERE %s`,
-			strings.Join(clauses, " AND "),
-		)
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildUserSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -950,4 +854,42 @@ func scanUserSettingsRow(rows *sql.Rows) (*types.UserSettings, error) {
 	}
 
 	return n, nil
+}
+
+func buildUserSearchQuery(query types.UserSearchQuery, base string) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.FullName != nil {
+		clauses = append(clauses, fmt.Sprintf("full_name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.FullName))
+		argsPos++
+	}
+
+	if query.RoleId != nil {
+		clauses = append(clauses, fmt.Sprintf("role_id = $%d", argsPos))
+		args = append(args, *query.RoleId)
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
 }

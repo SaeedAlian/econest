@@ -34,32 +34,12 @@ func (m *Manager) CreatePermissionGroup(p types.CreatePermissionGroupPayload) (i
 }
 
 func (m *Manager) GetRoles(query types.RolesSearchQuery) ([]types.Role, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM roles"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
+	q, args := buildRoleSearchQuery(query, base)
 
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	if len(clauses) == 0 {
-		rows, err = m.db.Query("SELECT * FROM roles;")
-	} else {
-		q := fmt.Sprintf("SELECT * FROM roles WHERE %s;", strings.Join(clauses, " AND "))
-
-		rows, err = m.db.Query(
-			q,
-			args...,
-		)
-	}
-
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -133,32 +113,12 @@ func (m *Manager) GetRoleByName(name string) (*types.Role, error) {
 func (m *Manager) GetPermissionGroups(
 	query types.PermissionGroupSearchQuery,
 ) ([]types.PermissionGroup, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM permission_groups"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
+	q, args := buildPermissionGroupSearchQuery(query, base)
 
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	if len(clauses) == 0 {
-		rows, err = m.db.Query("SELECT * FROM permission_groups;")
-	} else {
-		q := fmt.Sprintf("SELECT * FROM permission_groups WHERE %s;", strings.Join(clauses, " AND "))
-
-		rows, err = m.db.Query(
-			q,
-			args...,
-		)
-	}
-
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -232,32 +192,12 @@ func (m *Manager) GetPermissionGroupByName(name string) (*types.PermissionGroup,
 func (m *Manager) GetRolesWithPermissionGroups(
 	query types.RolesSearchQuery,
 ) ([]types.RoleWithPermissionGroups, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM roles"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
+	q, args := buildRoleSearchQuery(query, base)
 
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	if len(clauses) == 0 {
-		rows, err = m.db.Query("SELECT * FROM roles;")
-	} else {
-		q := fmt.Sprintf("SELECT * FROM roles WHERE %s;", strings.Join(clauses, " AND "))
-
-		rows, err = m.db.Query(
-			q,
-			args...,
-		)
-	}
-
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -308,32 +248,12 @@ func (m *Manager) GetRolesWithPermissionGroups(
 func (m *Manager) GetPermissionGroupsWithPermissions(
 	query types.PermissionGroupSearchQuery,
 ) ([]types.PermissionGroupWithPermissions, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM permission_groups"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
+	q, args := buildPermissionGroupSearchQuery(query, base)
 
-	var (
-		rows *sql.Rows
-		err  error
-	)
-
-	if len(clauses) == 0 {
-		rows, err = m.db.Query("SELECT * FROM permission_groups;")
-	} else {
-		q := fmt.Sprintf("SELECT * FROM permission_groups WHERE %s;", strings.Join(clauses, " AND "))
-
-		rows, err = m.db.Query(
-			q,
-			args...,
-		)
-	}
-
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
@@ -769,4 +689,50 @@ func scanActionPermissionInfoRow(rows *sql.Rows) (*types.GroupActionPermissionIn
 	}
 
 	return n, nil
+}
+
+func buildRoleSearchQuery(
+	query types.RolesSearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	q += ";"
+	return q, args
+}
+
+func buildPermissionGroupSearchQuery(
+	query types.PermissionGroupSearchQuery,
+	base string,
+) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	q += ";"
+	return q, args
 }

@@ -79,37 +79,10 @@ func (m *Manager) CreateStoreAddress(p types.CreateStoreAddressPayload) (int, er
 }
 
 func (m *Manager) GetStores(query types.StoreSearchQuery) ([]types.Store, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT * FROM stores"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM stores"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM stores WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildStoreSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -131,25 +104,10 @@ func (m *Manager) GetStores(query types.StoreSearchQuery) ([]types.Store, error)
 }
 
 func (m *Manager) GetStoresCount(query types.StoreSearchQuery) (int, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = "SELECT COUNT(*) as count FROM stores"
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
-
-	var q string
-
-	if len(clauses) == 0 {
-		q = "SELECT * FROM stores"
-	} else {
-		q = fmt.Sprintf("SELECT * FROM stores WHERE %s", strings.Join(clauses, " AND "))
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildStoreSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -196,52 +154,17 @@ func (m *Manager) GetStoreById(id int) (*types.Store, error) {
 func (m *Manager) GetStoresWithSettings(
 	query types.StoreSearchQuery,
 ) ([]types.StoreWithSettings, error) {
-	clauses := []string{}
-	args := []interface{}{}
-	argsPos := 1
+	var base string
+	base = `SELECT 
+    s.id, s.name, s.description, s.verified,
+    s.created_at, s.updated_at, s.owner_id,
 
-	if query.Name != nil {
-		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
-		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
-		argsPos++
-	}
+    t.id, t.public_owner, t.updated_at, t.store_id
 
-	var q string
+    FROM stores s LEFT JOIN stores_settings t ON s.id = t.store_id
+  `
 
-	if len(clauses) == 0 {
-		q = `SELECT 
-      s.id, s.name, s.description, s.verified,
-      s.created_at, s.updated_at, s.owner_id,
-
-      t.id, t.public_owner, t.updated_at, t.store_id
-
-      FROM stores s LEFT JOIN stores_settings t ON s.id = t.store_id
-    `
-	} else {
-		q = fmt.Sprintf(`SELECT 
-      s.id, s.name, s.description, s.verified,
-      s.created_at, s.updated_at, s.owner_id,
-
-      t.id, t.public_owner, t.updated_at, t.store_id
-
-      FROM stores s LEFT JOIN stores_settings t ON s.id = t.store_id WHERE %s`,
-			strings.Join(clauses, " AND "),
-		)
-	}
-
-	if query.Offset != nil {
-		q = fmt.Sprintf("%s OFFSET $%d", q, argsPos)
-		args = append(args, *query.Offset)
-		argsPos++
-	}
-
-	if query.Limit != nil {
-		q = fmt.Sprintf("%s LIMIT $%d", q, argsPos)
-		args = append(args, *query.Limit)
-		argsPos++
-	}
-
-	q = fmt.Sprintf("%s;", q)
+	q, args := buildStoreSearchQuery(query, base)
 
 	rows, err := m.db.Query(q, args...)
 	if err != nil {
@@ -843,4 +766,36 @@ func scanStoreOwnedProductRow(rows *sql.Rows) (*types.StoreOwnedProduct, error) 
 	}
 
 	return n, nil
+}
+
+func buildStoreSearchQuery(query types.StoreSearchQuery, base string) (string, []interface{}) {
+	clauses := []string{}
+	args := []interface{}{}
+	argsPos := 1
+
+	if query.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("name ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Name))
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
 }
