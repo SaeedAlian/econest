@@ -43,6 +43,7 @@ func (m *Manager) GetRoles(query types.RolesSearchQuery) ([]types.Role, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	roles := []types.Role{}
 
@@ -66,6 +67,7 @@ func (m *Manager) GetRoleById(id int) (*types.Role, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	role := new(types.Role)
 	role.Id = -1
@@ -92,6 +94,7 @@ func (m *Manager) GetRoleByName(name string) (*types.Role, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	role := new(types.Role)
 	role.Id = -1
@@ -122,6 +125,7 @@ func (m *Manager) GetPermissionGroups(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	groups := []types.PermissionGroup{}
 
@@ -145,6 +149,7 @@ func (m *Manager) GetPermissionGroupById(id int) (*types.PermissionGroup, error)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	group := new(types.PermissionGroup)
 	group.Id = -1
@@ -171,6 +176,7 @@ func (m *Manager) GetPermissionGroupByName(name string) (*types.PermissionGroup,
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	group := new(types.PermissionGroup)
 	group.Id = -1
@@ -201,6 +207,7 @@ func (m *Manager) GetRolesWithPermissionGroups(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	roles := []types.RoleWithPermissionGroups{}
 
@@ -218,6 +225,7 @@ func (m *Manager) GetRolesWithPermissionGroups(
 		if err != nil {
 			return nil, err
 		}
+		defer groupRows.Close()
 
 		groups := []types.PermissionGroup{}
 
@@ -257,6 +265,7 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	groups := []types.PermissionGroupWithPermissions{}
 
@@ -274,6 +283,7 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 		if err != nil {
 			return nil, err
 		}
+		defer actionRows.Close()
 
 		resourceRows, err := m.db.Query(`SELECT
       grp.resource FROM group_resource_permissions grp
@@ -283,6 +293,7 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 		if err != nil {
 			return nil, err
 		}
+		defer resourceRows.Close()
 
 		actions := []types.GroupActionPermissionInfo{}
 		resources := []types.GroupResourcePermissionInfo{}
@@ -329,6 +340,7 @@ func (m *Manager) GetRolesBasedOnResourcePermission(resource types.Resource) ([]
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	roles := []types.Role{}
 
@@ -353,6 +365,7 @@ func (m *Manager) GetRolesBasedOnActionPermission(action types.Action) ([]types.
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	roles := []types.Role{}
 
@@ -379,6 +392,7 @@ func (m *Manager) GetPermissionGroupsBasedOnResourcePermission(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	groups := []types.PermissionGroup{}
 
@@ -405,6 +419,7 @@ func (m *Manager) GetPermissionGroupsBasedOnActionPermission(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	groups := []types.PermissionGroup{}
 

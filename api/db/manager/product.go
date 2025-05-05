@@ -360,6 +360,7 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	products := []types.Product{}
 
@@ -387,6 +388,7 @@ func (m *Manager) GetProductsWithMainInfo(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	products := []types.ProductWithMainInfo{}
 
@@ -460,6 +462,7 @@ func (m *Manager) GetProductsCount(query types.ProductSearchQuery) (int, error) 
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -484,6 +487,7 @@ func (m *Manager) GetProductCategories(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	categories := []types.ProductCategory{}
 
@@ -593,6 +597,7 @@ func (m *Manager) GetProductCategoriesCount(
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -617,6 +622,7 @@ func (m *Manager) GetProductTags(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tags := []types.ProductTag{}
 
@@ -644,6 +650,7 @@ func (m *Manager) GetProductTagsCount(
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -668,6 +675,7 @@ func (m *Manager) GetProductOffers(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	offers := []types.ProductOffer{}
 
@@ -695,6 +703,7 @@ func (m *Manager) GetProductOffersCount(
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -712,6 +721,7 @@ func (m *Manager) GetProductImages(productId int) ([]types.ProductImage, error) 
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	images := []types.ProductImage{}
 
@@ -732,6 +742,7 @@ func (m *Manager) GetProductSpecs(productId int) ([]types.ProductSpec, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	specs := []types.ProductSpec{}
 
@@ -883,6 +894,7 @@ func (m *Manager) GetProductCommentsByProductId(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	comments := []types.ProductComment{}
 
@@ -911,6 +923,7 @@ func (m *Manager) GetProductCommentsCountByProductId(
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -936,6 +949,7 @@ func (m *Manager) GetProductCommentsByUserId(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	comments := []types.ProductComment{}
 
@@ -964,6 +978,7 @@ func (m *Manager) GetProductCommentsCountByUserId(
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -984,6 +999,7 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	product := new(types.Product)
 	product.Id = -1
@@ -1280,6 +1296,7 @@ func (m *Manager) GetProductCategoryById(id int) (*types.ProductCategory, error)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	cat := new(types.ProductCategory)
 	cat.Id = -1
@@ -1377,6 +1394,7 @@ func (m *Manager) GetProductTagById(id int) (*types.ProductTag, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	tag := new(types.ProductTag)
 	tag.Id = -1
@@ -1403,6 +1421,7 @@ func (m *Manager) GetProductOfferById(id int) (*types.ProductOffer, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	offer := new(types.ProductOffer)
 	offer.Id = -1
@@ -1429,6 +1448,7 @@ func (m *Manager) GetProductOfferByProductId(productId int) (*types.ProductOffer
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	offer := new(types.ProductOffer)
 	offer.Id = -1
@@ -1455,6 +1475,7 @@ func (m *Manager) GetProductImageById(id int) (*types.ProductImage, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	img := new(types.ProductImage)
 	img.Id = -1
@@ -1481,6 +1502,7 @@ func (m *Manager) GetProductSpecById(id int) (*types.ProductSpec, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	spec := new(types.ProductSpec)
 	spec.Id = -1
@@ -1547,6 +1569,7 @@ func (m *Manager) GetProductCommentById(id int) (*types.ProductComment, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	comment := new(types.ProductComment)
 	comment.Id = -1

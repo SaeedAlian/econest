@@ -88,6 +88,7 @@ func (m *Manager) GetStores(query types.StoreSearchQuery) ([]types.Store, error)
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	stores := []types.Store{}
 
@@ -113,6 +114,7 @@ func (m *Manager) GetStoresCount(query types.StoreSearchQuery) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -133,6 +135,7 @@ func (m *Manager) GetStoreById(id int) (*types.Store, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	store := new(types.Store)
 	store.Id = -1
@@ -170,6 +173,7 @@ func (m *Manager) GetStoresWithSettings(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	stores := []types.StoreWithSettings{}
 
@@ -198,6 +202,7 @@ func (m *Manager) GetStoreWithSettingsById(id int) (*types.StoreWithSettings, er
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	store := new(types.StoreWithSettings)
 	store.Id = -1
@@ -286,6 +291,7 @@ func (m *Manager) GetStorePhoneNumbers(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	phoneNumbers := []types.StorePhoneNumber{}
 
@@ -345,6 +351,7 @@ func (m *Manager) GetStoreAddresses(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	addresses := []types.StoreAddress{}
 
@@ -365,6 +372,7 @@ func (m *Manager) GetStoreSettings(storeId int) (*types.StoreSettings, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	settings := new(types.StoreSettings)
 	settings.Id = -1
@@ -392,6 +400,7 @@ func (m *Manager) GetStoreOwnedProducts(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	ownedProds := []types.StoreOwnedProduct{}
 

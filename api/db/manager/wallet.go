@@ -38,6 +38,7 @@ func (m *Manager) GetWalletTransactions(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	txs := []types.WalletTransaction{}
 
@@ -65,6 +66,7 @@ func (m *Manager) GetWalletTransactionsCount(
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {

@@ -98,6 +98,7 @@ func (m *Manager) GetUsers(query types.UserSearchQuery) ([]types.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	users := []types.User{}
 
@@ -123,6 +124,7 @@ func (m *Manager) GetUsersCount(query types.UserSearchQuery) (int, error) {
 	if err != nil {
 		return -1, err
 	}
+	defer rows.Close()
 
 	count := 0
 	for rows.Next() {
@@ -143,6 +145,7 @@ func (m *Manager) GetUserById(id int) (*types.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	user := new(types.User)
 	user.Id = -1
@@ -169,6 +172,7 @@ func (m *Manager) GetUserByUsername(username string) (*types.User, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	user := new(types.User)
 	user.Id = -1
@@ -207,6 +211,7 @@ func (m *Manager) GetUsersWithSettings(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	users := []types.UserWithSettings{}
 
@@ -236,6 +241,7 @@ func (m *Manager) GetUserWithSettingsById(id int) (*types.UserWithSettings, erro
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	user := new(types.UserWithSettings)
 	user.Id = -1
@@ -268,6 +274,7 @@ func (m *Manager) GetUserWithSettingsByUsername(username string) (*types.UserWit
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	user := new(types.UserWithSettings)
 	user.Id = -1
@@ -356,6 +363,7 @@ func (m *Manager) GetUserPhoneNumbers(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	phoneNumbers := []types.UserPhoneNumber{}
 
@@ -415,6 +423,7 @@ func (m *Manager) GetUserAddresses(
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	addresses := []types.UserAddress{}
 
@@ -435,6 +444,7 @@ func (m *Manager) GetUserSettings(userId int) (*types.UserSettings, error) {
 	if err != nil {
 		return nil, err
 	}
+	defer rows.Close()
 
 	settings := new(types.UserSettings)
 	settings.Id = -1
