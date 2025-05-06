@@ -25,8 +25,8 @@ CREATE TABLE order_shipments (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   order_id INTEGER NOT NULL UNIQUE REFERENCES orders(id) ON DELETE CASCADE,
-  receiver_address_id INTEGER REFERENCES addresses(id) ON DELETE SET NULL,
-  sender_address_id INTEGER REFERENCES addresses(id) ON DELETE SET NULL
+  receiver_address_id INTEGER NOT NULL REFERENCES addresses(id) ON DELETE CASCADE,
+  sender_address_id INTEGER NOT NULL REFERENCES addresses(id) ON DELETE CASCADE
 );
 
 ALTER TABLE order_shipments
