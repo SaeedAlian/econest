@@ -1,19 +1,22 @@
 package types
 
-import "time"
+import (
+	"database/sql"
+	"time"
+)
 
 type User struct {
-	Id            int       `json:"id"            exposure:"public"`
-	Username      string    `json:"username"      exposure:"private,needPermission"`
-	Email         string    `json:"email"         exposure:"publicEmail,needPermission"`
-	EmailVerified bool      `json:"emailVerified" exposure:"publicEmail,needPermission"`
-	Password      string    `json:"-"`
-	FullName      string    `json:"fullName"      exposure:"public"`
-	BirthDate     time.Time `json:"birthDate"     exposure:"publicBirthDate,needPermission"`
-	IsBanned      bool      `json:"isBanned"      exposure:"public"`
-	CreatedAt     time.Time `json:"createdAt"     exposure:"public"`
-	UpdatedAt     time.Time `json:"updatedAt"     exposure:"public"`
-	RoleId        int       `json:"roleId"        exposure:"private,needPermission"`
+	Id            int            `json:"id"            exposure:"public"`
+	Username      string         `json:"username"      exposure:"private,needPermission"`
+	Email         string         `json:"email"         exposure:"publicEmail,needPermission"`
+	EmailVerified bool           `json:"emailVerified" exposure:"publicEmail,needPermission"`
+	Password      string         `json:"-"`
+	FullName      sql.NullString `json:"fullName"      exposure:"public"`
+	BirthDate     sql.NullTime   `json:"birthDate"     exposure:"publicBirthDate,needPermission"`
+	IsBanned      bool           `json:"isBanned"      exposure:"public"`
+	CreatedAt     time.Time      `json:"createdAt"     exposure:"public"`
+	UpdatedAt     time.Time      `json:"updatedAt"     exposure:"public"`
+	RoleId        int            `json:"roleId"        exposure:"private,needPermission"`
 }
 
 type UserSettings struct {
@@ -48,16 +51,16 @@ type UserPhoneNumber struct {
 }
 
 type UserAddress struct {
-	Id        int       `json:"id"        exposure:"public"`
-	State     string    `json:"state"     exposure:"isPublic,needPermission"`
-	City      string    `json:"city"      exposure:"isPublic,needPermission"`
-	Street    string    `json:"street"    exposure:"isPublic,needPermission"`
-	Zipcode   string    `json:"zipcode"   exposure:"isPublic,needPermission"`
-	Details   string    `json:"details"   exposure:"isPublic,needPermission"`
-	IsPublic  bool      `json:"isPublic"  exposure:"public"`
-	CreatedAt time.Time `json:"createdAt" exposure:"public"`
-	UpdatedAt time.Time `json:"updatedAt" exposure:"public"`
-	UserId    int       `json:"userId"    exposure:"public"`
+	Id        int            `json:"id"        exposure:"public"`
+	State     string         `json:"state"     exposure:"isPublic,needPermission"`
+	City      string         `json:"city"      exposure:"isPublic,needPermission"`
+	Street    string         `json:"street"    exposure:"isPublic,needPermission"`
+	Zipcode   string         `json:"zipcode"   exposure:"isPublic,needPermission"`
+	Details   sql.NullString `json:"details"   exposure:"isPublic,needPermission"`
+	IsPublic  bool           `json:"isPublic"  exposure:"public"`
+	CreatedAt time.Time      `json:"createdAt" exposure:"public"`
+	UpdatedAt time.Time      `json:"updatedAt" exposure:"public"`
+	UserId    int            `json:"userId"    exposure:"public"`
 }
 
 type CreateUserPayload struct {

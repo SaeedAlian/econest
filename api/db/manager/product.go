@@ -538,12 +538,12 @@ func (m *Manager) GetProductCategoriesWithParents(
 		currentParentId := cat.ParentCategoryId
 		var currentParent *types.ProductCategoryWithParents = nil
 
-		for currentParentId != 0 {
-			parentCat, exists := allCategories[currentParentId]
+		for currentParentId.Int32 != 0 {
+			parentCat, exists := allCategories[int(currentParentId.Int32)]
 			if !exists {
 				parentRows, err := m.db.Query(
 					"SELECT * FROM product_categories WHERE id = $1;",
-					currentParentId,
+					currentParentId.Int32,
 				)
 				if err != nil {
 					return nil, err
@@ -1143,10 +1143,10 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	currentParentId := cat.ParentCategoryId
 	var currentParent *types.ProductCategoryWithParents = nil
 
-	for currentParentId != 0 {
+	for currentParentId.Int32 != 0 {
 		parentRows, err := m.db.Query(
 			"SELECT * FROM product_categories WHERE id = $1;",
-			currentParentId,
+			currentParentId.Int32,
 		)
 		if err != nil {
 			return nil, err
@@ -1416,10 +1416,10 @@ func (m *Manager) GetProductCategoryWithParentsById(
 	currentParentId := cat.ParentCategoryId
 	var currentParent *types.ProductCategoryWithParents = nil
 
-	for currentParentId != 0 {
+	for currentParentId.Int32 != 0 {
 		parentRows, err := m.db.Query(
 			"SELECT * FROM product_categories WHERE id = $1;",
-			currentParentId,
+			currentParentId.Int32,
 		)
 		if err != nil {
 			return nil, err
