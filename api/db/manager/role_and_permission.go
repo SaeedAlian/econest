@@ -466,7 +466,7 @@ func (m *Manager) AddResourcePermissionToGroup(
 ) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
-		"INSERT INTO group_resource_permissions (resource, group_id) VALUES ($1, $2) RETURNING id;",
+		"INSERT INTO group_resource_permissions (resource, group_id) VALUES ($1, $2) RETURNING group_id;",
 		p.Resource,
 		p.GroupId,
 	).Scan(&rowId)
@@ -482,7 +482,7 @@ func (m *Manager) AddActionPermissionToGroup(
 ) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
-		"INSERT INTO group_action_permissions (action, group_id) VALUES ($1, $2) RETURNING id;",
+		"INSERT INTO group_action_permissions (action, group_id) VALUES ($1, $2) RETURNING group_id;",
 		p.Action,
 		p.GroupId,
 	).Scan(&rowId)
@@ -536,6 +536,12 @@ func (m *Manager) UpdateRole(id int, p types.UpdateRolePayload) error {
 		argsPos++
 	}
 
+	if p.Description != nil {
+		clauses = append(clauses, fmt.Sprintf("description = $%d", argsPos))
+		args = append(args, *p.Description)
+		argsPos++
+	}
+
 	if len(clauses) == 0 {
 		return types.ErrNoFieldsReceivedToUpdate
 	}
@@ -567,6 +573,12 @@ func (m *Manager) UpdatePermissionGroup(id int, p types.UpdatePermissionGroupPay
 	if p.Name != nil {
 		clauses = append(clauses, fmt.Sprintf("name = $%d", argsPos))
 		args = append(args, *p.Name)
+		argsPos++
+	}
+
+	if p.Description != nil {
+		clauses = append(clauses, fmt.Sprintf("description = $%d", argsPos))
+		args = append(args, *p.Description)
 		argsPos++
 	}
 
