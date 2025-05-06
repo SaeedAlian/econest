@@ -817,6 +817,7 @@ func scanUserPhoneNumberRow(rows *sql.Rows) (*types.UserPhoneNumber, error) {
 		&n.CreatedAt,
 		&n.UpdatedAt,
 		&n.UserId,
+		new(sql.NullInt32),
 	)
 	if err != nil {
 		return nil, err
@@ -839,6 +840,7 @@ func scanUserAddressRow(rows *sql.Rows) (*types.UserAddress, error) {
 		&n.CreatedAt,
 		&n.UpdatedAt,
 		&n.UserId,
+		new(sql.NullInt32),
 	)
 	if err != nil {
 		return nil, err

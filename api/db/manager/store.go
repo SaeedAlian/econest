@@ -714,7 +714,7 @@ func scanStorePhoneNumberRow(rows *sql.Rows) (*types.StorePhoneNumber, error) {
 		&n.Verified,
 		&n.CreatedAt,
 		&n.UpdatedAt,
-		nil,
+		new(sql.NullInt32),
 		&n.StoreId,
 	)
 	if err != nil {
@@ -737,7 +737,7 @@ func scanStoreAddressRow(rows *sql.Rows) (*types.StoreAddress, error) {
 		&n.IsPublic,
 		&n.CreatedAt,
 		&n.UpdatedAt,
-		nil,
+		new(sql.NullInt32),
 		&n.StoreId,
 	)
 	if err != nil {
