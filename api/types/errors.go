@@ -6,6 +6,7 @@ var (
 	ErrUserNotFound                    = errors.New("user not found")
 	ErrStoreNotFound                   = errors.New("store not found")
 	ErrRoleNotFound                    = errors.New("role not found")
+	ErrWalletNotFound                  = errors.New("wallet not found")
 	ErrProductNotFound                 = errors.New("product not found")
 	ErrSubcategoryNotFound             = errors.New("subcategory not found")
 	ErrProductCategoryNotFound         = errors.New("product category not found")
