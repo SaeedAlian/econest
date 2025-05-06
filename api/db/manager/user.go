@@ -197,7 +197,7 @@ func (m *Manager) GetUsersWithSettings(
 	var base string
 	base = `SELECT 
     u.id, u.username, u.email, u.email_verified, u.password, u.full_name,
-    u.birth_date, u.created_at, u.updated_at, u.role_id,
+    u.birth_date, u.is_banned, u.created_at, u.updated_at, u.role_id,
 
     s.id, s.public_email, s.public_birth_date, s.is_using_dark_theme,
     s.language, s.updated_at 
@@ -230,12 +230,12 @@ func (m *Manager) GetUsersWithSettings(
 func (m *Manager) GetUserWithSettingsById(id int) (*types.UserWithSettings, error) {
 	rows, err := m.db.Query(`SELECT 
     u.id, u.username, u.email, u.email_verified, u.password, u.full_name,
-    u.birth_date, u.created_at, u.updated_at, u.role_id,
+    u.birth_date, u.is_banned, u.created_at, u.updated_at, u.role_id,
 
     s.id, s.public_email, s.public_birth_date, s.is_using_dark_theme,
     s.language, s.updated_at 
 
-    FROM users u LEFT JOIN users_settings s ON u.id = s.user_id WHERE id = $1;`,
+    FROM users u LEFT JOIN users_settings s ON u.id = s.user_id WHERE u.id = $1;`,
 		id,
 	)
 	if err != nil {
@@ -263,12 +263,12 @@ func (m *Manager) GetUserWithSettingsById(id int) (*types.UserWithSettings, erro
 func (m *Manager) GetUserWithSettingsByUsername(username string) (*types.UserWithSettings, error) {
 	rows, err := m.db.Query(`SELECT 
     u.id, u.username, u.email, u.email_verified, u.password, u.full_name,
-    u.birth_date, u.created_at, u.updated_at, u.role_id,
+    u.birth_date, u.is_banned, u.created_at, u.updated_at, u.role_id,
 
     s.id, s.public_email, s.public_birth_date, s.is_using_dark_theme,
     s.language, s.updated_at 
 
-    FROM users u LEFT JOIN users_settings s ON u.id = s.user_id WHERE username = $1;`,
+    FROM users u LEFT JOIN users_settings s ON u.id = s.user_id WHERE u.username = $1;`,
 		username,
 	)
 	if err != nil {
