@@ -1018,6 +1018,76 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	return product, nil
 }
 
+func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo, error) {
+	productRows, err := m.db.Query(
+		"SELECT * FROM products WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer productRows.Close()
+
+	if !productRows.Next() {
+		return nil, types.ErrProductNotFound
+	}
+
+	product, err := scanProductRow(productRows)
+	if err != nil {
+		return nil, err
+	}
+
+	var totalQuantity int
+	err = m.db.QueryRow(
+		"SELECT COALESCE(SUM(quantity), 0) FROM product_variants WHERE product_id = $1;",
+		product.Id,
+	).Scan(&totalQuantity)
+	if err != nil {
+		return nil, err
+	}
+
+	var offer *types.ProductOffer
+	offerRows, err := m.db.Query(
+		"SELECT * FROM product_offers WHERE product_id = $1;",
+		product.Id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if offerRows.Next() {
+		offer, err = scanProductOfferRow(offerRows)
+		if err != nil {
+			offerRows.Close()
+			return nil, err
+		}
+	}
+	offerRows.Close()
+
+	var mainImage *types.ProductImage
+	imageRows, err := m.db.Query(
+		"SELECT * FROM product_images WHERE product_id = $1 AND is_main = true;",
+		product.Id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	if imageRows.Next() {
+		mainImage, err = scanProductImageRow(imageRows)
+		if err != nil {
+			imageRows.Close()
+			return nil, err
+		}
+	}
+	imageRows.Close()
+
+	return &types.ProductWithMainInfo{
+		Product:       *product,
+		TotalQuantity: totalQuantity,
+		Offer:         offer,
+		MainImage:     mainImage,
+	}, nil
+}
+
 func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, error) {
 	productRows, err := m.db.Query(
 		"SELECT * FROM products WHERE id = $1;",
