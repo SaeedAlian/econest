@@ -15,7 +15,7 @@ func (m *Manager) CreateStore(p types.CreateStorePayload) (int, error) {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
-		return -1, nil
+		return -1, err
 	}
 
 	err = tx.QueryRow(
