@@ -54,14 +54,12 @@ const (
 	TransactionTypeDeposit  TransactionType = "deposit"
 	TransactionTypeWithdraw TransactionType = "withdraw"
 	TransactionTypePurchase TransactionType = "purchase"
-	TransactionTypeSale     TransactionType = "sale"
 )
 
 var ValidTransactionTypes = []TransactionType{
 	TransactionTypeDeposit,
 	TransactionTypeWithdraw,
 	TransactionTypePurchase,
-	TransactionTypeSale,
 }
 
 func (t TransactionType) IsValid() bool {
