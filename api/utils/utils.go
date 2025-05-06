@@ -35,3 +35,7 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 
 	return res
 }
+
+func Ptr[T any](v T) *T {
+	return &v
+}
