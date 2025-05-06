@@ -80,6 +80,33 @@ func (m *Manager) GetWalletTransactionsCount(
 	return count, nil
 }
 
+func (m *Manager) GetUserWallet(userId int) (*types.Wallet, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM wallets WHERE user_id = $1;",
+		userId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	wallet := new(types.Wallet)
+	wallet.Id = -1
+
+	for rows.Next() {
+		wallet, err = scanWalletRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if wallet.Id == -1 {
+		return nil, types.ErrWalletNotFound
+	}
+
+	return wallet, nil
+}
+
 func (m *Manager) UpdateWallet(id int, p types.UpdateWalletPayload) error {
 	q, args, err := buildWalletUpdateQuery(id, p)
 	if err != nil {
@@ -150,6 +177,23 @@ func (m *Manager) UpdateWalletAndTransaction(
 		return err
 	}
 	return nil
+}
+
+func scanWalletRow(rows *sql.Rows) (*types.Wallet, error) {
+	n := new(types.Wallet)
+
+	err := rows.Scan(
+		&n.Id,
+		&n.Balance,
+		&n.CreatedAt,
+		&n.UpdatedAt,
+		&n.UserId,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
 }
 
 func scanWalletTransactionRow(rows *sql.Rows) (*types.WalletTransaction, error) {
