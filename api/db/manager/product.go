@@ -169,16 +169,6 @@ func (m *Manager) CreateProductAttributeOption(
 		return -1, err
 	}
 
-	err = tx.QueryRow(
-		"INSERT INTO product_attribute_options (attribute_id, value) VALUES ($1, $2) RETURNING id;",
-		p.AttributeId,
-		p.Value,
-	).Scan(&rowId)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-
 	variantRows, err := tx.Query(
 		"SELECT id FROM product_variants WHERE product_id = $1;",
 		productId,
@@ -199,10 +189,12 @@ func (m *Manager) CreateProductAttributeOption(
 		variantIds = append(variantIds, id)
 	}
 
-	attrRows, err := tx.Query(
-		"SELECT id FROM product_attributes WHERE product_id = $1;",
-		productId,
-	)
+	attrRows, err := tx.Query(`
+    SELECT id FROM product_attributes pa 
+    WHERE product_id = $1 AND EXISTS (
+      SELECT 1 FROM product_attribute_options pao WHERE pao.attribute_id = pa.id
+    );
+  `, productId)
 	if err != nil {
 		tx.Rollback()
 		return -1, err
@@ -243,6 +235,16 @@ func (m *Manager) CreateProductAttributeOption(
 		optionMap[attrId] = opts
 	}
 
+	err = tx.QueryRow(
+		"INSERT INTO product_attribute_options (attribute_id, value) VALUES ($1, $2) RETURNING id;",
+		p.AttributeId,
+		p.Value,
+	).Scan(&rowId)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
 	pvoRows, err := tx.Query(`SELECT 
     pvo.* FROM product_variant_options pvo 
     JOIN product_variants pv ON pvo.variant_id = pv.id
@@ -264,7 +266,7 @@ func (m *Manager) CreateProductAttributeOption(
 		pvos = append(pvos, *pvo)
 	}
 
-	pvoFound, err := allOrNoneHaveAttribute(pvos, p.AttributeId)
+	pvoFound, err := allOrNoneHaveAttribute(pvos, p.AttributeId, len(variantIds))
 	if err != nil {
 		tx.Rollback()
 		return -1, err
@@ -2410,7 +2412,11 @@ func scanProductCommentRow(rows *sql.Rows) (*types.ProductComment, error) {
 	return n, nil
 }
 
-func allOrNoneHaveAttribute(pvos []types.ProductVariantOption, attributeId int) (bool, error) {
+func allOrNoneHaveAttribute(
+	pvos []types.ProductVariantOption,
+	attributeId int,
+	variantsLen int,
+) (bool, error) {
 	if len(pvos) == 0 {
 		return false, nil
 	}
@@ -2423,7 +2429,7 @@ func allOrNoneHaveAttribute(pvos []types.ProductVariantOption, attributeId int) 
 	}
 
 	switch {
-	case countWithAttr == len(pvos):
+	case countWithAttr == variantsLen:
 		return true, nil
 	case countWithAttr == 0:
 		return false, nil
@@ -2437,17 +2443,22 @@ func allOrNoneHaveAttribute(pvos []types.ProductVariantOption, attributeId int) 
 }
 
 func createAttributeCombinations(attributeOptionsMap map[int][]int) [][]map[int]int {
+	var res [][]map[int]int
+
+	if len(attributeOptionsMap) == 0 {
+		res = append(res, []map[int]int{})
+		return res
+	}
+
 	keys := make([]int, 0, len(attributeOptionsMap))
 
 	for k := range attributeOptionsMap {
 		keys = append(keys, k)
 	}
 
-	var res [][]map[int]int
-
 	var backtrack func(index int, curr []map[int]int)
 	backtrack = func(index int, curr []map[int]int) {
-		if index == len(curr) {
+		if index == len(attributeOptionsMap) {
 			comb := make([]map[int]int, len(curr))
 			for i, c := range curr {
 				cpmap := make(map[int]int)
