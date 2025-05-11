@@ -5,6 +5,10 @@ import (
 	"strings"
 )
 
+var structPaths []string = []string{
+	"github.com/SaeedAlian/econest/api/types",
+}
+
 func FilterStruct(input interface{}, exposures map[string]bool) map[string]interface{} {
 	res := make(map[string]interface{})
 	v := reflect.ValueOf(input)
@@ -59,8 +63,17 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 			typ = typ.Elem()
 		}
 
-		if typ.Kind() == reflect.Struct &&
-			typ.PkgPath() == "github.com/SaeedAlian/econest/api/types" {
+		pkgPath := typ.PkgPath()
+
+		isStruct := false
+		for _, p := range structPaths {
+			if p == pkgPath {
+				isStruct = true
+				break
+			}
+		}
+
+		if typ.Kind() == reflect.Struct && isStruct {
 			res[tag] = FilterStruct(fieldVal.Interface(), exposures)
 		} else {
 			res[tag] = fieldVal.Interface()
