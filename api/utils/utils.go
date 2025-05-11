@@ -10,10 +10,24 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 	v := reflect.ValueOf(input)
 	t := reflect.TypeOf(input)
 
+	if v.Kind() == reflect.Ptr {
+		if v.IsNil() {
+			return nil
+		}
+		v = v.Elem()
+		t = t.Elem()
+	}
+
 	for i := 0; i < v.NumField(); i++ {
 		f := t.Field(i)
+		fieldVal := v.Field(i)
+
+		if !fieldVal.CanInterface() {
+			continue
+		}
+
 		tag := f.Tag.Get("json")
-		ex := strings.Split(f.Tag.Get("exposures"), ",")
+		ex := strings.Split(f.Tag.Get("exposure"), ",")
 
 		if tag == "-" {
 			continue
@@ -25,11 +39,31 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 			tag = strings.Split(tag, ",")[0]
 		}
 
-		for i, e := range ex {
+		include := false
+		for _, e := range ex {
 			if exposures[e] {
-				res[tag] = v.Field(i).Interface()
+				include = true
 				break
 			}
+		}
+		if !include {
+			continue
+		}
+
+		typ := fieldVal.Type()
+		if typ.Kind() == reflect.Ptr {
+			if fieldVal.IsNil() {
+				res[tag] = nil
+				continue
+			}
+			typ = typ.Elem()
+		}
+
+		if typ.Kind() == reflect.Struct &&
+			typ.PkgPath() == "github.com/SaeedAlian/econest/api/types" {
+			res[tag] = FilterStruct(fieldVal.Interface(), exposures)
+		} else {
+			res[tag] = fieldVal.Interface()
 		}
 	}
 
