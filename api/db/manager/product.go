@@ -68,6 +68,12 @@ func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
 		return -1, err
 	}
 
+	err = tx.Commit()
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
 	return rowId, nil
 }
 
