@@ -1,3 +1,6 @@
+DELETE FROM addresses WHERE user_id IS NULL;
+DELETE FROM phonenumbers WHERE user_id IS NULL;
+
 ALTER TABLE addresses
   DROP CONSTRAINT IF EXISTS address_has_owner;
 
