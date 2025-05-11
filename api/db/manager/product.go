@@ -2168,6 +2168,10 @@ func (m *Manager) UpdateProductComment(
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
+	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
+	args = append(args, time.Now())
+	argsPos++
+
 	args = append(args, id)
 	q := fmt.Sprintf(
 		"UPDATE product_comments SET %s WHERE id = $%d",
