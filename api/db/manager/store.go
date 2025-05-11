@@ -162,7 +162,7 @@ func (m *Manager) GetStoresWithSettings(
     s.id, s.name, s.description, s.verified,
     s.created_at, s.updated_at, s.owner_id,
 
-    t.id, t.public_owner, t.updated_at, t.store_id
+    t.id, t.public_owner, t.updated_at
 
     FROM stores s LEFT JOIN stores_settings t ON s.id = t.store_id
   `
@@ -194,9 +194,9 @@ func (m *Manager) GetStoreWithSettingsById(id int) (*types.StoreWithSettings, er
     s.id, s.name, s.description, s.verified,
     s.created_at, s.updated_at, s.owner_id,
 
-    t.id, t.public_owner, t.updated_at, t.store_id
+    t.id, t.public_owner, t.updated_at
 
-    FROM stores s LEFT JOIN stores_settings t ON s.id = t.store_id WHERE id = $1;`,
+    FROM stores s LEFT JOIN stores_settings t ON s.id = t.store_id WHERE s.id = $1;`,
 		id,
 	)
 	if err != nil {
