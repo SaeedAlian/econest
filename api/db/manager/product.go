@@ -2394,7 +2394,7 @@ func (m *Manager) DeleteProductAttributeOption(id int) error {
 
 func (m *Manager) DeleteProductComment(id int) error {
 	_, err := m.db.Exec(
-		"DELETE FROM product_specs WHERE id = $1;",
+		"DELETE FROM product_comments WHERE id = $1;",
 		id,
 	)
 	if err != nil {
