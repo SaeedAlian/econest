@@ -132,7 +132,7 @@ type ProductComment struct {
 }
 
 type ProductWithMainInfo struct {
-	Product
+	Product       `              json:"product"             exposure:"public"`
 	TotalQuantity int           `json:"totalQuantity"       exposure:"public"`
 	Offer         *ProductOffer `json:"offer,omitempty"     exposure:"public"`
 	MainImage     *ProductImage `json:"mainImage,omitempty" exposure:"public"`
@@ -140,7 +140,7 @@ type ProductWithMainInfo struct {
 }
 
 type ProductWithAllInfo struct {
-	Product
+	Product     `                              json:"product"         exposure:"public"`
 	Subcategory ProductCategoryWithParents    `json:"subcategory"     exposure:"public"`
 	Specs       []ProductSpecInfo             `json:"specs"           exposure:"public"`
 	Tags        []ProductTag                  `json:"tags"            exposure:"public"`

@@ -30,7 +30,7 @@ type UserSettings struct {
 }
 
 type UserWithSettings struct {
-	User
+	User              `json:"user" exposure:"public"`
 	SettingsId        int       `json:"settingsId"        exposure:"public"`
 	PublicEmail       bool      `json:"publicEmail"       exposure:"public"`
 	PublicBirthDate   bool      `json:"publicBirthDate"   exposure:"public"`
