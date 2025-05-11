@@ -248,7 +248,10 @@ func buildWalletTransactionSearchQuery(
 	}
 
 	if query.UserId != nil {
-		clauses = append(clauses, fmt.Sprintf("user_id = $%d", argsPos))
+		clauses = append(
+			clauses,
+			fmt.Sprintf("wallet_id IN (SELECT id FROM wallets WHERE user_id = $%d)", argsPos),
+		)
 		args = append(args, *query.UserId)
 		argsPos++
 	}
