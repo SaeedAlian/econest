@@ -15,6 +15,11 @@ type Store struct {
 	OwnerId     int       `json:"ownerId"     exposure:"publicOwner,needPermission"`
 }
 
+type StoreInfo struct {
+	Id   int    `json:"id"   exposure:"public"`
+	Name string `json:"name" exposure:"public"`
+}
+
 type StoreSettings struct {
 	Id          int       `json:"id"          exposure:"public"`
 	PublicOwner bool      `json:"publicOwner" exposure:"public"`

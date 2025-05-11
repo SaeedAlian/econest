@@ -681,6 +681,20 @@ func scanStoreRow(rows *sql.Rows) (*types.Store, error) {
 	return n, nil
 }
 
+func scanStoreInfoRow(rows *sql.Rows) (*types.StoreInfo, error) {
+	n := new(types.StoreInfo)
+
+	err := rows.Scan(
+		&n.Id,
+		&n.Name,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
 func scanStoreWithSettingsRow(rows *sql.Rows) (*types.StoreWithSettings, error) {
 	n := new(types.StoreWithSettings)
 

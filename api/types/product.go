@@ -135,6 +135,7 @@ type ProductWithMainInfo struct {
 	TotalQuantity int           `json:"totalQuantity"       exposure:"public"`
 	Offer         *ProductOffer `json:"offer,omitempty"     exposure:"public"`
 	MainImage     *ProductImage `json:"mainImage,omitempty" exposure:"public"`
+	Store         StoreInfo     `json:"store"               exposure:"public"`
 }
 
 type ProductWithAllInfo struct {
@@ -146,6 +147,7 @@ type ProductWithAllInfo struct {
 	Variants    []ProductVariantInfo          `json:"variants"        exposure:"public"`
 	Offer       *ProductOffer                 `json:"offer,omitempty" exposure:"public"`
 	Images      []ProductImage                `json:"images"          exposure:"public"`
+	Store       StoreInfo                     `json:"store"           exposure:"public"`
 }
 
 type CreateProductTagPayload struct {

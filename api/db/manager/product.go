@@ -447,11 +447,30 @@ func (m *Manager) GetProductsWithMainInfo(
 		}
 		imageRows.Close()
 
+		var storeInfo *types.StoreInfo
+		storeInfoRows, err := m.db.Query(`
+      SELECT s.id, s.name FROM stores s WHERE s.id IN (
+        SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
+      )
+    `, product.Id)
+		if err != nil {
+			return nil, err
+		}
+		if storeInfoRows.Next() {
+			storeInfo, err = scanStoreInfoRow(storeInfoRows)
+			if err != nil {
+				storeInfoRows.Close()
+				return nil, err
+			}
+		}
+		storeInfoRows.Close()
+
 		products = append(products, types.ProductWithMainInfo{
 			Product:       *product,
 			TotalQuantity: totalQuantity,
 			Offer:         offer,
 			MainImage:     mainImage,
+			Store:         *storeInfo,
 		})
 	}
 
@@ -1086,11 +1105,30 @@ func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo
 	}
 	imageRows.Close()
 
+	var storeInfo *types.StoreInfo
+	storeInfoRows, err := m.db.Query(`
+    SELECT s.id, s.name FROM stores s WHERE s.id IN (
+      SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
+    )
+  `, product.Id)
+	if err != nil {
+		return nil, err
+	}
+	if storeInfoRows.Next() {
+		storeInfo, err = scanStoreInfoRow(storeInfoRows)
+		if err != nil {
+			storeInfoRows.Close()
+			return nil, err
+		}
+	}
+	storeInfoRows.Close()
+
 	return &types.ProductWithMainInfo{
 		Product:       *product,
 		TotalQuantity: totalQuantity,
 		Offer:         offer,
 		MainImage:     mainImage,
+		Store:         *storeInfo,
 	}, nil
 }
 
@@ -1352,6 +1390,24 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		images = append(images, *img)
 	}
 
+	var storeInfo *types.StoreInfo
+	storeInfoRows, err := m.db.Query(`
+      SELECT s.id, s.name FROM stores s WHERE s.id IN (
+        SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
+      )
+    `, product.Id)
+	if err != nil {
+		return nil, err
+	}
+	if storeInfoRows.Next() {
+		storeInfo, err = scanStoreInfoRow(storeInfoRows)
+		if err != nil {
+			storeInfoRows.Close()
+			return nil, err
+		}
+	}
+	storeInfoRows.Close()
+
 	return &types.ProductWithAllInfo{
 		Product:     *product,
 		Subcategory: subcategory,
@@ -1361,6 +1417,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		Variants:    variantInfos,
 		Offer:       offer,
 		Images:      images,
+		Store:       *storeInfo,
 	}, nil
 }
 
