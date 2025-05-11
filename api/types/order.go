@@ -18,7 +18,7 @@ type Order struct {
 type OrderShipment struct {
 	Id                int          `json:"id"                exposure:"private,needPermission"`
 	ArrivalDate       time.Time    `json:"arrivalDate"       exposure:"private,needPermission"`
-	ShipmentDate      bool         `json:"shipmentDate"      exposure:"private,needPermission"`
+	ShipmentDate      time.Time    `json:"shipmentDate"      exposure:"private,needPermission"`
 	Status            OrderStatus  `json:"status"            exposure:"private,needPermission"`
 	ShipmentType      ShipmentType `json:"shipmentType"      exposure:"private,needPermission"`
 	CreatedAt         time.Time    `json:"createdAt"         exposure:"private,needPermission"`
@@ -92,7 +92,7 @@ type OrderSearchQuery struct {
 
 type CreateOrderShipmentPayload struct {
 	ArrivalDate       time.Time    `json:"arrivalDate"       validate:"required"`
-	ShipmentDate      bool         `json:"shipmentDate"      validate:"required"`
+	ShipmentDate      time.Time    `json:"shipmentDate"      validate:"required"`
 	ShipmentType      ShipmentType `json:"shipmentType"      validate:"required"`
 	OrderId           int          `json:"orderId"           validate:"required"`
 	ReceiverAddressId int          `json:"receiverAddressId" validate:"required"`
