@@ -43,6 +43,6 @@ ALTER TABLE phonenumbers
 
 CREATE TABLE store_owned_products (
   store_id INTEGER NOT NULL REFERENCES stores(id) ON DELETE RESTRICT,
-  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE RESTRICT,
+  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
   PRIMARY KEY (store_id, product_id)
 );
