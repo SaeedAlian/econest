@@ -91,10 +91,28 @@ func (m *Manager) CreateProductTag(p types.CreateProductTagPayload) (int, error)
 }
 
 func (m *Manager) CreateProductTagAssignment(p types.CreateProductTagAssignment) error {
-	_, err := m.db.Exec("INSERT INTO product_tag_assignments (product_id, tag_id) VALUES ($1, $2);",
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec("INSERT INTO product_tag_assignments (product_id, tag_id) VALUES ($1, $2);",
 		p.ProductId, p.TagId,
 	)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -115,12 +133,30 @@ func (m *Manager) CreateProductOffer(p types.CreateProductOfferPayload) (int, er
 }
 
 func (m *Manager) CreateProductImage(p types.CreateProductImagePayload) (int, error) {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
+	}
+
 	rowId := -1
-	err := m.db.QueryRow("INSERT INTO product_images (image_name, is_main, product_id) VALUES ($1, $2, $3) RETURNING id;",
+	err = tx.QueryRow("INSERT INTO product_images (image_name, is_main, product_id) VALUES ($1, $2, $3) RETURNING id;",
 		p.ImageName, p.IsMain, p.ProductId,
 	).
 		Scan(&rowId)
 	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return -1, err
 	}
 
@@ -129,11 +165,29 @@ func (m *Manager) CreateProductImage(p types.CreateProductImagePayload) (int, er
 
 func (m *Manager) CreateProductSpec(p types.CreateProductSpecPayload) (int, error) {
 	rowId := -1
-	err := m.db.QueryRow("INSERT INTO product_specs (label, value, product_id) VALUES ($1, $2, $3) RETURNING id;",
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
+	}
+
+	err = tx.QueryRow("INSERT INTO product_specs (label, value, product_id) VALUES ($1, $2, $3) RETURNING id;",
 		p.Label, p.Value, p.ProductId,
 	).
 		Scan(&rowId)
 	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return -1, err
 	}
 
@@ -142,11 +196,29 @@ func (m *Manager) CreateProductSpec(p types.CreateProductSpecPayload) (int, erro
 
 func (m *Manager) CreateProductAttribute(p types.CreateProductAttributePayload) (int, error) {
 	rowId := -1
-	err := m.db.QueryRow("INSERT INTO product_attributes (label, product_id) VALUES ($1, $2) RETURNING id;",
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
+	}
+
+	err = tx.QueryRow("INSERT INTO product_attributes (label, product_id) VALUES ($1, $2) RETURNING id;",
 		p.Label, p.ProductId,
 	).
 		Scan(&rowId)
 	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return -1, err
 	}
 
@@ -332,6 +404,12 @@ func (m *Manager) CreateProductAttributeOption(
 				return -1, err
 			}
 		}
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return -1, err
 	}
 
 	err = tx.Commit()
@@ -2218,12 +2296,30 @@ func (m *Manager) DeleteProductTag(id int) error {
 }
 
 func (m *Manager) DeleteProductTagAssignment(productId int, tagId int) error {
-	_, err := m.db.Exec(
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
 		"DELETE FROM product_tag_assignments WHERE product_id = $1 AND tag_id = $2;",
 		productId,
 		tagId,
 	)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -2255,11 +2351,41 @@ func (m *Manager) DeleteProductOffer(id int) error {
 }
 
 func (m *Manager) DeleteProductImage(id int) error {
-	_, err := m.db.Exec(
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow("SELECT product_id FROM product_images WHERE id = $1;", id).Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
+	}
+
+	_, err = tx.Exec(
 		"DELETE FROM product_images WHERE id = $1;",
 		id,
 	)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -2267,11 +2393,41 @@ func (m *Manager) DeleteProductImage(id int) error {
 }
 
 func (m *Manager) DeleteProductSpec(id int) error {
-	_, err := m.db.Exec(
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow("SELECT product_id FROM product_specs WHERE id = $1;", id).Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
+	}
+
+	_, err = m.db.Exec(
 		"DELETE FROM product_specs WHERE id = $1;",
 		id,
 	)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -2283,6 +2439,19 @@ func (m *Manager) DeleteProductAttribute(id int) error {
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow("SELECT product_id FROM product_attributes WHERE id = $1;", id).
+		Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
 	}
 
 	_, err = tx.Exec(`
@@ -2325,6 +2494,12 @@ func (m *Manager) DeleteProductAttribute(id int) error {
       SELECT unnest(variant_ids[2:]) AS dup_variant_id FROM dup_sets
 		);
 	`)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -2389,6 +2564,12 @@ func (m *Manager) DeleteProductAttributeOption(id int) error {
 	_, err = tx.Exec(`
 		DELETE FROM product_attribute_options WHERE id = $1;
 	`, id)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return err
