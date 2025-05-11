@@ -205,6 +205,7 @@ func scanWalletTransactionRow(rows *sql.Rows) (*types.WalletTransaction, error) 
 		&n.TxType,
 		&n.Status,
 		&n.CreatedAt,
+		&n.UpdatedAt,
 		&n.WalletId,
 	)
 	if err != nil {

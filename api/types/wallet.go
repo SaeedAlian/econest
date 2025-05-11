@@ -16,6 +16,7 @@ type WalletTransaction struct {
 	TxType    TransactionType   `json:"txType"    exposure:"private,needPermission"`
 	Status    TransactionStatus `json:"status"    exposure:"private,needPermission"`
 	CreatedAt time.Time         `json:"createdAt" exposure:"private,needPermission"`
+	UpdatedAt time.Time         `json:"updatedAt" exposure:"private,needPermission"`
 	WalletId  int               `json:"walletId"  exposure:"private,needPermission"`
 }
 
