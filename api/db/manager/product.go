@@ -1888,6 +1888,24 @@ func (m *Manager) UpdateProductOffer(id int, p types.UpdateProductOfferPayload) 
 }
 
 func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) error {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow("SELECT product_id FROM product_images WHERE id = $1;", id).Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
+	}
+
 	clauses := []string{}
 	args := []interface{}{}
 	argsPos := 1
@@ -1899,6 +1917,7 @@ func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) 
 	}
 
 	if len(clauses) == 0 {
+		tx.Rollback()
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
@@ -1909,8 +1928,20 @@ func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) 
 		argsPos,
 	)
 
-	_, err := m.db.Exec(q, args...)
+	_, err = tx.Exec(q, args...)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -1918,6 +1949,24 @@ func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) 
 }
 
 func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) error {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow("SELECT product_id FROM product_specs WHERE id = $1;", id).Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
+	}
+
 	clauses := []string{}
 	args := []interface{}{}
 	argsPos := 1
@@ -1935,6 +1984,7 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 	}
 
 	if len(clauses) == 0 {
+		tx.Rollback()
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
@@ -1945,8 +1995,20 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 		argsPos,
 	)
 
-	_, err := m.db.Exec(q, args...)
+	_, err = tx.Exec(q, args...)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -1954,6 +2016,25 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 }
 
 func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributePayload) error {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow("SELECT product_id FROM product_attributes WHERE id = $1;", id).
+		Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
+	}
+
 	clauses := []string{}
 	args := []interface{}{}
 	argsPos := 1
@@ -1965,6 +2046,7 @@ func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributeP
 	}
 
 	if len(clauses) == 0 {
+		tx.Rollback()
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
@@ -1975,8 +2057,20 @@ func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributeP
 		argsPos,
 	)
 
-	_, err := m.db.Exec(q, args...)
+	_, err = tx.Exec(q, args...)
 	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -1987,6 +2081,28 @@ func (m *Manager) UpdateProductAttributeOption(
 	id int,
 	p types.UpdateProductAttributeOptionPayload,
 ) error {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	productId := -1
+	err = tx.QueryRow(`
+    SELECT pa.product_id FROM product_attribute_options pao 
+    JOIN product_attributes pa ON pao.attribute_id = pa.id
+    WHERE pao.id = $1;
+  `, id).Scan(&productId)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if productId == -1 {
+		tx.Rollback()
+		return types.ErrProductNotFound
+	}
+
 	clauses := []string{}
 	args := []interface{}{}
 	argsPos := 1
@@ -1998,6 +2114,7 @@ func (m *Manager) UpdateProductAttributeOption(
 	}
 
 	if len(clauses) == 0 {
+		tx.Rollback()
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
@@ -2008,8 +2125,19 @@ func (m *Manager) UpdateProductAttributeOption(
 		argsPos,
 	)
 
-	_, err := m.db.Exec(q, args...)
+	_, err = tx.Exec(q, args...)
 	if err != nil {
+		return err
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
 		return err
 	}
 
@@ -2883,4 +3011,17 @@ func buildProductCommentSearchQueryByUserId(
 
 	q += ";"
 	return q, args
+}
+
+func updateProductUpdatedAtColumnAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	updatedAt time.Time,
+) error {
+	_, err := tx.Exec("UPDATE products SET updated_at = $1 WHERE id = $2", updatedAt, productId)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
