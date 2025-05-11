@@ -1818,6 +1818,12 @@ func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
 		argsPos++
 	}
 
+	if p.IsActive != nil {
+		clauses = append(clauses, fmt.Sprintf("is_active = $%d", argsPos))
+		args = append(args, *p.IsActive)
+		argsPos++
+	}
+
 	if p.SubcategoryId != nil {
 		clauses = append(clauses, fmt.Sprintf("subcategory_id = $%d", argsPos))
 		args = append(args, *p.SubcategoryId)
@@ -2435,6 +2441,7 @@ func scanProductRow(rows *sql.Rows) (*types.Product, error) {
 		&n.Slug,
 		&n.Price,
 		&n.Description,
+		&n.IsActive,
 		&n.CreatedAt,
 		&n.UpdatedAt,
 		&n.SubcategoryId,
@@ -2723,6 +2730,12 @@ func buildProductSearchQuery(
 		clauses = append(clauses, fmt.Sprintf(`
       EXISTS (SELECT 1 FROM product_offers po WHERE po.product_id = p.id)
     `))
+	}
+
+	if query.IsActive != nil {
+		clauses = append(clauses, fmt.Sprintf("p.is_active = $%d", argsPos))
+		args = append(args, *query.IsActive)
+		argsPos++
 	}
 
 	if query.TagId != nil {

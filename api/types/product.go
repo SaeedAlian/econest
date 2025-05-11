@@ -11,6 +11,7 @@ type Product struct {
 	Slug          string    `json:"slug"          exposure:"public"`
 	Price         float64   `json:"price"         exposure:"public"`
 	Description   string    `json:"description"   exposure:"public"`
+	IsActive      bool      `json:"isActive"      exposure:"public"`
 	CreatedAt     time.Time `json:"createdAt"     exposure:"public"`
 	UpdatedAt     time.Time `json:"updatedAt"     exposure:"public"`
 	SubcategoryId int       `json:"subcategoryId" exposure:"public"`
@@ -203,6 +204,7 @@ type UpdateProductPayload struct {
 	Price         *float64 `json:"price"`
 	Description   *string  `json:"description"`
 	SubcategoryId *int     `json:"subcategoryId"`
+	IsActive      *bool    `json:"isActive"`
 }
 
 type ProductSearchQuery struct {
@@ -216,6 +218,7 @@ type ProductSearchQuery struct {
 	PriceLessThan *int    `json:"priceLessThan"`
 	PriceMoreThan *int    `json:"priceMoreThan"`
 	StoreId       *int    `json:"storeId"`
+	IsActive      *bool   `json:"isActive"`
 	Limit         *int    `json:"limit"`
 	Offset        *int    `json:"offset"`
 }
