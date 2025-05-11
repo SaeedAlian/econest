@@ -38,5 +38,5 @@ CREATE TABLE order_product_variants (
   quantity INTEGER NOT NULL CHECK (quantity >= 1),
 
   order_id INTEGER NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
-  variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE
+  variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE RESTRICT
 );
