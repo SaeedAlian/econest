@@ -2172,14 +2172,6 @@ func (m *Manager) DeleteProductAttributeOption(id int) error {
 		return err
 	}
 
-	_, err = tx.Exec(`
-		DELETE FROM product_variant_options WHERE option_id = $1;
-	`, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
 	if count > 1 {
 		_, err = tx.Exec(`
 			DELETE FROM product_variants 
@@ -2191,6 +2183,14 @@ func (m *Manager) DeleteProductAttributeOption(id int) error {
 			tx.Rollback()
 			return err
 		}
+	}
+
+	_, err = tx.Exec(`
+		DELETE FROM product_variant_options WHERE option_id = $1;
+	`, id)
+	if err != nil {
+		tx.Rollback()
+		return err
 	}
 
 	_, err = tx.Exec(`
