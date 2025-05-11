@@ -38,6 +38,11 @@ func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
 		}
 	}
 
+	if err = tx.Commit(); err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
 	return rowId, nil
 }
 
