@@ -55,14 +55,16 @@ func (m *Manager) CreateOrderShipment(p types.CreateOrderShipmentPayload) (int, 
       shipment_type,
       order_id,
       receiver_address_id,
-      sender_address_id
-    ) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;`,
+      sender_address_id,
+      status
+    ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`,
 		p.ArrivalDate,
 		p.ShipmentDate,
 		p.ShipmentType,
 		p.OrderId,
 		p.ReceiverAddressId,
 		p.SenderAddressId,
+		types.ShipmentStatusToBeDetermined,
 	).
 		Scan(&rowId)
 	if err != nil {

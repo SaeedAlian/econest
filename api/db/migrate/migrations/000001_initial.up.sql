@@ -62,4 +62,4 @@ CREATE TYPE "transaction_types" AS ENUM ('deposit', 'withdraw', 'purchase');
 CREATE TYPE "transaction_statuses" AS ENUM ('pending', 'successful', 'failed');
 CREATE TYPE "order_statuses" AS ENUM ('pending_payment', 'payment_paid', 'cancelled');
 CREATE TYPE "shipment_types" AS ENUM ('shipping', 'returning');
-CREATE TYPE "shipment_statuses" AS ENUM ('on_the_way', 'delivered', 'cancelled');
+CREATE TYPE "shipment_statuses" AS ENUM ('to_be_determined', 'on_the_way', 'delivered', 'cancelled');

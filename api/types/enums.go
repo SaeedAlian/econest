@@ -258,12 +258,14 @@ func (t ShipmentType) IsValid() bool {
 type ShipmentStatus string
 
 const (
-	ShipmentStatusOnTheWay  ShipmentStatus = "on_the_way"
-	ShipmentStatusDelivered ShipmentStatus = "delivered"
-	ShipmentStatusCancelled ShipmentStatus = "cancelled"
+	ShipmentStatusToBeDetermined ShipmentStatus = "to_be_determined"
+	ShipmentStatusOnTheWay       ShipmentStatus = "on_the_way"
+	ShipmentStatusDelivered      ShipmentStatus = "delivered"
+	ShipmentStatusCancelled      ShipmentStatus = "cancelled"
 )
 
 var ValidShipmentStatuses = []ShipmentStatus{
+	ShipmentStatusToBeDetermined,
 	ShipmentStatusOnTheWay,
 	ShipmentStatusDelivered,
 	ShipmentStatusCancelled,
