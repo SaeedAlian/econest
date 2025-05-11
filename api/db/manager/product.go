@@ -90,17 +90,15 @@ func (m *Manager) CreateProductTag(p types.CreateProductTagPayload) (int, error)
 	return rowId, nil
 }
 
-func (m *Manager) CreateProductTagAssignment(p types.CreateProductTagAssignment) (int, error) {
-	rowId := -1
-	err := m.db.QueryRow("INSERT INTO product_tag_assignments (product_id, tag_id) VALUES ($1, $2) RETURNING id;",
+func (m *Manager) CreateProductTagAssignment(p types.CreateProductTagAssignment) error {
+	_, err := m.db.Exec("INSERT INTO product_tag_assignments (product_id, tag_id) VALUES ($1, $2);",
 		p.ProductId, p.TagId,
-	).
-		Scan(&rowId)
+	)
 	if err != nil {
-		return -1, err
+		return err
 	}
 
-	return rowId, nil
+	return nil
 }
 
 func (m *Manager) CreateProductOffer(p types.CreateProductOfferPayload) (int, error) {
