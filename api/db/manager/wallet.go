@@ -80,6 +80,33 @@ func (m *Manager) GetWalletTransactionsCount(
 	return count, nil
 }
 
+func (m *Manager) GetWalletTransactionById(id int) (*types.WalletTransaction, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM wallet_transactions WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tx := new(types.WalletTransaction)
+	tx.Id = -1
+
+	for rows.Next() {
+		tx, err = scanWalletTransactionRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if tx.Id == -1 {
+		return nil, types.ErrWalletTransactionNotFound
+	}
+
+	return tx, nil
+}
+
 func (m *Manager) GetUserWallet(userId int) (*types.Wallet, error) {
 	rows, err := m.db.Query(
 		"SELECT * FROM wallets WHERE user_id = $1;",
