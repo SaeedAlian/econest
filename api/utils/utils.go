@@ -1,12 +1,52 @@
 package utils
 
 import (
+	"encoding/json"
+	"net/http"
 	"reflect"
 	"strings"
+
+	"github.com/go-playground/validator/v10"
+
+	"github.com/SaeedAlian/econest/api/types"
 )
 
 var structPaths []string = []string{
 	"github.com/SaeedAlian/econest/api/types",
+}
+
+var Validator = validator.New()
+
+func ParseJSONFromRequest(r *http.Request, payload any) error {
+	body := r.Body
+
+	if body == nil {
+		return types.ErrReqBodyNotFound
+	}
+
+	return json.NewDecoder(r.Body).Decode(payload)
+}
+
+func WriteJSONInResponse(
+	w http.ResponseWriter,
+	status int,
+	payload any,
+	headers *map[string]string,
+) error {
+	if headers != nil {
+		for k, v := range *headers {
+			w.Header().Add(k, v)
+		}
+	}
+
+	w.Header().Add("Content-Type", "application/json")
+	w.WriteHeader(status)
+
+	return json.NewEncoder(w).Encode(payload)
+}
+
+func WriteErrorInResponse(w http.ResponseWriter, status int, message error) error {
+	return WriteJSONInResponse(w, status, map[string]string{"message": message.Error()}, nil)
 }
 
 func FilterStruct(input interface{}, exposures map[string]bool) map[string]interface{} {

@@ -1,6 +1,9 @@
 package types
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 var (
 	ErrUserNotFound                    = errors.New("user not found")
@@ -23,7 +26,14 @@ var (
 	ErrNoFieldsReceivedToUpdate        = errors.New("no fields received to update")
 	ErrInvalidVisibilityStatusOption   = errors.New("invalid visibility status option")
 	ErrInvalidVerificationStatusOption = errors.New("invalid verification status option")
+	ErrReqBodyNotFound                 = errors.New("request body is not found")
+	ErrInvalidUserPayload              = errors.New("invalid user payload")
 	ErrInconsistentAttributePresence   = errors.New(
 		"inconsistent attribute presence: some but not all pvos have attribute_id",
 	)
+	ErrDuplicateUsernameOrEmail = errors.New("another user with this username/email already exists")
+	ErrInternalServer           = errors.New("internal server error")
+	ErrInvalidPayload           = func(err error) error {
+		return errors.New(fmt.Sprintf("invalid payload: %v", err))
+	}
 )
