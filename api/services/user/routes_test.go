@@ -21,7 +21,7 @@ func TestUserService(t *testing.T) {
 	manager := db_manager.NewManager(db)
 	handler := NewHandler(manager)
 
-	t.Run("should register successfully", func(t *testing.T) {
+	t.Run("should register customer successfully", func(t *testing.T) {
 		payload := types.CreateUserPayload{
 			FullName:  "Test User 1",
 			Username:  strings.ToLower("testuser1"),
@@ -43,7 +43,7 @@ func TestUserService(t *testing.T) {
 		rr := httptest.NewRecorder()
 		router := mux.NewRouter()
 
-		router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+		router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
 
 		router.ServeHTTP(rr, req)
 
@@ -61,7 +61,47 @@ func TestUserService(t *testing.T) {
 		}
 	})
 
-	t.Run("should fail to register due to duplicated username", func(t *testing.T) {
+	t.Run("should register vendor successfully", func(t *testing.T) {
+		payload := types.CreateUserPayload{
+			FullName:  "Test Vendor 1",
+			Username:  strings.ToLower("testvendor1"),
+			Email:     strings.ToLower("testvendor1@gmail.com"),
+			BirthDate: time.Date(1989, 2, 25, 0, 0, 0, 0, time.UTC),
+			Password:  "password123",
+		}
+
+		marshalled, err := json.Marshal(payload)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		req, err := http.NewRequest("POST", "/register/vendor", bytes.NewBuffer(marshalled))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		rr := httptest.NewRecorder()
+		router := mux.NewRouter()
+
+		router.HandleFunc("/register/vendor", handler.register("Vendor")).Methods("POST")
+
+		router.ServeHTTP(rr, req)
+
+		if rr.Code != http.StatusCreated {
+			t.Errorf("Expected code %d, received %d", http.StatusCreated, rr.Code)
+		}
+
+		created, err := handler.db.GetUserByUsername(strings.ToLower("testvendor1"))
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if created == nil {
+			t.Error("Expected for the created user to exist, but it's not")
+		}
+	})
+
+	t.Run("should fail to register customer due to duplicated username", func(t *testing.T) {
 		payload := types.CreateUserPayload{
 			FullName:  "Test User 1",
 			Username:  strings.ToLower("testuser1"),
@@ -83,7 +123,7 @@ func TestUserService(t *testing.T) {
 		rr := httptest.NewRecorder()
 		router := mux.NewRouter()
 
-		router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+		router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
 
 		router.ServeHTTP(rr, req)
 
@@ -99,7 +139,7 @@ func TestUserService(t *testing.T) {
 		}
 	})
 
-	t.Run("should fail to register due to duplicated username", func(t *testing.T) {
+	t.Run("should fail to register customer due to duplicated username", func(t *testing.T) {
 		payload := types.CreateUserPayload{
 			FullName:  "Test User 1",
 			Username:  strings.ToLower("testuserfailed"),
@@ -121,7 +161,7 @@ func TestUserService(t *testing.T) {
 		rr := httptest.NewRecorder()
 		router := mux.NewRouter()
 
-		router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+		router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
 
 		router.ServeHTTP(rr, req)
 
@@ -137,7 +177,7 @@ func TestUserService(t *testing.T) {
 		}
 	})
 
-	t.Run("should fail to register because of invalid data", func(t *testing.T) {
+	t.Run("should fail to register customer because of invalid data", func(t *testing.T) {
 		payload := types.CreateUserPayload{
 			FullName:  "Test User 1",
 			Username:  strings.ToLower("newErrorUser"),
@@ -159,7 +199,7 @@ func TestUserService(t *testing.T) {
 		rr := httptest.NewRecorder()
 		router := mux.NewRouter()
 
-		router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+		router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
 
 		router.ServeHTTP(rr, req)
 
@@ -173,7 +213,7 @@ func TestUserService(t *testing.T) {
 		}
 	})
 
-	t.Run("should fail to register because of short password", func(t *testing.T) {
+	t.Run("should fail to register customer because of short password", func(t *testing.T) {
 		payload := types.CreateUserPayload{
 			FullName:  "Test User 1",
 			Username:  strings.ToLower("newErrorUser"),
@@ -195,7 +235,7 @@ func TestUserService(t *testing.T) {
 		rr := httptest.NewRecorder()
 		router := mux.NewRouter()
 
-		router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+		router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
 
 		router.ServeHTTP(rr, req)
 
@@ -209,7 +249,7 @@ func TestUserService(t *testing.T) {
 		}
 	})
 
-	t.Run("should fail to register because of long password", func(t *testing.T) {
+	t.Run("should fail to register customer because of long password", func(t *testing.T) {
 		payload := types.CreateUserPayload{
 			FullName:  "Test User 1",
 			Username:  strings.ToLower("newErrorUser"),
@@ -231,7 +271,7 @@ func TestUserService(t *testing.T) {
 		rr := httptest.NewRecorder()
 		router := mux.NewRouter()
 
-		router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+		router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
 
 		router.ServeHTTP(rr, req)
 
