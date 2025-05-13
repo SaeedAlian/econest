@@ -64,7 +64,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	// get roles
 	roles, err := s.manager.GetRoles(types.RolesSearchQuery{})
 	s.Require().NoError(err)
-	s.Require().Equal(4, len(roles))
+	s.Require().Equal(7, len(roles))
 
 	// get role with query
 	roles, err = s.manager.GetRoles(types.RolesSearchQuery{
@@ -93,14 +93,14 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Error(err)
 
 	// update role
-	role, err = s.manager.GetRoleById(2)
+	role, err = s.manager.GetRoleByName("role1")
 	s.Require().NoError(err)
 	err = s.manager.UpdateRole(role.Id, types.UpdateRolePayload{
 		Name:        utils.Ptr("new_name"),
 		Description: utils.Ptr("New description"),
 	})
 	s.Require().NoError(err)
-	role, err = s.manager.GetRoleById(2)
+	role, err = s.manager.GetRoleByName("new_name")
 	s.Require().NoError(err)
 	s.Require().Equal("new_name", role.Name)
 	s.Require().Equal("New description", role.Description.String)
@@ -115,7 +115,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	})
 	s.Require().NoError(err)
 
-	role, err = s.manager.GetRoleById(2)
+	role, err = s.manager.GetRoleByName("role1")
 	s.Require().NoError(err)
 	s.Require().Equal("role1", role.Name)
 	s.Require().Equal("Role 1", role.Description.String)
@@ -213,7 +213,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	// get roles with permission groups
 	rolesWithPGroups, err := s.manager.GetRolesWithPermissionGroups(types.RolesSearchQuery{})
 	s.Require().NoError(err)
-	s.Require().Equal(4, len(rolesWithPGroups))
+	s.Require().Equal(7, len(rolesWithPGroups))
 
 	found := false
 

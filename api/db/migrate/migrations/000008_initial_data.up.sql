@@ -1,4 +1,7 @@
 INSERT INTO roles (name) VALUES ('Super Admin');
+INSERT INTO roles (name) VALUES ('Admin');
+INSERT INTO roles (name) VALUES ('Vendor');
+INSERT INTO roles (name) VALUES ('Customer');
 
 INSERT INTO permission_groups 
   (name, description) VALUES
