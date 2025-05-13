@@ -191,6 +191,61 @@ func (m *Manager) GetUserByUsername(username string) (*types.User, error) {
 	return user, nil
 }
 
+func (m *Manager) GetUserByEmail(email string) (*types.User, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM users WHERE email = $1;",
+		strings.ToLower(email),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	user := new(types.User)
+	user.Id = -1
+
+	for rows.Next() {
+		user, err = scanUserRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if user.Id == -1 {
+		return nil, types.ErrUserNotFound
+	}
+
+	return user, nil
+}
+
+func (m *Manager) GetUserByUsernameOrEmail(username string, email string) (*types.User, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM users WHERE username = $1 OR email = $2;",
+		strings.ToLower(username),
+		strings.ToLower(email),
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	user := new(types.User)
+	user.Id = -1
+
+	for rows.Next() {
+		user, err = scanUserRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if user.Id == -1 {
+		return nil, types.ErrUserNotFound
+	}
+
+	return user, nil
+}
+
 func (m *Manager) GetUsersWithSettings(
 	query types.UserSearchQuery,
 ) ([]types.UserWithSettings, error) {
