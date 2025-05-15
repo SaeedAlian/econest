@@ -28,12 +28,23 @@ var (
 	ErrInvalidVerificationStatusOption = errors.New("invalid verification status option")
 	ErrReqBodyNotFound                 = errors.New("request body is not found")
 	ErrInvalidUserPayload              = errors.New("invalid user payload")
+	ErrInvalidLoginPayload             = errors.New("invalid login payload")
 	ErrInconsistentAttributePresence   = errors.New(
 		"inconsistent attribute presence: some but not all pvos have attribute_id",
 	)
 	ErrDuplicateUsernameOrEmail = errors.New("another user with this username/email already exists")
 	ErrInternalServer           = errors.New("internal server error")
+	ErrValidateTokenFailure     = errors.New("failed to validate token")
+	ErrInvalidTokenReceived     = errors.New("invalid token received")
+	ErrInvalidCredentials       = errors.New("invalid credentials received")
 	ErrInvalidPayload           = func(err error) error {
 		return errors.New(fmt.Sprintf("invalid payload: %v", err))
 	}
+	ErrInvalidPEMBlockForPrivateKey = errors.New("invalid PEM block for private key")
+	ErrInvalidPEMBlockForPublicKey  = errors.New("invalid PEM block for public key")
+	ErrKIDHeaderMissing             = errors.New("missing kid in token header")
+	ErrUnexpectedSigningMethod      = func(alg interface{}) error {
+		return errors.New(fmt.Sprintf("unexpected signing method: %v", alg))
+	}
+	ErrPubKeyIdNotFound = errors.New("public key not found")
 )

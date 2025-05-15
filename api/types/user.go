@@ -3,6 +3,8 @@ package types
 import (
 	"database/sql"
 	"time"
+
+	"github.com/golang-jwt/jwt/v5"
 )
 
 type User struct {
@@ -72,6 +74,18 @@ type CreateUserPayload struct {
 	RoleId    int       `json:"roleId"`
 }
 
+type LoginUserPayload struct {
+	Username string `json:"username" validate:"required,min=5"`
+	Password string `json:"password" validate:"required,min=6,max=130"`
+}
+
+type UserJWTClaims struct {
+	UserId    int    `json:"userId"`
+	ExpiresAt int64  `json:"expiresAt"`
+	IssuedAt  int64  `json:"issuedAt"`
+	JTI       string `json:"jti"`
+}
+
 type CreateUserPhoneNumberPayload struct {
 	CountryCode string `json:"countryCode" validate:"required,min=1,max=4"`
 	Number      string `json:"number"      validate:"required,min=5,max=20"`
@@ -134,4 +148,12 @@ type UpdateUserAddressPayload struct {
 	Zipcode  *string `json:"zipcode"`
 	Details  *string `json:"details"`
 	IsPublic *bool   `json:"isPublic"`
+}
+
+func (c *UserJWTClaims) PopulateFromToken(claims jwt.MapClaims) error {
+	c.UserId = claims["userId"].(int)
+	c.ExpiresAt = int64(claims["exp"].(float64))
+	c.IssuedAt = int64(claims["iat"].(float64))
+	c.JTI = claims["jti"].(string)
+	return nil
 }
