@@ -2,7 +2,7 @@ package db_manager_test
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 	"testing"
 	"time"
 
@@ -30,7 +30,7 @@ func TestDBIntegrationSuite(t *testing.T) {
 }
 
 func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
-	fmt.Println("Start Tests...")
+	log.Println("Start Tests...")
 
 	// create default roles
 	role1Id, err := s.manager.CreateRole(types.CreateRolePayload{
