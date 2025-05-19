@@ -43,8 +43,10 @@ var (
 	ErrInvalidPEMBlockForPrivateKey = errors.New("invalid PEM block for private key")
 	ErrInvalidPEMBlockForPublicKey  = errors.New("invalid PEM block for public key")
 	ErrKIDHeaderMissing             = errors.New("missing kid in token header")
-	ErrUnexpectedSigningMethod      = func(alg interface{}) error {
+	ErrUnexpectedSigningMethod      = func(alg any) error {
 		return errors.New(fmt.Sprintf("unexpected signing method: %v", alg))
 	}
-	ErrPubKeyIdNotFound = errors.New("public key not found")
+	ErrPubKeyIdNotFound                  = errors.New("public key not found")
+	ErrAuthenticationCredentialsNotFound = errors.New("authentication credentials not found")
+	ErrAccessDenied                      = errors.New("access denied")
 )
