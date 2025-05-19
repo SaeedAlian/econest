@@ -6,6 +6,7 @@ import (
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
+	"log"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -33,6 +34,7 @@ func NewKeyServer(cache *redis.Client) *KeyServer {
 func (ks *KeyServer) RotateKeys(newKID string) error {
 	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
+		log.Fatalf("error on generating rsa private key: %v", err)
 		return err
 	}
 
@@ -40,6 +42,7 @@ func (ks *KeyServer) RotateKeys(newKID string) error {
 	pubPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PUBLIC KEY", Bytes: publicKeyBytes})
 
 	if err := ks.cache.Set(ctx, "jwt:public:"+newKID, pubPEM, 7*24*time.Hour).Err(); err != nil {
+		log.Fatalf("error on setting rsa public key in the cache: %v", err)
 		return err
 	}
 
@@ -47,10 +50,12 @@ func (ks *KeyServer) RotateKeys(newKID string) error {
 	privPEM := pem.EncodeToMemory(&pem.Block{Type: "RSA PRIVATE KEY", Bytes: privateKeyBytes})
 
 	if err := ks.cache.Set(ctx, "jwt:private:"+newKID, privPEM, 7*24*time.Hour).Err(); err != nil {
+		log.Fatalf("error on setting rsa private key in the cache: %v", err)
 		return err
 	}
 
 	if err := ks.cache.Set(ctx, "jwt:current_kid", newKID, 0).Err(); err != nil {
+		log.Fatalf("error on setting current kid in the cache: %v", err)
 		return err
 	}
 

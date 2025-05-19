@@ -5,7 +5,6 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"fmt"
-	"log"
 	"net/http"
 	"time"
 
@@ -41,13 +40,11 @@ func (h *AuthHandler) WithJWTAuth(
 		claims := types.UserJWTClaims{}
 		token, err := h.ValidateToken(tokenStr, &claims)
 		if err != nil {
-			log.Printf("failed to validate token: %v", err)
 			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrValidateTokenFailure)
 			return
 		}
 
 		if !token.Valid {
-			log.Printf("invalid token received")
 			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrInvalidTokenReceived)
 			return
 		}
@@ -56,7 +53,6 @@ func (h *AuthHandler) WithJWTAuth(
 
 		u, err := manager.GetUserById(userId)
 		if u == nil || err != nil {
-			log.Printf("invalid token received")
 			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrInvalidTokenReceived)
 			return
 		}
@@ -81,7 +77,6 @@ func (h *AuthHandler) WithActionPermissionAuth(
 		userRoleId := ctx.Value("userRoleId")
 
 		if userId == nil || userRoleId == nil {
-			log.Printf("authentication credentials not found")
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusUnauthorized,
@@ -92,7 +87,6 @@ func (h *AuthHandler) WithActionPermissionAuth(
 
 		acceptedRoles, err := manager.GetRolesBasedOnActionPermission(actionPermissions)
 		if err != nil {
-			log.Printf("internal server error")
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusInternalServerError,
@@ -111,7 +105,6 @@ func (h *AuthHandler) WithActionPermissionAuth(
 		}
 
 		if !found {
-			log.Printf("access denied")
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusForbidden,
@@ -135,7 +128,6 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 		userRoleId := ctx.Value("userRoleId")
 
 		if userId == nil || userRoleId == nil {
-			log.Printf("authentication credentials not found")
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusUnauthorized,
@@ -146,7 +138,6 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 
 		acceptedRoles, err := manager.GetRolesBasedOnResourcePermission(resourcePermissions)
 		if err != nil {
-			log.Printf("internal server error")
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusInternalServerError,
@@ -165,7 +156,6 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 		}
 
 		if !found {
-			log.Printf("access denied")
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusForbidden,
