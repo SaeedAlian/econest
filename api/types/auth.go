@@ -6,6 +6,10 @@ type LoginResponsePayload struct {
 	AccessToken string `json:"accessToken"`
 }
 
+type LogoutResponsePayload struct {
+	Success bool `json:"success"`
+}
+
 type LoginUserPayload struct {
 	Username string `json:"username" validate:"required,min=5"`
 	Password string `json:"password" validate:"required,min=6,max=130"`

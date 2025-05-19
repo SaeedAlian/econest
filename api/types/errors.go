@@ -51,4 +51,6 @@ var (
 	ErrAccessDenied                      = errors.New("access denied")
 	ErrCSRFMissing                       = errors.New("csrf token is missing")
 	ErrInvalidCSRFToken                  = errors.New("csrf token is invalid")
+	ErrRefreshTokenNotFound              = errors.New("refresh token not found")
+	ErrInvalidRefreshToken               = errors.New("refresh token is invalid")
 )

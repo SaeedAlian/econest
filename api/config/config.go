@@ -8,14 +8,18 @@ import (
 )
 
 type Config struct {
-	Host       string
-	Port       string
-	DBHost     string
-	DBUser     string
-	DBPassword string
-	DBName     string
-	DBPort     string
-	RedisAddr  string
+	Host                        string
+	Port                        string
+	DBHost                      string
+	DBUser                      string
+	DBPassword                  string
+	DBName                      string
+	DBPort                      string
+	KeyServerRedisAddr          string
+	AuthRedisAddr               string
+	AccessTokenExpirationInMin  float64
+	RefreshTokenExpirationInMin float64
+	CSRFTokenExpirationInMin    float64
 }
 
 var Env = InitConfig()
@@ -24,14 +28,18 @@ func InitConfig() Config {
 	godotenv.Load()
 
 	return Config{
-		Host:       getEnv("HOST", "http://localhost"),
-		Port:       getEnv("PORT", "8080"),
-		DBUser:     getEnv("DB_USER", "postgres"),
-		DBHost:     getEnv("DB_HOST", "localhost"),
-		DBPassword: getEnv("DB_PASSWORD", "postgres"),
-		DBName:     getEnv("DB_NAME", "postgres"),
-		DBPort:     getEnv("DB_PORT", "5432"),
-		RedisAddr:  getEnv("REDIS_ADDRESS", "localhost:6379"),
+		Host:                        getEnv("HOST", "http://localhost"),
+		Port:                        getEnv("PORT", "8080"),
+		DBUser:                      getEnv("DB_USER", "postgres"),
+		DBHost:                      getEnv("DB_HOST", "localhost"),
+		DBPassword:                  getEnv("DB_PASSWORD", "postgres"),
+		DBName:                      getEnv("DB_NAME", "postgres"),
+		DBPort:                      getEnv("DB_PORT", "5432"),
+		KeyServerRedisAddr:          getEnv("KEY_SERVER_REDIS_ADDRESS", "localhost:6379"),
+		AuthRedisAddr:               getEnv("AUTH_REDIS_ADDRESS", "localhost:6379"),
+		AccessTokenExpirationInMin:  float64(15),
+		RefreshTokenExpirationInMin: float64(60 * 24 * 7),
+		CSRFTokenExpirationInMin:    float64(30),
 	}
 }
 

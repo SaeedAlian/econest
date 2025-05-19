@@ -4,10 +4,14 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"time"
+
+	"github.com/redis/go-redis/v9"
 
 	"github.com/SaeedAlian/econest/api/api"
 	"github.com/SaeedAlian/econest/api/config"
 	"github.com/SaeedAlian/econest/api/db"
+	"github.com/SaeedAlian/econest/api/services/auth"
 )
 
 func main() {
@@ -18,7 +22,20 @@ func main() {
 
 	initStorage(db)
 
-	server := api.NewServer(fmt.Sprintf(":%s", config.Env.Port), db)
+	ksCache := redis.NewClient(&redis.Options{
+		Addr: config.Env.KeyServerRedisAddr,
+	})
+
+	keyServer := auth.NewKeyServer(ksCache)
+
+	go func() {
+		c := time.Tick(2 * 24 * time.Hour)
+		for range c {
+			keyServer.RotateKeys(time.Now().String())
+		}
+	}()
+
+	server := api.NewServer(fmt.Sprintf(":%s", config.Env.Port), db, keyServer)
 
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
