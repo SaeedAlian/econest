@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/go-playground/validator/v10"
 
@@ -47,6 +48,24 @@ func WriteJSONInResponse(
 
 func WriteErrorInResponse(w http.ResponseWriter, status int, message error) error {
 	return WriteJSONInResponse(w, status, map[string]string{"message": message.Error()}, nil)
+}
+
+func DeleteCookie(w http.ResponseWriter, cookie *http.Cookie) {
+	http.SetCookie(w, &http.Cookie{
+		Name:        cookie.Name,
+		Value:       cookie.Value,
+		Quoted:      cookie.Quoted,
+		Path:        cookie.Path,
+		Domain:      cookie.Domain,
+		Secure:      cookie.Secure,
+		HttpOnly:    cookie.HttpOnly,
+		SameSite:    cookie.SameSite,
+		Partitioned: cookie.Partitioned,
+		Raw:         cookie.Raw,
+		Unparsed:    cookie.Unparsed,
+		Expires:     time.Now().Add(-7 * 24 * time.Hour),
+		MaxAge:      -1,
+	})
 }
 
 func FilterStruct(input interface{}, exposures map[string]bool) map[string]interface{} {
