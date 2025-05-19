@@ -3,6 +3,7 @@ package utils
 import (
 	"encoding/json"
 	"net/http"
+	"os"
 	"reflect"
 	"strings"
 	"time"
@@ -144,4 +145,15 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 
 func Ptr[T any](v T) *T {
 	return &v
+}
+
+func PathExists(path string) (bool, error) {
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
+	return false, err
 }
