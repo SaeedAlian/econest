@@ -66,6 +66,54 @@ func (h *AuthHandler) WithJWTAuth(
 	}
 }
 
+func (h *AuthHandler) WithCSRFToken(
+	next http.Handler,
+) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.Method == "GET" || r.Method == "OPTIONS" {
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		csrfHeader := r.Header.Get("X-CSRF-Token")
+		if csrfHeader == "" {
+			http.Error(w, types.ErrCSRFMissing.Error(), http.StatusForbidden)
+			return
+		}
+
+		ctx := r.Context()
+		userId := ctx.Value("userId")
+		if userId == nil {
+			http.Error(
+				w,
+				types.ErrAuthenticationCredentialsNotFound.Error(),
+				http.StatusUnauthorized,
+			)
+			return
+		}
+
+		savedToken, isValid, err := h.GetCSRFToken(userId.(int))
+		if err != nil {
+			http.Error(
+				w,
+				types.ErrInternalServer.Error(),
+				http.StatusInternalServerError,
+			)
+			return
+		}
+		if !isValid || savedToken != csrfHeader {
+			http.Error(
+				w,
+				types.ErrInvalidCSRFToken.Error(),
+				http.StatusForbidden,
+			)
+			return
+		}
+
+		next.ServeHTTP(w, r)
+	})
+}
+
 func (h *AuthHandler) WithActionPermissionAuth(
 	handler http.HandlerFunc,
 	manager *db_manager.Manager,
