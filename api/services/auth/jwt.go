@@ -22,16 +22,16 @@ type JWTClaims interface {
 	PopulateFromToken(claims jwt.MapClaims) error
 }
 
-type JWTHandler struct {
+type AuthHandler struct {
 	cache     *redis.Client
 	keyServer *KeyServer
 }
 
-func NewJWTHandler(cache *redis.Client, keyServer *KeyServer) *JWTHandler {
-	return &JWTHandler{cache: cache, keyServer: keyServer}
+func NewJWTHandler(cache *redis.Client, keyServer *KeyServer) *AuthHandler {
+	return &AuthHandler{cache: cache, keyServer: keyServer}
 }
 
-func (h *JWTHandler) WithJWTAuth(
+func (h *AuthHandler) WithJWTAuth(
 	handler http.HandlerFunc,
 	manager *db_manager.Manager,
 ) http.HandlerFunc {
@@ -70,7 +70,7 @@ func (h *JWTHandler) WithJWTAuth(
 	}
 }
 
-func (h *JWTHandler) WithActionPermissionAuth(
+func (h *AuthHandler) WithActionPermissionAuth(
 	handler http.HandlerFunc,
 	manager *db_manager.Manager,
 	actionPermissions []types.Action,
@@ -124,7 +124,7 @@ func (h *JWTHandler) WithActionPermissionAuth(
 	}
 }
 
-func (h *JWTHandler) WithResourcePermissionAuth(
+func (h *AuthHandler) WithResourcePermissionAuth(
 	handler http.HandlerFunc,
 	manager *db_manager.Manager,
 	resourcePermissions []types.Resource,
@@ -178,7 +178,7 @@ func (h *JWTHandler) WithResourcePermissionAuth(
 	}
 }
 
-func (h *JWTHandler) GenerateToken(userId int, expiresAtInMinutes float64) (string, error) {
+func (h *AuthHandler) GenerateToken(userId int, expiresAtInMinutes float64) (string, error) {
 	now := time.Now().UTC()
 	expiration := time.Minute * time.Duration(expiresAtInMinutes)
 
@@ -213,7 +213,7 @@ func (h *JWTHandler) GenerateToken(userId int, expiresAtInMinutes float64) (stri
 	return tokenStr, nil
 }
 
-func (h *JWTHandler) GenerateCSRFToken() (string, error) {
+func (h *AuthHandler) GenerateCSRFToken() (string, error) {
 	bytes := make([]byte, 32)
 	if _, err := rand.Read(bytes); err != nil {
 		return "", nil
@@ -222,7 +222,7 @@ func (h *JWTHandler) GenerateCSRFToken() (string, error) {
 	return token, nil
 }
 
-func (h *JWTHandler) ValidateToken(token string, claims *types.UserJWTClaims) (*jwt.Token, error) {
+func (h *AuthHandler) ValidateToken(token string, claims *types.UserJWTClaims) (*jwt.Token, error) {
 	parsed, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok {
@@ -256,19 +256,19 @@ func (h *JWTHandler) ValidateToken(token string, claims *types.UserJWTClaims) (*
 	return parsed, nil
 }
 
-func (h *JWTHandler) SaveRefreshToken(jti string, userId int, exp int64) error {
+func (h *AuthHandler) SaveRefreshToken(jti string, userId int, exp int64) error {
 	ttl := time.Duration(exp - time.Now().Unix())
 	err := h.cache.Set(ctx, "refresh:"+jti, userId, ttl*time.Second).Err()
 	return err
 }
 
-func (h *JWTHandler) SaveCSRFToken(userId int, token string) error {
+func (h *AuthHandler) SaveCSRFToken(userId int, token string) error {
 	ttl := 30 * time.Minute
 	err := h.cache.Set(ctx, fmt.Sprintf("csrf:%d", userId), token, ttl).Err()
 	return err
 }
 
-func (h *JWTHandler) GetCSRFToken(userId int) (token string, isValid bool, err error) {
+func (h *AuthHandler) GetCSRFToken(userId int) (token string, isValid bool, err error) {
 	t, e := h.cache.Get(ctx, fmt.Sprintf("csrf:%d", userId)).Result()
 	if e == redis.Nil {
 		return "", false, nil
@@ -279,7 +279,7 @@ func (h *JWTHandler) GetCSRFToken(userId int) (token string, isValid bool, err e
 	}
 }
 
-func (h *JWTHandler) IsRefreshTokenValid(jti string) (isValid bool, err error) {
+func (h *AuthHandler) IsRefreshTokenValid(jti string) (isValid bool, err error) {
 	_, e := h.cache.Get(ctx, "refresh:"+jti).Result()
 	if e == redis.Nil {
 		return false, nil
@@ -290,24 +290,29 @@ func (h *JWTHandler) IsRefreshTokenValid(jti string) (isValid bool, err error) {
 	}
 }
 
-func (h *JWTHandler) RevokeRefreshToken(jti string) error {
+func (h *AuthHandler) RevokeRefreshToken(jti string) error {
 	err := h.cache.Del(ctx, "refresh:"+jti).Err()
 	return err
 }
 
-func (h *JWTHandler) RevokeCSRFToken(userId int) error {
+func (h *AuthHandler) RevokeCSRFToken(userId int) error {
 	err := h.cache.Del(ctx, fmt.Sprintf("csrf:%d", userId)).Err()
 	return err
 }
 
-func (h *JWTHandler) RotateRefreshToken(oldJTI string, newJTI string, userId int, exp int64) error {
+func (h *AuthHandler) RotateRefreshToken(
+	oldJTI string,
+	newJTI string,
+	userId int,
+	exp int64,
+) error {
 	if err := h.RevokeRefreshToken(oldJTI); err != nil {
 		return err
 	}
 	return h.SaveRefreshToken(newJTI, userId, exp)
 }
 
-func (h *JWTHandler) RotateCSRFToken(userId int, newToken string) error {
+func (h *AuthHandler) RotateCSRFToken(userId int, newToken string) error {
 	if err := h.RevokeCSRFToken(userId); err != nil {
 		return err
 	}
