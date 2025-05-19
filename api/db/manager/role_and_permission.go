@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/lib/pq"
+
 	"github.com/SaeedAlian/econest/api/types"
 )
 
@@ -331,12 +333,14 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 	return groups, nil
 }
 
-func (m *Manager) GetRolesBasedOnResourcePermission(resource types.Resource) ([]types.Role, error) {
+func (m *Manager) GetRolesBasedOnResourcePermission(
+	resources []types.Resource,
+) ([]types.Role, error) {
 	rows, err := m.db.Query(`SELECT
     r.* FROM group_resource_permissions grp 
     JOIN role_group_assignments rga ON rga.permission_group_id = grp.group_id
-    JOIN roles r ON rga.role_id = r.id WHERE grp.resource = $1;
-  `, resource)
+		JOIN roles r ON rga.role_id = r.id WHERE grp.resource = ANY($1::resources[]);
+  `, pq.Array(resources))
 	if err != nil {
 		return nil, err
 	}
@@ -356,12 +360,12 @@ func (m *Manager) GetRolesBasedOnResourcePermission(resource types.Resource) ([]
 	return roles, nil
 }
 
-func (m *Manager) GetRolesBasedOnActionPermission(action types.Action) ([]types.Role, error) {
+func (m *Manager) GetRolesBasedOnActionPermission(actions []types.Action) ([]types.Role, error) {
 	rows, err := m.db.Query(`SELECT
     r.* FROM group_action_permissions gap 
     JOIN role_group_assignments rga ON rga.permission_group_id = gap.group_id
-    JOIN roles r ON rga.role_id = r.id WHERE gap.action = $1;
-  `, action)
+		JOIN roles r ON rga.role_id = r.id WHERE gap.action = ANY($1::actions[]);
+  `, pq.Array(actions))
 	if err != nil {
 		return nil, err
 	}
@@ -382,13 +386,13 @@ func (m *Manager) GetRolesBasedOnActionPermission(action types.Action) ([]types.
 }
 
 func (m *Manager) GetPermissionGroupsBasedOnResourcePermission(
-	resource types.Resource,
+	resources []types.Resource,
 ) ([]types.PermissionGroup, error) {
 	rows, err := m.db.Query(`SELECT
     pg.* FROM group_resource_permissions grp
     JOIN permission_groups pg ON pg.id = grp.group_id
-    WHERE grp.resource = $1;
-  `, resource)
+    WHERE grp.resource = ANY($1::resources[]);
+  `, pq.Array(resources))
 	if err != nil {
 		return nil, err
 	}
@@ -409,13 +413,13 @@ func (m *Manager) GetPermissionGroupsBasedOnResourcePermission(
 }
 
 func (m *Manager) GetPermissionGroupsBasedOnActionPermission(
-	action types.Action,
+	actions []types.Action,
 ) ([]types.PermissionGroup, error) {
 	rows, err := m.db.Query(`SELECT
     pg.* FROM group_action_permissions gap
     JOIN permission_groups pg ON pg.id = gap.group_id
-    WHERE gap.action = $1;
-  `, action)
+    WHERE gap.action = ANY($1::actions[]);
+  `, pq.Array(actions))
 	if err != nil {
 		return nil, err
 	}
