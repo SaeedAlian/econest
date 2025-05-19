@@ -1,5 +1,7 @@
 package types
 
+import "slices"
+
 type SettingVisibilityStatus string
 
 const (
@@ -15,13 +17,7 @@ var ValidSettingVisibilityStatuses = []SettingVisibilityStatus{
 }
 
 func (s SettingVisibilityStatus) IsValid() bool {
-	for _, v := range ValidSettingVisibilityStatuses {
-		if s == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidSettingVisibilityStatuses, s)
 }
 
 type CredentialVerificationStatus string
@@ -39,13 +35,7 @@ var ValidCredentialVerificationStatuses = []CredentialVerificationStatus{
 }
 
 func (s CredentialVerificationStatus) IsValid() bool {
-	for _, v := range ValidCredentialVerificationStatuses {
-		if s == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidCredentialVerificationStatuses, s)
 }
 
 type TransactionType string
@@ -63,13 +53,7 @@ var ValidTransactionTypes = []TransactionType{
 }
 
 func (t TransactionType) IsValid() bool {
-	for _, v := range ValidTransactionTypes {
-		if t == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidTransactionTypes, t)
 }
 
 type TransactionStatus string
@@ -87,13 +71,7 @@ var ValidTransactionStatuses = []TransactionStatus{
 }
 
 func (s TransactionStatus) IsValid() bool {
-	for _, v := range ValidTransactionStatuses {
-		if s == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidTransactionStatuses, s)
 }
 
 type Action string
@@ -167,12 +145,7 @@ var ValidActions = []Action{
 }
 
 func (a Action) IsValid() bool {
-	for _, v := range ValidActions {
-		if a == v {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(ValidActions, a)
 }
 
 type Resource string
@@ -200,13 +173,7 @@ var ValidResources = []Resource{
 }
 
 func (r Resource) IsValid() bool {
-	for _, v := range ValidResources {
-		if r == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidResources, r)
 }
 
 type OrderStatus string
@@ -224,13 +191,7 @@ var ValidOrderStatuses = []OrderStatus{
 }
 
 func (s OrderStatus) IsValid() bool {
-	for _, v := range ValidOrderStatuses {
-		if s == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidOrderStatuses, s)
 }
 
 type ShipmentType string
@@ -246,13 +207,7 @@ var ValidShipmentTypes = []ShipmentType{
 }
 
 func (t ShipmentType) IsValid() bool {
-	for _, v := range ValidShipmentTypes {
-		if t == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidShipmentTypes, t)
 }
 
 type ShipmentStatus string
@@ -272,11 +227,5 @@ var ValidShipmentStatuses = []ShipmentStatus{
 }
 
 func (s ShipmentStatus) IsValid() bool {
-	for _, v := range ValidShipmentStatuses {
-		if s == v {
-			return true
-		}
-	}
-
-	return false
+	return slices.Contains(ValidShipmentStatuses, s)
 }
