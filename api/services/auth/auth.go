@@ -289,14 +289,14 @@ func (h *AuthHandler) ValidateToken(token string, claims *types.UserJWTClaims) (
 	return parsed, nil
 }
 
-func (h *AuthHandler) SaveRefreshToken(jti string, userId int, exp int64) error {
-	ttl := time.Duration(exp - time.Now().Unix())
-	err := h.cache.Set(ctx, "refresh:"+jti, userId, ttl*time.Second).Err()
+func (h *AuthHandler) SaveRefreshToken(jti string, userId int, expiresAtInMinutes float64) error {
+	ttl := time.Duration(expiresAtInMinutes) * time.Minute
+	err := h.cache.Set(ctx, "refresh:"+jti, userId, ttl).Err()
 	return err
 }
 
-func (h *AuthHandler) SaveCSRFToken(userId int, token string) error {
-	ttl := 30 * time.Minute
+func (h *AuthHandler) SaveCSRFToken(userId int, token string, expiresAtInMinutes float64) error {
+	ttl := time.Duration(expiresAtInMinutes) * time.Minute
 	err := h.cache.Set(ctx, fmt.Sprintf("csrf:%d", userId), token, ttl).Err()
 	return err
 }
@@ -337,17 +337,21 @@ func (h *AuthHandler) RotateRefreshToken(
 	oldJTI string,
 	newJTI string,
 	userId int,
-	exp int64,
+	expiresAtInMinutes float64,
 ) error {
 	if err := h.RevokeRefreshToken(oldJTI); err != nil {
 		return err
 	}
-	return h.SaveRefreshToken(newJTI, userId, exp)
+	return h.SaveRefreshToken(newJTI, userId, expiresAtInMinutes)
 }
 
-func (h *AuthHandler) RotateCSRFToken(userId int, newToken string) error {
+func (h *AuthHandler) RotateCSRFToken(
+	userId int,
+	newToken string,
+	expiresAtInMinutes float64,
+) error {
 	if err := h.RevokeCSRFToken(userId); err != nil {
 		return err
 	}
-	return h.SaveCSRFToken(userId, newToken)
+	return h.SaveCSRFToken(userId, newToken, expiresAtInMinutes)
 }
