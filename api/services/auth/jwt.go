@@ -2,6 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
+	"fmt"
 	"log"
 	"net/http"
 	"time"
@@ -210,14 +213,23 @@ func (h *JWTHandler) GenerateToken(userId int, expiresAtInMinutes float64) (stri
 	return tokenStr, nil
 }
 
+func (h *JWTHandler) GenerateCSRFToken() (string, error) {
+	bytes := make([]byte, 32)
+	if _, err := rand.Read(bytes); err != nil {
+		return "", nil
+	}
+	token := base64.RawURLEncoding.EncodeToString(bytes)
+	return token, nil
+}
+
 func (h *JWTHandler) ValidateToken(token string, claims *types.UserJWTClaims) (*jwt.Token, error) {
-	parsed, err := jwt.Parse(token, func(token *jwt.Token) (interface{}, error) {
+	parsed, err := jwt.Parse(token, func(token *jwt.Token) (any, error) {
 		kid, ok := token.Header["kid"].(string)
 		if !ok {
 			return nil, types.ErrKIDHeaderMissing
 		}
 
-		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		if _, ok := token.Method.(*jwt.SigningMethodRSA); !ok {
 			return nil, types.ErrUnexpectedSigningMethod(token.Header["alg"])
 		}
 
@@ -250,6 +262,23 @@ func (h *JWTHandler) SaveRefreshToken(jti string, userId int, exp int64) error {
 	return err
 }
 
+func (h *JWTHandler) SaveCSRFToken(userId int, token string) error {
+	ttl := 30 * time.Minute
+	err := h.cache.Set(ctx, fmt.Sprintf("csrf:%d", userId), token, ttl).Err()
+	return err
+}
+
+func (h *JWTHandler) GetCSRFToken(userId int) (token string, isValid bool, err error) {
+	t, e := h.cache.Get(ctx, fmt.Sprintf("csrf:%d", userId)).Result()
+	if e == redis.Nil {
+		return "", false, nil
+	} else if e != nil {
+		return "", false, e
+	} else {
+		return t, true, nil
+	}
+}
+
 func (h *JWTHandler) IsRefreshTokenValid(jti string) (isValid bool, err error) {
 	_, e := h.cache.Get(ctx, "refresh:"+jti).Result()
 	if e == redis.Nil {
@@ -266,9 +295,21 @@ func (h *JWTHandler) RevokeRefreshToken(jti string) error {
 	return err
 }
 
+func (h *JWTHandler) RevokeCSRFToken(userId int) error {
+	err := h.cache.Del(ctx, fmt.Sprintf("csrf:%d", userId)).Err()
+	return err
+}
+
 func (h *JWTHandler) RotateRefreshToken(oldJTI string, newJTI string, userId int, exp int64) error {
 	if err := h.RevokeRefreshToken(oldJTI); err != nil {
 		return err
 	}
 	return h.SaveRefreshToken(newJTI, userId, exp)
+}
+
+func (h *JWTHandler) RotateCSRFToken(userId int, newToken string) error {
+	if err := h.RevokeCSRFToken(userId); err != nil {
+		return err
+	}
+	return h.SaveCSRFToken(userId, newToken)
 }
