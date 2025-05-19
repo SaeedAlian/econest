@@ -152,6 +152,13 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(groupId, 0)
 
+	groupId2, err := s.manager.CreatePermissionGroup(types.CreatePermissionGroupPayload{
+		Name:        "test_group2",
+		Description: "Test group 2 description",
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(groupId2, 1)
+
 	// create permission group (duplicate name)
 	_, err = s.manager.CreatePermissionGroup(types.CreatePermissionGroupPayload{
 		Name:        "test_group",
@@ -161,6 +168,9 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 
 	// add permission group to role
 	err = s.manager.AddPermissionGroupToRole(role.Id, groupId)
+	s.Require().NoError(err)
+
+	err = s.manager.AddPermissionGroupToRole(role2Id, groupId2)
 	s.Require().NoError(err)
 
 	// add permission group to role (not found)
@@ -174,7 +184,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	// get permission groups
 	pgroups, err := s.manager.GetPermissionGroups(types.PermissionGroupSearchQuery{})
 	s.Require().NoError(err)
-	s.Require().Equal(2, len(pgroups))
+	s.Require().Equal(3, len(pgroups))
 
 	// get permission groups with query
 	pgroups, err = s.manager.GetPermissionGroups(types.PermissionGroupSearchQuery{
@@ -188,7 +198,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		Name: utils.Ptr("test"),
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(pgroups))
+	s.Require().Equal(2, len(pgroups))
 
 	// get permission group by id
 	pgroup, err := s.manager.GetPermissionGroupById(pgroups[0].Id)
@@ -234,6 +244,13 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(rpg, 0)
 
+	rpg2, err := s.manager.AddResourcePermissionToGroup(types.CreateGroupResourcePermissionPayload{
+		GroupId:  groupId2,
+		Resource: "wallet_transactions_full_access",
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(rpg2, 0)
+
 	// add action permission to group
 	apg, err := s.manager.AddActionPermissionToGroup(types.CreateGroupActionPermissionPayload{
 		GroupId: pgroup.Id,
@@ -247,7 +264,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		types.PermissionGroupSearchQuery{},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(2, len(pgroupsWithPermissions))
+	s.Require().Equal(3, len(pgroupsWithPermissions))
 
 	found = false
 
@@ -262,53 +279,67 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Equal(true, found)
 
 	// get roles based on resource permission
-	roles, err = s.manager.GetRolesBasedOnResourcePermission("roles_and_permissions")
+	roles, err = s.manager.GetRolesBasedOnResourcePermission(
+		[]types.Resource{"roles_and_permissions", "wallet_transactions_full_access"},
+	)
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(roles))
+	s.Require().Equal(2, len(roles))
 
-	roles, err = s.manager.GetRolesBasedOnResourcePermission("users_full_access")
+	roles, err = s.manager.GetRolesBasedOnResourcePermission([]types.Resource{"users_full_access"})
 	s.Require().NoError(err)
 	s.Require().Equal(0, len(roles))
 
-	roles, err = s.manager.GetRolesBasedOnResourcePermission("can_delete_product_comment")
+	roles, err = s.manager.GetRolesBasedOnResourcePermission(
+		[]types.Resource{"can_delete_product_comment"},
+	)
 	s.Require().Error(err)
 
 	// get roles based on action permission
-	roles, err = s.manager.GetRolesBasedOnActionPermission("can_ban_user")
+	roles, err = s.manager.GetRolesBasedOnActionPermission([]types.Action{"can_ban_user"})
 	s.Require().NoError(err)
 	s.Require().Equal(1, len(roles))
 
-	roles, err = s.manager.GetRolesBasedOnActionPermission("can_create_order")
+	roles, err = s.manager.GetRolesBasedOnActionPermission([]types.Action{"can_create_order"})
 	s.Require().NoError(err)
 	s.Require().Equal(0, len(roles))
 
-	roles, err = s.manager.GetRolesBasedOnActionPermission("users_full_access")
+	roles, err = s.manager.GetRolesBasedOnActionPermission([]types.Action{"users_full_access"})
 	s.Require().Error(err)
 
 	// get permission groups based on resource permission
-	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission("roles_and_permissions")
+	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission(
+		[]types.Resource{"roles_and_permissions"},
+	)
 	s.Require().NoError(err)
 	s.Require().Equal(1, len(pgroups))
 
-	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission("users_full_access")
+	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission(
+		[]types.Resource{"users_full_access"},
+	)
 	s.Require().NoError(err)
 	s.Require().Equal(0, len(pgroups))
 
 	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission(
-		"can_delete_product_comment",
+		[]types.Resource{"can_delete_product_comment"},
 	)
 	s.Require().Error(err)
 
 	// get permission groups based on action permission
-	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission("can_ban_user")
+	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission(
+		[]types.Action{"can_ban_user"},
+	)
 	s.Require().NoError(err)
 	s.Require().Equal(1, len(pgroups))
 
-	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission("can_create_order")
+	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission(
+		[]types.Action{"can_create_order"},
+	)
 	s.Require().NoError(err)
 	s.Require().Equal(0, len(pgroups))
 
-	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission("users_full_access")
+	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission(
+		[]types.Action{"users_full_access"},
+	)
 	s.Require().Error(err)
 
 	// remove resource permission from group
