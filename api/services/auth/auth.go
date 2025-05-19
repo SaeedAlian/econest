@@ -208,39 +208,42 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 	}
 }
 
-func (h *AuthHandler) GenerateToken(userId int, expiresAtInMinutes float64) (string, error) {
+func (h *AuthHandler) GenerateToken(
+	userId int,
+	expiresAtInMinutes float64,
+) (token string, jti string, error error) {
 	now := time.Now().UTC()
 	expiration := time.Minute * time.Duration(expiresAtInMinutes)
 
-	jti := uuid.NewString()
+	new_jti := uuid.NewString()
 
 	tokenClaims := jwt.MapClaims{
 		"sub": userId,
-		"jti": jti,
+		"jti": new_jti,
 		"iat": now.Unix(),
 		"exp": now.Add(expiration).Unix(),
 	}
 
-	token := jwt.NewWithClaims(jwt.SigningMethodRS256, tokenClaims)
+	new_token := jwt.NewWithClaims(jwt.SigningMethodRS256, tokenClaims)
 
 	currentKID, err := h.keyServer.GetCurrentKID()
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
 	currentPK, err := h.keyServer.GetPrivateKey(currentKID)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	token.Header["kid"] = currentKID
+	new_token.Header["kid"] = currentKID
 
-	tokenStr, err := token.SignedString(currentPK)
+	tokenStr, err := new_token.SignedString(currentPK)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 
-	return tokenStr, nil
+	return tokenStr, jti, nil
 }
 
 func (h *AuthHandler) GenerateCSRFToken() (string, error) {
