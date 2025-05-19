@@ -67,6 +67,114 @@ func (h *JWTHandler) WithJWTAuth(
 	}
 }
 
+func (h *JWTHandler) WithActionPermissionAuth(
+	handler http.HandlerFunc,
+	manager *db_manager.Manager,
+	actionPermissions []types.Action,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userId := ctx.Value("userId")
+		userRoleId := ctx.Value("userRoleId")
+
+		if userId == nil || userRoleId == nil {
+			log.Printf("authentication credentials not found")
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusUnauthorized,
+				types.ErrAuthenticationCredentialsNotFound,
+			)
+			return
+		}
+
+		acceptedRoles, err := manager.GetRolesBasedOnActionPermission(actionPermissions)
+		if err != nil {
+			log.Printf("internal server error")
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusInternalServerError,
+				types.ErrInternalServer,
+			)
+			return
+		}
+
+		found := false
+
+		for _, r := range acceptedRoles {
+			if r.Id == userRoleId.(int) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Printf("access denied")
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusForbidden,
+				types.ErrAccessDenied,
+			)
+			return
+		}
+
+		handler(w, r)
+	}
+}
+
+func (h *JWTHandler) WithResourcePermissionAuth(
+	handler http.HandlerFunc,
+	manager *db_manager.Manager,
+	resourcePermissions []types.Resource,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+		userId := ctx.Value("userId")
+		userRoleId := ctx.Value("userRoleId")
+
+		if userId == nil || userRoleId == nil {
+			log.Printf("authentication credentials not found")
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusUnauthorized,
+				types.ErrAuthenticationCredentialsNotFound,
+			)
+			return
+		}
+
+		acceptedRoles, err := manager.GetRolesBasedOnResourcePermission(resourcePermissions)
+		if err != nil {
+			log.Printf("internal server error")
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusInternalServerError,
+				types.ErrInternalServer,
+			)
+			return
+		}
+
+		found := false
+
+		for _, r := range acceptedRoles {
+			if r.Id == userRoleId.(int) {
+				found = true
+				break
+			}
+		}
+
+		if !found {
+			log.Printf("access denied")
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusForbidden,
+				types.ErrAccessDenied,
+			)
+			return
+		}
+
+		handler(w, r)
+	}
+}
+
 func (h *JWTHandler) GenerateToken(userId int, expiresAtInMinutes float64) (string, error) {
 	now := time.Now().UTC()
 	expiration := time.Minute * time.Duration(expiresAtInMinutes)
