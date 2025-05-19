@@ -67,51 +67,43 @@ func (h *AuthHandler) WithJWTAuth(
 }
 
 func (h *AuthHandler) WithCSRFToken(
-	next http.Handler,
-) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	handler http.HandlerFunc,
+) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		if r.Method == "GET" || r.Method == "OPTIONS" {
-			next.ServeHTTP(w, r)
+			handler(w, r)
 			return
 		}
 
 		csrfHeader := r.Header.Get("X-CSRF-Token")
 		if csrfHeader == "" {
-			http.Error(w, types.ErrCSRFMissing.Error(), http.StatusForbidden)
+			utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCSRFMissing)
 			return
 		}
 
 		ctx := r.Context()
 		userId := ctx.Value("userId")
 		if userId == nil {
-			http.Error(
+			utils.WriteErrorInResponse(
 				w,
-				types.ErrAuthenticationCredentialsNotFound.Error(),
 				http.StatusUnauthorized,
+				types.ErrAuthenticationCredentialsNotFound,
 			)
 			return
 		}
 
 		savedToken, isValid, err := h.GetCSRFToken(userId.(int))
 		if err != nil {
-			http.Error(
-				w,
-				types.ErrInternalServer.Error(),
-				http.StatusInternalServerError,
-			)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
 			return
 		}
 		if !isValid || savedToken != csrfHeader {
-			http.Error(
-				w,
-				types.ErrInvalidCSRFToken.Error(),
-				http.StatusForbidden,
-			)
+			utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidCSRFToken)
 			return
 		}
 
-		next.ServeHTTP(w, r)
-	})
+		handler(w, r)
+	}
 }
 
 func (h *AuthHandler) WithActionPermissionAuth(
