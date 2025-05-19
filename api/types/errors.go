@@ -49,4 +49,6 @@ var (
 	ErrPubKeyIdNotFound                  = errors.New("public key not found")
 	ErrAuthenticationCredentialsNotFound = errors.New("authentication credentials not found")
 	ErrAccessDenied                      = errors.New("access denied")
+	ErrCSRFMissing                       = errors.New("csrf token is missing")
+	ErrInvalidCSRFToken                  = errors.New("csrf token is invalid")
 )
