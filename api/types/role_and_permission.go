@@ -1,38 +1,39 @@
 package types
 
 import (
-	"database/sql"
 	"time"
+
+	json_types "github.com/SaeedAlian/econest/api/types/json"
 )
 
 type Role struct {
-	Id          int            `json:"id"          exposure:"needPermission"`
-	Name        string         `json:"name"        exposure:"needPermission"`
-	Description sql.NullString `json:"description" exposure:"needPermission"`
-	CreatedAt   time.Time      `json:"createdAt"   exposure:"needPermission"`
-	UpdatedAt   time.Time      `json:"updatedAt"   exposure:"needPermission"`
+	Id          int                       `json:"id"          exposure:"needPermission"`
+	Name        string                    `json:"name"        exposure:"needPermission"`
+	Description json_types.JSONNullString `json:"description" exposure:"needPermission"`
+	CreatedAt   time.Time                 `json:"createdAt"   exposure:"needPermission"`
+	UpdatedAt   time.Time                 `json:"updatedAt"   exposure:"needPermission"`
 }
 
 type RoleWithPermissionGroups struct {
-	Id               int               `json:"id"               exposure:"needPermission"`
-	Name             string            `json:"name"             exposure:"needPermission"`
-	Description      sql.NullString    `json:"description"      exposure:"needPermission"`
-	CreatedAt        time.Time         `json:"createdAt"        exposure:"needPermission"`
-	UpdatedAt        time.Time         `json:"updatedAt"        exposure:"needPermission"`
-	PermissionGroups []PermissionGroup `json:"permissionGroups" exposure:"needPermission"`
+	Id               int                       `json:"id"               exposure:"needPermission"`
+	Name             string                    `json:"name"             exposure:"needPermission"`
+	Description      json_types.JSONNullString `json:"description"      exposure:"needPermission"`
+	CreatedAt        time.Time                 `json:"createdAt"        exposure:"needPermission"`
+	UpdatedAt        time.Time                 `json:"updatedAt"        exposure:"needPermission"`
+	PermissionGroups []PermissionGroup         `json:"permissionGroups" exposure:"needPermission"`
 }
 
 type PermissionGroup struct {
-	Id          int            `json:"id"          exposure:"needPermission"`
-	Name        string         `json:"name"        exposure:"needPermission"`
-	Description sql.NullString `json:"description" exposure:"needPermission"`
-	CreatedAt   time.Time      `json:"createdAt"   exposure:"needPermission"`
+	Id          int                       `json:"id"          exposure:"needPermission"`
+	Name        string                    `json:"name"        exposure:"needPermission"`
+	Description json_types.JSONNullString `json:"description" exposure:"needPermission"`
+	CreatedAt   time.Time                 `json:"createdAt"   exposure:"needPermission"`
 }
 
 type PermissionGroupWithPermissions struct {
 	Id                  int                           `json:"id"                  exposure:"needPermission"`
 	Name                string                        `json:"name"                exposure:"needPermission"`
-	Description         sql.NullString                `json:"description"         exposure:"needPermission"`
+	Description         json_types.JSONNullString     `json:"description"         exposure:"needPermission"`
 	CreatedAt           time.Time                     `json:"createdAt"           exposure:"needPermission"`
 	ResourcePermissions []GroupResourcePermissionInfo `json:"resourcePermissions" exposure:"needPermission"`
 	ActionPermissions   []GroupActionPermissionInfo   `json:"actionPermissions"   exposure:"needPermission"`

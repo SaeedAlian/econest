@@ -1,8 +1,9 @@
 package types
 
 import (
-	"database/sql"
 	"time"
+
+	json_types "github.com/SaeedAlian/econest/api/types/json"
 )
 
 type Product struct {
@@ -18,12 +19,12 @@ type Product struct {
 }
 
 type ProductCategory struct {
-	Id               int           `json:"id"               exposure:"public"`
-	Name             string        `json:"name"             exposure:"public"`
-	ImageName        string        `json:"imageName"        exposure:"public"`
-	CreatedAt        time.Time     `json:"createdAt"        exposure:"public"`
-	UpdatedAt        time.Time     `json:"updatedAt"        exposure:"public"`
-	ParentCategoryId sql.NullInt32 `json:"parentCategoryId" exposure:"public"`
+	Id               int                      `json:"id"               exposure:"public"`
+	Name             string                   `json:"name"             exposure:"public"`
+	ImageName        string                   `json:"imageName"        exposure:"public"`
+	CreatedAt        time.Time                `json:"createdAt"        exposure:"public"`
+	UpdatedAt        time.Time                `json:"updatedAt"        exposure:"public"`
+	ParentCategoryId json_types.JSONNullInt32 `json:"parentCategoryId" exposure:"public"`
 }
 
 type ProductCategoryWithParents struct {
@@ -122,13 +123,13 @@ type ProductVariantInfo struct {
 }
 
 type ProductComment struct {
-	Id        int            `json:"id"        exposure:"public"`
-	Scoring   int            `json:"scoring"   exposure:"public"`
-	Comment   sql.NullString `json:"comment"   exposure:"public"`
-	CreatedAt time.Time      `json:"createdAt" exposure:"public"`
-	UpdatedAt time.Time      `json:"updatedAt" exposure:"public"`
-	ProductId int            `json:"productId" exposure:"public"`
-	UserId    int            `json:"userId"    exposure:"public"`
+	Id        int                       `json:"id"        exposure:"public"`
+	Scoring   int                       `json:"scoring"   exposure:"public"`
+	Comment   json_types.JSONNullString `json:"comment"   exposure:"public"`
+	CreatedAt time.Time                 `json:"createdAt" exposure:"public"`
+	UpdatedAt time.Time                 `json:"updatedAt" exposure:"public"`
+	ProductId int                       `json:"productId" exposure:"public"`
+	UserId    int                       `json:"userId"    exposure:"public"`
 }
 
 type ProductWithMainInfo struct {

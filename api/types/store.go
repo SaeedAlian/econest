@@ -1,8 +1,9 @@
 package types
 
 import (
-	"database/sql"
 	"time"
+
+	json_types "github.com/SaeedAlian/econest/api/types/json"
 )
 
 type Store struct {
@@ -46,16 +47,16 @@ type StorePhoneNumber struct {
 }
 
 type StoreAddress struct {
-	Id        int            `json:"id"        exposure:"public"`
-	State     string         `json:"state"     exposure:"isPublic,needPermission"`
-	City      string         `json:"city"      exposure:"isPublic,needPermission"`
-	Street    string         `json:"street"    exposure:"isPublic,needPermission"`
-	Zipcode   string         `json:"zipcode"   exposure:"isPublic,needPermission"`
-	Details   sql.NullString `json:"details"   exposure:"isPublic,needPermission"`
-	IsPublic  bool           `json:"isPublic"  exposure:"public"`
-	CreatedAt time.Time      `json:"createdAt" exposure:"public"`
-	UpdatedAt time.Time      `json:"updatedAt" exposure:"public"`
-	StoreId   int            `json:"storeId"   exposure:"public"`
+	Id        int                       `json:"id"        exposure:"public"`
+	State     string                    `json:"state"     exposure:"isPublic,needPermission"`
+	City      string                    `json:"city"      exposure:"isPublic,needPermission"`
+	Street    string                    `json:"street"    exposure:"isPublic,needPermission"`
+	Zipcode   string                    `json:"zipcode"   exposure:"isPublic,needPermission"`
+	Details   json_types.JSONNullString `json:"details"   exposure:"isPublic,needPermission"`
+	IsPublic  bool                      `json:"isPublic"  exposure:"public"`
+	CreatedAt time.Time                 `json:"createdAt" exposure:"public"`
+	UpdatedAt time.Time                 `json:"updatedAt" exposure:"public"`
+	StoreId   int                       `json:"storeId"   exposure:"public"`
 }
 
 type StoreOwnedProduct struct {
