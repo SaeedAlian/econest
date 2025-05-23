@@ -44,7 +44,7 @@ func SetupTestDB(t *testing.T) *sql.DB {
 	}
 
 	m, err := migrate.NewWithDatabaseInstance(
-		"file://../../db/migrate/migrations", // Adjust path as needed
+		"file://../../db/migrate/migrations",
 		"postgres",
 		driver,
 	)
