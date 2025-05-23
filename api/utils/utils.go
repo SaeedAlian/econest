@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"time"
 
@@ -69,8 +70,8 @@ func DeleteCookie(w http.ResponseWriter, cookie *http.Cookie) {
 	})
 }
 
-func FilterStruct(input interface{}, exposures map[string]bool) map[string]interface{} {
-	res := make(map[string]interface{})
+func FilterStruct(input any, exposures map[string]bool) map[string]any {
+	res := make(map[string]any)
 	v := reflect.ValueOf(input)
 	t := reflect.TypeOf(input)
 
@@ -82,7 +83,7 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 		t = t.Elem()
 	}
 
-	for i := 0; i < v.NumField(); i++ {
+	for i := range v.NumField() {
 		f := t.Field(i)
 		fieldVal := v.Field(i)
 
@@ -125,13 +126,7 @@ func FilterStruct(input interface{}, exposures map[string]bool) map[string]inter
 
 		pkgPath := typ.PkgPath()
 
-		isStruct := false
-		for _, p := range structPaths {
-			if p == pkgPath {
-				isStruct = true
-				break
-			}
-		}
+		isStruct := slices.Contains(structPaths, pkgPath)
 
 		if typ.Kind() == reflect.Struct && isStruct {
 			res[tag] = FilterStruct(fieldVal.Interface(), exposures)
