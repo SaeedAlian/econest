@@ -29,7 +29,8 @@ func main() {
 	keyServer := auth.NewKeyServer(ksCache)
 
 	go func() {
-		c := time.Tick(2 * 24 * time.Hour)
+		rotateHours := config.Env.RotateKeyDays * 24
+		c := time.Tick(time.Duration(rotateHours) * time.Hour)
 		for range c {
 			keyServer.RotateKeys(time.Now().String())
 		}

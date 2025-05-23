@@ -17,6 +17,7 @@ type Config struct {
 	DBPort                      string
 	KeyServerRedisAddr          string
 	AuthRedisAddr               string
+	RotateKeyDays               int64
 	AccessTokenExpirationInMin  float64
 	RefreshTokenExpirationInMin float64
 	CSRFTokenExpirationInMin    float64
@@ -37,6 +38,7 @@ func InitConfig() Config {
 		DBPort:                      getEnv("DB_PORT", "5432"),
 		KeyServerRedisAddr:          getEnv("KEY_SERVER_REDIS_ADDRESS", "localhost:6379"),
 		AuthRedisAddr:               getEnv("AUTH_REDIS_ADDRESS", "localhost:6379"),
+		RotateKeyDays:               getEnvAsInt("ROTATE_KEY_DAYS", 2),
 		AccessTokenExpirationInMin:  float64(15),
 		RefreshTokenExpirationInMin: float64(60 * 24 * 7),
 		CSRFTokenExpirationInMin:    float64(30),
