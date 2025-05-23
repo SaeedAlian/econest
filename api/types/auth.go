@@ -23,7 +23,7 @@ type UserJWTClaims struct {
 }
 
 func (c *UserJWTClaims) PopulateFromToken(claims jwt.MapClaims) error {
-	c.UserId = claims["userId"].(int)
+	c.UserId = int(claims["sub"].(float64))
 	c.ExpiresAt = int64(claims["exp"].(float64))
 	c.IssuedAt = int64(claims["iat"].(float64))
 	c.JTI = claims["jti"].(string)
