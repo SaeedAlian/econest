@@ -226,7 +226,7 @@ func (m *Manager) GetStorePhoneNumbers(
 	query types.StorePhoneNumberSearchQuery,
 ) ([]types.StorePhoneNumber, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	clauses = append(clauses, fmt.Sprintf("store_id = $%d", argsPos))
@@ -312,7 +312,7 @@ func (m *Manager) GetStoreAddresses(
 	query types.StoreAddressSearchQuery,
 ) ([]types.StoreAddress, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	clauses = append(clauses, fmt.Sprintf("store_id = $%d", argsPos))
@@ -418,7 +418,7 @@ func (m *Manager) GetStoreOwnedProducts(
 
 func (m *Manager) UpdateStore(id int, p types.UpdateStorePayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Name != nil {
@@ -464,7 +464,7 @@ func (m *Manager) UpdateStore(id int, p types.UpdateStorePayload) error {
 
 func (m *Manager) UpdateStoreSettings(storeId int, p types.UpdateStoreSettingsPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.PublicOwner != nil {
@@ -502,7 +502,7 @@ func (m *Manager) UpdateStorePhoneNumber(
 	p types.UpdateStorePhoneNumberPayload,
 ) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.CountryCode != nil {
@@ -560,7 +560,7 @@ func (m *Manager) UpdateStoreAddress(
 	p types.UpdateStoreAddressPayload,
 ) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.State != nil {
@@ -791,9 +791,9 @@ func scanStoreOwnedProductRow(rows *sql.Rows) (*types.StoreOwnedProduct, error) 
 	return n, nil
 }
 
-func buildStoreSearchQuery(query types.StoreSearchQuery, base string) (string, []interface{}) {
+func buildStoreSearchQuery(query types.StoreSearchQuery, base string) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.Name != nil {

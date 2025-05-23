@@ -531,7 +531,7 @@ func (m *Manager) RemoveActionPermissionFromGroup(
 
 func (m *Manager) UpdateRole(id int, p types.UpdateRolePayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Name != nil {
@@ -571,7 +571,7 @@ func (m *Manager) UpdateRole(id int, p types.UpdateRolePayload) error {
 
 func (m *Manager) UpdatePermissionGroup(id int, p types.UpdatePermissionGroupPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Name != nil {
@@ -725,9 +725,9 @@ func scanActionPermissionInfoRow(rows *sql.Rows) (*types.GroupActionPermissionIn
 func buildRoleSearchQuery(
 	query types.RolesSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.Name != nil {
@@ -748,9 +748,9 @@ func buildRoleSearchQuery(
 func buildPermissionGroupSearchQuery(
 	query types.PermissionGroupSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.Name != nil {

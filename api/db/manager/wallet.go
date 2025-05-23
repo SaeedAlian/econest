@@ -245,9 +245,9 @@ func scanWalletTransactionRow(rows *sql.Rows) (*types.WalletTransaction, error) 
 func buildWalletTransactionSearchQuery(
 	query types.WalletTransactionSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.TxType != nil {
@@ -339,9 +339,9 @@ func updateWalletTransactionAsDBTx(
 func buildWalletUpdateQuery(
 	walletId int,
 	p types.UpdateWalletPayload,
-) (string, []interface{}, error) {
+) (string, []any, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Balance != nil {
@@ -371,9 +371,9 @@ func buildWalletUpdateQuery(
 func buildWalletTransactionUpdateQuery(
 	transactionId int,
 	p types.UpdateWalletTransactionPayload,
-) (string, []interface{}, error) {
+) (string, []any, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Status != nil {

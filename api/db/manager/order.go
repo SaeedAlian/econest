@@ -255,7 +255,7 @@ func (m *Manager) UpdateOrderShipment(
 	p types.UpdateOrderShipmentPayload,
 ) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.ArrivalDate != nil {
@@ -468,9 +468,9 @@ func scanOrderProductSelectedAttributeRow(
 func buildOrderSearchQuery(
 	query types.OrderSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.UserId != nil {
@@ -545,9 +545,9 @@ func updateOrderAsDBTx(
 func buildOrderUpdateQuery(
 	orderId int,
 	p types.UpdateOrderPayload,
-) (string, []interface{}, error) {
+) (string, []any, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Verified != nil {

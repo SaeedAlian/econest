@@ -353,7 +353,7 @@ func (m *Manager) GetUserPhoneNumbers(
 	query types.UserPhoneNumberSearchQuery,
 ) ([]types.UserPhoneNumber, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	clauses = append(clauses, fmt.Sprintf("user_id = $%d", argsPos))
@@ -439,7 +439,7 @@ func (m *Manager) GetUserAddresses(
 	query types.UserAddressSearchQuery,
 ) ([]types.UserAddress, error) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	clauses = append(clauses, fmt.Sprintf("user_id = $%d", argsPos))
@@ -522,7 +522,7 @@ func (m *Manager) GetUserSettings(userId int) (*types.UserSettings, error) {
 
 func (m *Manager) UpdateUser(id int, p types.UpdateUserPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Username != nil {
@@ -592,7 +592,7 @@ func (m *Manager) UpdateUser(id int, p types.UpdateUserPayload) error {
 
 func (m *Manager) UpdateUserSettings(userId int, p types.UpdateUserSettingsPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.PublicEmail != nil {
@@ -648,7 +648,7 @@ func (m *Manager) UpdateUserPhoneNumber(
 	p types.UpdateUserPhoneNumberPayload,
 ) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.CountryCode != nil {
@@ -706,7 +706,7 @@ func (m *Manager) UpdateUserAddress(
 	p types.UpdateUserAddressPayload,
 ) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.State != nil {
@@ -923,9 +923,9 @@ func scanUserSettingsRow(rows *sql.Rows) (*types.UserSettings, error) {
 	return n, nil
 }
 
-func buildUserSearchQuery(query types.UserSearchQuery, base string) (string, []interface{}) {
+func buildUserSearchQuery(query types.UserSearchQuery, base string) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.FullName != nil {

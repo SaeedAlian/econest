@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"maps"
 	"strings"
 	"time"
 
@@ -14,7 +15,7 @@ func (m *Manager) CreateProductCategory(p types.CreateProductCategoryPayload) (i
 	rowId := -1
 
 	var q string
-	args := []interface{}{}
+	args := []any{}
 
 	if p.ParentCategoryId != nil {
 		q = "INSERT INTO product_categories (name, image_name, parent_category_id) VALUES ($1, $2, $3) RETURNING id;"
@@ -1801,7 +1802,7 @@ func (m *Manager) GetProductCommentById(id int) (*types.ProductComment, error) {
 
 func (m *Manager) UpdateProductTag(id int, p types.UpdateProductTagPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Name != nil {
@@ -1835,7 +1836,7 @@ func (m *Manager) UpdateProductTag(id int, p types.UpdateProductTagPayload) erro
 
 func (m *Manager) UpdateProductCategory(id int, p types.UpdateProductCategoryPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Name != nil {
@@ -1869,7 +1870,7 @@ func (m *Manager) UpdateProductCategory(id int, p types.UpdateProductCategoryPay
 
 func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Name != nil {
@@ -1933,7 +1934,7 @@ func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
 
 func (m *Manager) UpdateProductOffer(id int, p types.UpdateProductOfferPayload) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Discount != nil {
@@ -1991,7 +1992,7 @@ func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) 
 	}
 
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.IsMain != nil {
@@ -2052,7 +2053,7 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 	}
 
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Label != nil {
@@ -2120,7 +2121,7 @@ func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributeP
 	}
 
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Label != nil {
@@ -2188,7 +2189,7 @@ func (m *Manager) UpdateProductAttributeOption(
 	}
 
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Value != nil {
@@ -2233,7 +2234,7 @@ func (m *Manager) UpdateProductComment(
 	p types.UpdateProductCommentPayload,
 ) error {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if p.Scoring != nil {
@@ -2843,9 +2844,7 @@ func createAttributeCombinations(attributeOptionsMap map[int][]int) [][]map[int]
 			comb := make([]map[int]int, len(curr))
 			for i, c := range curr {
 				cpmap := make(map[int]int)
-				for k, v := range c {
-					cpmap[k] = v
-				}
+				maps.Copy(cpmap, c)
 				comb[i] = cpmap
 			}
 
@@ -2870,9 +2869,9 @@ func createAttributeCombinations(attributeOptionsMap map[int][]int) [][]map[int]
 func buildProductSearchQuery(
 	query types.ProductSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.Name != nil {
@@ -2991,9 +2990,9 @@ func buildProductSearchQuery(
 func buildProductCategorySearchQuery(
 	query types.ProductCategorySearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.Name != nil {
@@ -3032,9 +3031,9 @@ func buildProductCategorySearchQuery(
 func buildProductTagSearchQuery(
 	query types.ProductTagSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.Name != nil {
@@ -3077,9 +3076,9 @@ func buildProductTagSearchQuery(
 func buildProductOfferSearchQuery(
 	query types.ProductOfferSearchQuery,
 	base string,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{}
-	args := []interface{}{}
+	args := []any{}
 	argsPos := 1
 
 	if query.DiscountLessThan != nil {
@@ -3131,9 +3130,9 @@ func buildProductCommentSearchQueryByProductId(
 	query types.ProductCommentSearchQuery,
 	base string,
 	productId int,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{"product_id = $1"}
-	args := []interface{}{productId}
+	args := []any{productId}
 	argsPos := 2
 
 	if query.ScoringLessThan != nil {
@@ -3173,9 +3172,9 @@ func buildProductCommentSearchQueryByUserId(
 	query types.ProductCommentSearchQuery,
 	base string,
 	userId int,
-) (string, []interface{}) {
+) (string, []any) {
 	clauses := []string{"user_id = $1"}
-	args := []interface{}{userId}
+	args := []any{userId}
 	argsPos := 2
 
 	if query.ScoringLessThan != nil {
