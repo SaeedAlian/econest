@@ -35,6 +35,8 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 			h.authHandler.WithCSRFToken(h.logout), h.db,
 		),
 	).Methods("POST")
+
+	router.HandleFunc("/me", h.authHandler.WithJWTAuth(h.getMe, h.db))
 }
 
 func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.Request) {
@@ -349,4 +351,38 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, types.LogoutResponsePayload{
 		Success: true,
 	}, nil)
+}
+
+func (h *Handler) getMe(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	user, err := h.db.GetUserById(userId.(int))
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	userRes := utils.FilterStruct(user, map[string]bool{
+		"public":         true,
+		"private":        true,
+		"needPermission": true,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, userRes, nil)
 }
