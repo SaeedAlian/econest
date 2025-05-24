@@ -25,18 +25,22 @@ func NewHandler(db *db_manager.Manager, authHandler *auth.AuthHandler) *Handler 
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/register/vendor", h.register("Vendor")).Methods("POST")
-	router.HandleFunc("/register/customer", h.register("Customer")).Methods("POST")
+	registerRouter := router.PathPrefix("/register").Methods("POST").Subrouter()
+	registerRouter.HandleFunc("/vendor", h.register("Vendor"))
+	registerRouter.HandleFunc("/customer", h.register("Customer"))
 
-	router.HandleFunc("/login", h.login).Methods("POST")
-	router.HandleFunc("/refresh", h.refresh).Methods("POST")
-	router.HandleFunc("/logout",
-		h.authHandler.WithJWTAuth(
-			h.authHandler.WithCSRFToken(h.logout), h.db,
-		),
-	).Methods("POST")
+	authRouter := router.Methods("POST").Subrouter()
+	authRouter.HandleFunc("/login", h.login)
+	authRouter.HandleFunc("/refresh", h.refresh)
 
-	router.HandleFunc("/me", h.authHandler.WithJWTAuth(h.getMe, h.db))
+	logoutRouter := router.Methods("POST").Subrouter()
+	logoutRouter.HandleFunc("/logout", h.logout)
+	logoutRouter.Use(h.authHandler.WithJWTAuth(h.db))
+	logoutRouter.Use(h.authHandler.WithCSRFToken())
+
+	withAuthRouter := router.NewRoute().Subrouter()
+	withAuthRouter.HandleFunc("/me", h.getMe)
+	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
 }
 
 func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.Request) {

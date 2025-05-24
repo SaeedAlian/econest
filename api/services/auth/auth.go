@@ -32,78 +32,105 @@ func NewAuthHandler(cache *redis.Client, keyServer *KeyServer) *AuthHandler {
 }
 
 func (h *AuthHandler) WithJWTAuth(
-	handler http.HandlerFunc,
 	manager *db_manager.Manager,
-) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		tokenStr := strings.Split(r.Header.Get("Authorization"), "Bearer ")[1]
+) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusUnauthorized,
+					types.ErrValidateTokenFailure,
+				)
+				return
+			}
 
-		claims := types.UserJWTClaims{}
-		token, err := h.ValidateToken(tokenStr, &claims)
-		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrValidateTokenFailure)
-			return
-		}
+			tokenStr := strings.Split(authHeader, "Bearer ")[1]
 
-		if !token.Valid {
-			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrInvalidTokenReceived)
-			return
-		}
+			claims := types.UserJWTClaims{}
+			token, err := h.ValidateToken(tokenStr, &claims)
+			if err != nil {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusUnauthorized,
+					types.ErrValidateTokenFailure,
+				)
+				return
+			}
 
-		userId := claims.UserId
+			if !token.Valid {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusUnauthorized,
+					types.ErrInvalidTokenReceived,
+				)
+				return
+			}
 
-		u, err := manager.GetUserById(userId)
-		if u == nil || err != nil {
-			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrInvalidTokenReceived)
-			return
-		}
+			userId := claims.UserId
 
-		ctx := r.Context()
-		ctx = context.WithValue(ctx, "userId", u.Id)
-		ctx = context.WithValue(ctx, "userRoleId", u.RoleId)
-		r = r.WithContext(ctx)
+			u, err := manager.GetUserById(userId)
+			if u == nil || err != nil {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusUnauthorized,
+					types.ErrInvalidTokenReceived,
+				)
+				return
+			}
 
-		handler(w, r)
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, "userId", u.Id)
+			ctx = context.WithValue(ctx, "userRoleId", u.RoleId)
+			r = r.WithContext(ctx)
+
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
-func (h *AuthHandler) WithCSRFToken(
-	handler http.HandlerFunc,
-) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		if r.Method == "GET" || r.Method == "OPTIONS" {
-			handler(w, r)
-			return
-		}
+func (h *AuthHandler) WithCSRFToken() func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "GET" || r.Method == "OPTIONS" {
+				next.ServeHTTP(w, r)
+				return
+			}
 
-		csrfHeader := r.Header.Get("X-CSRF-Token")
-		if csrfHeader == "" {
-			utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCSRFMissing)
-			return
-		}
+			csrfHeader := r.Header.Get("X-CSRF-Token")
+			if csrfHeader == "" {
+				utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCSRFMissing)
+				return
+			}
 
-		ctx := r.Context()
-		userId := ctx.Value("userId")
-		if userId == nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusUnauthorized,
-				types.ErrAuthenticationCredentialsNotFound,
-			)
-			return
-		}
+			ctx := r.Context()
+			userId := ctx.Value("userId")
+			if userId == nil {
+				http.Error(
+					w,
+					types.ErrAuthenticationCredentialsNotFound.Error(),
+					http.StatusUnauthorized,
+				)
+				return
+			}
 
-		savedToken, isValid, err := h.GetCSRFToken(userId.(int))
-		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
-			return
-		}
-		if !isValid || savedToken != csrfHeader {
-			utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidCSRFToken)
-			return
-		}
+			savedToken, isValid, err := h.GetCSRFToken(userId.(int))
+			if err != nil {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusInternalServerError,
+					types.ErrInternalServer,
+				)
+				return
+			}
+			if !isValid || savedToken != csrfHeader {
+				utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidCSRFToken)
+				return
+			}
 
-		handler(w, r)
+			next.ServeHTTP(w, r)
+		})
 	}
 }
 
