@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
@@ -35,7 +36,7 @@ func (h *AuthHandler) WithJWTAuth(
 	manager *db_manager.Manager,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		tokenStr := r.Header.Get("Authorization")
+		tokenStr := strings.Split(r.Header.Get("Authorization"), "Bearer ")[1]
 
 		claims := types.UserJWTClaims{}
 		token, err := h.ValidateToken(tokenStr, &claims)
