@@ -76,7 +76,7 @@ type CreateUserPayload struct {
 type CreateUserPhoneNumberPayload struct {
 	CountryCode string `json:"countryCode" validate:"required,min=1,max=4"`
 	Number      string `json:"number"      validate:"required,min=5,max=20"`
-	UserId      int    `json:"userId"      validate:"required"`
+	UserId      int    `json:"userId"`
 }
 
 type CreateUserAddressPayload struct {
@@ -85,7 +85,7 @@ type CreateUserAddressPayload struct {
 	Street  string `json:"street"  validate:"required"`
 	Zipcode string `json:"zipcode" validate:"required"`
 	Details string `json:"details"`
-	UserId  int    `json:"userId"  validate:"required"`
+	UserId  int    `json:"userId"`
 }
 
 type UserSearchQuery struct {
