@@ -3,6 +3,7 @@ package db_manager
 import (
 	"database/sql"
 	"fmt"
+	"slices"
 	"strings"
 	"time"
 
@@ -631,6 +632,242 @@ func (m *Manager) DeletePermissionGroup(id int) error {
 	}
 
 	return nil
+}
+
+func (m *Manager) IsRoleHasAllActionPermissions(
+	actions []types.Action,
+	roleName string,
+) (bool, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM roles WHERE name = $1;",
+		roleName,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	role := new(types.Role)
+	role.Id = -1
+
+	for rows.Next() {
+		role, err = scanRoleRow(rows)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	if role.Id == -1 {
+		return false, types.ErrRoleNotFound
+	}
+
+	actionRows, err := m.db.Query(`
+		SELECT gap.action FROM role_group_assignments rga 
+		JOIN group_action_permissions gap ON gap.group_id = rga.permission_group_id
+		WHERE rga.role_id = $1;
+	`, role.Id)
+	if err != nil {
+		return false, err
+	}
+	defer actionRows.Close()
+
+	resultActions := []types.Action{}
+
+	for actionRows.Next() {
+		var a types.Action
+		err := actionRows.Scan(&a)
+		if err != nil {
+			return false, err
+		}
+		resultActions = append(resultActions, a)
+	}
+
+	found := 0
+
+	for _, r1 := range actions {
+		for _, r2 := range resultActions {
+			if r1 == r2 {
+				found++
+			}
+		}
+	}
+
+	return found == len(actions), nil
+}
+
+func (m *Manager) IsRoleHasSomeActionPermissions(
+	actions []types.Action,
+	roleName string,
+) (bool, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM roles WHERE name = $1;",
+		roleName,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	role := new(types.Role)
+	role.Id = -1
+
+	for rows.Next() {
+		role, err = scanRoleRow(rows)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	if role.Id == -1 {
+		return false, types.ErrRoleNotFound
+	}
+
+	actionRows, err := m.db.Query(`
+		SELECT gap.action FROM role_group_assignments rga 
+		JOIN group_action_permissions gap ON gap.group_id = rga.permission_group_id
+		WHERE rga.role_id = $1;
+	`, role.Id)
+	if err != nil {
+		return false, err
+	}
+	defer actionRows.Close()
+
+	resultActions := []types.Action{}
+
+	for actionRows.Next() {
+		var a types.Action
+		err := actionRows.Scan(&a)
+		if err != nil {
+			return false, err
+		}
+		resultActions = append(resultActions, a)
+	}
+
+	for _, r := range actions {
+		if slices.Contains(resultActions, r) {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (m *Manager) IsRoleHasAllResourcePermissions(
+	resources []types.Resource,
+	roleName string,
+) (bool, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM roles WHERE name = $1;",
+		roleName,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	role := new(types.Role)
+	role.Id = -1
+
+	for rows.Next() {
+		role, err = scanRoleRow(rows)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	if role.Id == -1 {
+		return false, types.ErrRoleNotFound
+	}
+
+	resourceRows, err := m.db.Query(`
+		SELECT grp.resource FROM role_group_assignments rga 
+		JOIN group_resource_permissions grp ON grp.group_id = rga.permission_group_id
+		WHERE rga.role_id = $1;
+	`, role.Id)
+	if err != nil {
+		return false, err
+	}
+	defer resourceRows.Close()
+
+	resultResources := []types.Resource{}
+
+	for resourceRows.Next() {
+		var r types.Resource
+		err := resourceRows.Scan(&r)
+		if err != nil {
+			return false, err
+		}
+		resultResources = append(resultResources, r)
+	}
+
+	found := 0
+
+	for _, r1 := range resources {
+		for _, r2 := range resultResources {
+			if r1 == r2 {
+				found++
+			}
+		}
+	}
+
+	return found == len(resources), nil
+}
+
+func (m *Manager) IsRoleHasSomeResourcePermissions(
+	resources []types.Resource,
+	roleName string,
+) (bool, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM roles WHERE name = $1;",
+		roleName,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	role := new(types.Role)
+	role.Id = -1
+
+	for rows.Next() {
+		role, err = scanRoleRow(rows)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	if role.Id == -1 {
+		return false, types.ErrRoleNotFound
+	}
+
+	resourceRows, err := m.db.Query(`
+		SELECT grp.resource FROM role_group_assignments rga 
+		JOIN group_resource_permissions grp ON grp.group_id = rga.permission_group_id
+		WHERE rga.role_id = $1;
+	`, role.Id)
+	if err != nil {
+		return false, err
+	}
+	defer resourceRows.Close()
+
+	resultResources := []types.Resource{}
+
+	for resourceRows.Next() {
+		var r types.Resource
+		err := resourceRows.Scan(&r)
+		if err != nil {
+			return false, err
+		}
+		resultResources = append(resultResources, r)
+	}
+
+	for _, r := range resources {
+		if slices.Contains(resultResources, r) {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
 
 func scanRoleRow(rows *sql.Rows) (*types.Role, error) {
