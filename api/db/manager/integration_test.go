@@ -432,6 +432,10 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(phoneId, 0)
 
+	userPhone, err := s.manager.GetUserPhoneNumberById(phoneId)
+	s.Require().NoError(err)
+	s.Require().Equal(userPhone.Id, phoneId)
+
 	_, err = s.manager.CreateUserPhoneNumber(types.CreateUserPhoneNumberPayload{
 		CountryCode: "+1213198",
 		Number:      "9121231212",
@@ -456,6 +460,10 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(addrId, 0)
+
+	userAddr, err := s.manager.GetUserAddressById(addrId)
+	s.Require().NoError(err)
+	s.Require().Equal(userAddr.Id, addrId)
 
 	addr2Id, err := s.manager.CreateUserAddress(types.CreateUserAddressPayload{
 		State:   "S",

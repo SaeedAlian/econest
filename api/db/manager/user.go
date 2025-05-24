@@ -434,6 +434,33 @@ func (m *Manager) GetUserPhoneNumbers(
 	return phoneNumbers, nil
 }
 
+func (m *Manager) GetUserPhoneNumberById(id int) (*types.UserPhoneNumber, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM phonenumbers WHERE id = $1 AND user_id IS NOT NULL;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	phone := new(types.UserPhoneNumber)
+	phone.Id = -1
+
+	for rows.Next() {
+		phone, err = scanUserPhoneNumberRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if phone.Id == -1 {
+		return nil, types.ErrUserPhoneNumberNotFound
+	}
+
+	return phone, nil
+}
+
 func (m *Manager) GetUserAddresses(
 	userId int,
 	query types.UserAddressSearchQuery,
@@ -492,6 +519,33 @@ func (m *Manager) GetUserAddresses(
 	}
 
 	return addresses, nil
+}
+
+func (m *Manager) GetUserAddressById(id int) (*types.UserAddress, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM addresses WHERE id = $1 AND user_id IS NOT NULL;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	addr := new(types.UserAddress)
+	addr.Id = -1
+
+	for rows.Next() {
+		addr, err = scanUserAddressRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if addr.Id == -1 {
+		return nil, types.ErrUserAddressNotFound
+	}
+
+	return addr, nil
 }
 
 func (m *Manager) GetUserSettings(userId int) (*types.UserSettings, error) {
