@@ -20,6 +20,10 @@ func (s SettingVisibilityStatus) IsValid() bool {
 	return slices.Contains(ValidSettingVisibilityStatuses, s)
 }
 
+func (s SettingVisibilityStatus) String() string {
+	return string(s)
+}
+
 type CredentialVerificationStatus string
 
 const (
@@ -36,6 +40,10 @@ var ValidCredentialVerificationStatuses = []CredentialVerificationStatus{
 
 func (s CredentialVerificationStatus) IsValid() bool {
 	return slices.Contains(ValidCredentialVerificationStatuses, s)
+}
+
+func (s CredentialVerificationStatus) String() string {
+	return string(s)
 }
 
 type TransactionType string
@@ -56,6 +64,10 @@ func (t TransactionType) IsValid() bool {
 	return slices.Contains(ValidTransactionTypes, t)
 }
 
+func (t TransactionType) String() string {
+	return string(t)
+}
+
 type TransactionStatus string
 
 const (
@@ -72,6 +84,10 @@ var ValidTransactionStatuses = []TransactionStatus{
 
 func (s TransactionStatus) IsValid() bool {
 	return slices.Contains(ValidTransactionStatuses, s)
+}
+
+func (s TransactionStatus) String() string {
+	return string(s)
 }
 
 type Action string
@@ -148,6 +164,10 @@ func (a Action) IsValid() bool {
 	return slices.Contains(ValidActions, a)
 }
 
+func (a Action) String() string {
+	return string(a)
+}
+
 type Resource string
 
 const (
@@ -176,6 +196,10 @@ func (r Resource) IsValid() bool {
 	return slices.Contains(ValidResources, r)
 }
 
+func (r Resource) String() string {
+	return string(r)
+}
+
 type OrderStatus string
 
 const (
@@ -194,6 +218,10 @@ func (s OrderStatus) IsValid() bool {
 	return slices.Contains(ValidOrderStatuses, s)
 }
 
+func (s OrderStatus) String() string {
+	return string(s)
+}
+
 type ShipmentType string
 
 const (
@@ -208,6 +236,10 @@ var ValidShipmentTypes = []ShipmentType{
 
 func (t ShipmentType) IsValid() bool {
 	return slices.Contains(ValidShipmentTypes, t)
+}
+
+func (t ShipmentType) String() string {
+	return string(t)
 }
 
 type ShipmentStatus string
@@ -228,4 +260,8 @@ var ValidShipmentStatuses = []ShipmentStatus{
 
 func (s ShipmentStatus) IsValid() bool {
 	return slices.Contains(ValidShipmentStatuses, s)
+}
+
+func (s ShipmentStatus) String() string {
+	return string(s)
 }
