@@ -271,7 +271,7 @@ func (h *AuthHandler) GenerateToken(
 		return "", "", err
 	}
 
-	return tokenStr, jti, nil
+	return tokenStr, new_jti, nil
 }
 
 func (h *AuthHandler) GenerateCSRFToken() (string, error) {
