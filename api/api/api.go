@@ -30,9 +30,8 @@ func NewServer(addr string, db *sql.DB, keyServer *auth.KeyServer) *Server {
 
 func (s *Server) Run() error {
 	router := mux.NewRouter()
-	subrouter := router.PathPrefix("/api").Subrouter()
 
-	userSubrouter := subrouter.PathPrefix("/user").Subrouter()
+	userSubrouter := router.PathPrefix("/user").Subrouter()
 
 	authCache := redis.NewClient(&redis.Options{
 		Addr: config.Env.KeyServerRedisAddr,
