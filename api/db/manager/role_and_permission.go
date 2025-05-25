@@ -636,36 +636,13 @@ func (m *Manager) DeletePermissionGroup(id int) error {
 
 func (m *Manager) IsRoleHasAllActionPermissions(
 	actions []types.Action,
-	roleName string,
+	roleId int,
 ) (bool, error) {
-	rows, err := m.db.Query(
-		"SELECT * FROM roles WHERE name = $1;",
-		roleName,
-	)
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	role := new(types.Role)
-	role.Id = -1
-
-	for rows.Next() {
-		role, err = scanRoleRow(rows)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	if role.Id == -1 {
-		return false, types.ErrRoleNotFound
-	}
-
 	actionRows, err := m.db.Query(`
 		SELECT gap.action FROM role_group_assignments rga 
 		JOIN group_action_permissions gap ON gap.group_id = rga.permission_group_id
 		WHERE rga.role_id = $1;
-	`, role.Id)
+	`, roleId)
 	if err != nil {
 		return false, err
 	}
@@ -697,36 +674,13 @@ func (m *Manager) IsRoleHasAllActionPermissions(
 
 func (m *Manager) IsRoleHasSomeActionPermissions(
 	actions []types.Action,
-	roleName string,
+	roleId int,
 ) (bool, error) {
-	rows, err := m.db.Query(
-		"SELECT * FROM roles WHERE name = $1;",
-		roleName,
-	)
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	role := new(types.Role)
-	role.Id = -1
-
-	for rows.Next() {
-		role, err = scanRoleRow(rows)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	if role.Id == -1 {
-		return false, types.ErrRoleNotFound
-	}
-
 	actionRows, err := m.db.Query(`
 		SELECT gap.action FROM role_group_assignments rga 
 		JOIN group_action_permissions gap ON gap.group_id = rga.permission_group_id
 		WHERE rga.role_id = $1;
-	`, role.Id)
+	`, roleId)
 	if err != nil {
 		return false, err
 	}
@@ -754,36 +708,13 @@ func (m *Manager) IsRoleHasSomeActionPermissions(
 
 func (m *Manager) IsRoleHasAllResourcePermissions(
 	resources []types.Resource,
-	roleName string,
+	roleId int,
 ) (bool, error) {
-	rows, err := m.db.Query(
-		"SELECT * FROM roles WHERE name = $1;",
-		roleName,
-	)
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	role := new(types.Role)
-	role.Id = -1
-
-	for rows.Next() {
-		role, err = scanRoleRow(rows)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	if role.Id == -1 {
-		return false, types.ErrRoleNotFound
-	}
-
 	resourceRows, err := m.db.Query(`
 		SELECT grp.resource FROM role_group_assignments rga 
 		JOIN group_resource_permissions grp ON grp.group_id = rga.permission_group_id
 		WHERE rga.role_id = $1;
-	`, role.Id)
+	`, roleId)
 	if err != nil {
 		return false, err
 	}
@@ -815,36 +746,13 @@ func (m *Manager) IsRoleHasAllResourcePermissions(
 
 func (m *Manager) IsRoleHasSomeResourcePermissions(
 	resources []types.Resource,
-	roleName string,
+	roleId int,
 ) (bool, error) {
-	rows, err := m.db.Query(
-		"SELECT * FROM roles WHERE name = $1;",
-		roleName,
-	)
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	role := new(types.Role)
-	role.Id = -1
-
-	for rows.Next() {
-		role, err = scanRoleRow(rows)
-		if err != nil {
-			return false, err
-		}
-	}
-
-	if role.Id == -1 {
-		return false, types.ErrRoleNotFound
-	}
-
 	resourceRows, err := m.db.Query(`
 		SELECT grp.resource FROM role_group_assignments rga 
 		JOIN group_resource_permissions grp ON grp.group_id = rga.permission_group_id
 		WHERE rga.role_id = $1;
-	`, role.Id)
+	`, roleId)
 	if err != nil {
 		return false, err
 	}
