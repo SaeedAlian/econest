@@ -27,32 +27,59 @@ func NewHandler(db *db_manager.Manager, authHandler *auth.AuthHandler) *Handler 
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	registerRouter := router.PathPrefix("/register").Methods("POST").Subrouter()
-	registerRouter.HandleFunc("/vendor", h.register("Vendor"))
-	registerRouter.HandleFunc("/customer", h.register("Customer"))
+	registerRouter.HandleFunc("/vendor", h.register("Vendor")).Methods("POST")
+	registerRouter.HandleFunc("/customer", h.register("Customer")).Methods("POST")
 
 	authRouter := router.Methods("POST").Subrouter()
-	authRouter.HandleFunc("/login", h.login)
+	authRouter.HandleFunc("/login", h.login).Methods("POST")
 	authRouter.HandleFunc("/refresh", h.refresh).Methods("POST")
 
 	logoutRouter := router.Methods("POST").Subrouter()
-	logoutRouter.HandleFunc("/logout", h.logout)
+	logoutRouter.HandleFunc("/logout", h.logout).Methods("POST")
 	logoutRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	logoutRouter.Use(h.authHandler.WithCSRFToken())
 
 	withAuthRouter := router.Methods("GET", "POST", "PATCH", "DELETE").Subrouter()
-	withAuthRouter.HandleFunc("/me", h.getMe)
+	withAuthRouter.HandleFunc("/", h.getUsers).Methods("GET")
+	withAuthRouter.HandleFunc("/pages", h.getUsersPages).Methods("GET")
+	withAuthRouter.HandleFunc("/me", h.getMe).Methods("GET")
+	withAuthRouter.HandleFunc("/{userId}", h.getUser).Methods("GET")
+	withAuthRouter.HandleFunc("/", h.updateProfile).Methods("PATCH")
+	withAuthRouter.HandleFunc(
+		"/ban/{userId}",
+		h.authHandler.WithActionPermissionAuth(
+			h.banUser,
+			h.db,
+			[]types.Action{types.ActionCanBanUser},
+		),
+	).Methods("PATCH")
+	withAuthRouter.HandleFunc(
+		"/unban/{userId}",
+		h.authHandler.WithActionPermissionAuth(
+			h.unbanUser,
+			h.db,
+			[]types.Action{types.ActionCanUnbanUser},
+		),
+	).Methods("PATCH")
 	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	withAuthRouter.Use(h.authHandler.WithCSRFToken())
+
+	settingsRouter := withAuthRouter.PathPrefix("/settings").Subrouter()
+	settingsRouter.HandleFunc("/me", h.getMySettings).Methods("GET")
+	settingsRouter.HandleFunc("/{userId}", h.getUserSettings).Methods("GET")
+	settingsRouter.HandleFunc("/", h.updateSettings).Methods("PATCH")
 
 	addressHandlerRouter := withAuthRouter.PathPrefix("/address").Subrouter()
 	addressHandlerRouter.HandleFunc("/", h.createAddress).Methods("POST")
 	addressHandlerRouter.HandleFunc("/", h.getMyAddresses).Methods("GET")
+	addressHandlerRouter.HandleFunc("/{userId}", h.getUserAddresses).Methods("GET")
 	addressHandlerRouter.HandleFunc("/{addrId}", h.updateAddress).Methods("PATCH")
 	addressHandlerRouter.HandleFunc("/{addrId}", h.deleteAddress).Methods("DELETE")
 
 	phoneNumberHandlerRouter := withAuthRouter.PathPrefix("/phonenumber").Subrouter()
 	phoneNumberHandlerRouter.HandleFunc("/", h.createPhoneNumber).Methods("POST")
 	phoneNumberHandlerRouter.HandleFunc("/", h.getMyPhoneNumbers).Methods("GET")
+	addressHandlerRouter.HandleFunc("/{userId}", h.getUserPhoneNumbers).Methods("GET")
 	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.updatePhoneNumber).Methods("PATCH")
 	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.deletePhoneNumber).Methods("DELETE")
 }
@@ -800,4 +827,590 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	}
 
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
+	userIdParam := mux.Vars(r)["userId"]
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidUserId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+
+	if cLoggedUserRoleId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	visibilityStatusQuery := r.URL.Query().Get("visibility")
+	var visibilityStatus *types.SettingVisibilityStatus = nil
+
+	if visibilityStatusQuery != "" {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
+		if !visibilityStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVisibilityStatusOption,
+			)
+			return
+		}
+	}
+
+	loggedUserRoleId := cLoggedUserRoleId.(int)
+
+	loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+		[]types.Resource{types.ResourceUsersFullAccess},
+		loggedUserRoleId,
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	if !loggedUserHasFullAccess {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
+	}
+
+	query := types.UserAddressSearchQuery{
+		VisibilityStatus: visibilityStatus,
+	}
+
+	addresses, err := h.db.GetUserAddresses(userId, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredAddresses := []map[string]any{}
+
+	for _, a := range addresses {
+		f := utils.FilterStruct(a, map[string]bool{
+			"public":         true,
+			"isPublic":       a.IsPublic,
+			"needPermission": loggedUserHasFullAccess,
+		})
+
+		filteredAddresses = append(filteredAddresses, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredAddresses, nil)
+}
+
+func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
+	userIdParam := mux.Vars(r)["userId"]
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidUserId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+
+	if cLoggedUserRoleId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	visibilityStatusQuery := r.URL.Query().Get("visibility")
+	var visibilityStatus *types.SettingVisibilityStatus = nil
+
+	verificationStatusQuery := r.URL.Query().Get("verified")
+	var verificationStatus *types.CredentialVerificationStatus = nil
+
+	if visibilityStatusQuery != "" {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
+		if !visibilityStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVisibilityStatusOption,
+			)
+			return
+		}
+	}
+
+	if verificationStatusQuery != "" {
+		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
+		if !verificationStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVerificationStatusOption,
+			)
+			return
+		}
+	}
+
+	loggedUserRoleId := cLoggedUserRoleId.(int)
+
+	loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+		[]types.Resource{types.ResourceUsersFullAccess},
+		loggedUserRoleId,
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	if !loggedUserHasFullAccess {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
+		verificationStatus = utils.Ptr(types.CredentialVerificationStatusVerified)
+	}
+
+	query := types.UserPhoneNumberSearchQuery{
+		VerificationStatus: verificationStatus,
+		VisibilityStatus:   visibilityStatus,
+	}
+
+	phones, err := h.db.GetUserPhoneNumbers(userId, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredPhones := []map[string]any{}
+
+	for _, p := range phones {
+		f := utils.FilterStruct(p, map[string]bool{
+			"public":         true,
+			"isPublic":       p.IsPublic,
+			"needPermission": loggedUserHasFullAccess,
+		})
+
+		filteredPhones = append(filteredPhones, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredPhones, nil)
+}
+
+func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+
+	if cLoggedUserRoleId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	fullNameQuery := r.URL.Query().Get("name")
+	roleIdQuery := r.URL.Query().Get("role")
+	pageQuery := r.URL.Query().Get("p")
+
+	var fullName *string = nil
+	var roleId *int = nil
+	var limit *int = nil
+	var offset *int = nil
+
+	if fullNameQuery != "" {
+		fullName = utils.Ptr(fullNameQuery)
+	}
+
+	if roleIdQuery != "" {
+		intRoleId, err := strconv.Atoi(roleIdQuery)
+		if err != nil {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidRoleIdQuery,
+			)
+			return
+		}
+
+		roleId = utils.Ptr(intRoleId)
+	}
+
+	limit = utils.Ptr(int(config.Env.MaxUsersInPage))
+
+	if pageQuery != "" {
+		intPage, err := strconv.Atoi(pageQuery)
+		if err != nil {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidPageQuery,
+			)
+			return
+		}
+
+		offset = utils.Ptr((*limit) * (intPage - 1))
+	} else {
+		offset = utils.Ptr(0)
+	}
+
+	loggedUserRoleId := cLoggedUserRoleId.(int)
+
+	loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+		[]types.Resource{types.ResourceUsersFullAccess},
+		loggedUserRoleId,
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	query := types.UserSearchQuery{
+		FullName: fullName,
+		RoleId:   roleId,
+		Limit:    limit,
+		Offset:   offset,
+	}
+
+	users, err := h.db.GetUsersWithSettings(query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredUsers := []map[string]any{}
+
+	for _, u := range users {
+		f := utils.FilterStruct(u.User, map[string]bool{
+			"public":          true,
+			"publicEmail":     u.PublicEmail,
+			"publicBirthDate": u.PublicBirthDate,
+			"needPermission":  loggedUserHasFullAccess,
+		})
+
+		filteredUsers = append(filteredUsers, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredUsers, nil)
+}
+
+func (h *Handler) getUsersPages(w http.ResponseWriter, r *http.Request) {
+	fullNameQuery := r.URL.Query().Get("name")
+	roleIdQuery := r.URL.Query().Get("role")
+
+	var fullName *string = nil
+	var roleId *int = nil
+
+	if fullNameQuery != "" {
+		fullName = utils.Ptr(fullNameQuery)
+	}
+
+	if roleIdQuery != "" {
+		intRoleId, err := strconv.Atoi(roleIdQuery)
+		if err != nil {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidRoleIdQuery,
+			)
+			return
+		}
+
+		roleId = utils.Ptr(intRoleId)
+	}
+
+	query := types.UserSearchQuery{
+		FullName: fullName,
+		RoleId:   roleId,
+	}
+
+	count, err := h.db.GetUsersCount(query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxUsersInPage))
+
+	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
+		"pages": pageCount,
+	}, nil)
+}
+
+func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
+	userIdParam := mux.Vars(r)["userId"]
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidUserId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+
+	if cLoggedUserRoleId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	loggedUserRoleId := cLoggedUserRoleId.(int)
+
+	loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+		[]types.Resource{types.ResourceUsersFullAccess},
+		loggedUserRoleId,
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	user, err := h.db.GetUserWithSettingsById(userId)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	filteredUser := utils.FilterStruct(user.User, map[string]bool{
+		"public":          true,
+		"publicEmail":     user.PublicEmail,
+		"publicBirthDate": user.PublicBirthDate,
+		"needPermission":  loggedUserHasFullAccess,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredUser, nil)
+}
+
+func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
+	var payload types.UpdateUserPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidProfilePayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	err := h.db.UpdateUser(userId, types.UpdateUserPayload{
+		Username:  payload.Username,
+		FullName:  payload.FullName,
+		BirthDate: payload.BirthDate,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
+	var payload types.UpdateUserSettingsPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidUserSettingsPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	err := h.db.UpdateUserSettings(userId, payload)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) banUser(w http.ResponseWriter, r *http.Request) {
+	userIdParam := mux.Vars(r)["userId"]
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidUserId,
+		)
+		return
+	}
+
+	err = h.db.UpdateUser(userId, types.UpdateUserPayload{
+		IsBanned: utils.Ptr(true),
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) unbanUser(w http.ResponseWriter, r *http.Request) {
+	userIdParam := mux.Vars(r)["userId"]
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidUserId,
+		)
+		return
+	}
+
+	err = h.db.UpdateUser(userId, types.UpdateUserPayload{
+		IsBanned: utils.Ptr(false),
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) getUserSettings(w http.ResponseWriter, r *http.Request) {
+	userIdParam := mux.Vars(r)["userId"]
+
+	userId, err := strconv.Atoi(userIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidUserId,
+		)
+		return
+	}
+
+	settings, err := h.db.GetUserSettings(userId)
+	if err != nil {
+		if err == types.ErrUserSettingsNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	filteredSettings := utils.FilterStruct(settings, map[string]bool{
+		"public": true,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredSettings, nil)
+}
+
+func (h *Handler) getMySettings(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	settings, err := h.db.GetUserSettings(userId.(int))
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	settingsRes := utils.FilterStruct(settings, map[string]bool{
+		"public":         true,
+		"private":        true,
+		"needPermission": true,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, settingsRes, nil)
 }

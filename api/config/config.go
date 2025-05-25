@@ -21,6 +21,7 @@ type Config struct {
 	AccessTokenExpirationInMin  float64
 	RefreshTokenExpirationInMin float64
 	CSRFTokenExpirationInMin    float64
+	MaxUsersInPage              int32
 }
 
 var Env = InitConfig()
@@ -42,6 +43,7 @@ func InitConfig() Config {
 		AccessTokenExpirationInMin:  float64(15),
 		RefreshTokenExpirationInMin: float64(60 * 24 * 7),
 		CSRFTokenExpirationInMin:    float64(30),
+		MaxUsersInPage:              int32(10),
 	}
 }
 
