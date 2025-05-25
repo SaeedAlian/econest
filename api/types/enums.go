@@ -265,3 +265,27 @@ func (s ShipmentStatus) IsValid() bool {
 func (s ShipmentStatus) String() string {
 	return string(s)
 }
+
+type DefaultRole string
+
+const (
+	DefaultRoleSuperAdmin DefaultRole = "Super Admin"
+	DefaultRoleAdmin      DefaultRole = "Admin"
+	DefaultRoleVendor     DefaultRole = "Vendor"
+	DefaultRoleCustomer   DefaultRole = "Customer"
+)
+
+var ValidDefaultRoles = []DefaultRole{
+	DefaultRoleSuperAdmin,
+	DefaultRoleAdmin,
+	DefaultRoleVendor,
+	DefaultRoleCustomer,
+}
+
+func (r DefaultRole) IsValid() bool {
+	return slices.Contains(ValidDefaultRoles, r)
+}
+
+func (r DefaultRole) String() string {
+	return string(r)
+}
