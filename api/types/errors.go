@@ -74,4 +74,5 @@ var (
 	ErrInvalidPageQuery                  = errors.New("")
 	ErrInvalidProfilePayload             = errors.New("")
 	ErrInvalidUserSettingsPayload        = errors.New("")
+	ErrCannotBanThisUser                 = errors.New("")
 )

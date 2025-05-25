@@ -1309,6 +1309,29 @@ func (h *Handler) banUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	user, err := h.db.GetUserById(userId)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	userRole, err := h.db.GetRoleById(user.RoleId)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	if userRole.Name == types.DefaultRoleSuperAdmin.String() ||
+		userRole.Name == types.DefaultRoleAdmin.String() {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotBanThisUser)
+		return
+	}
+
 	err = h.db.UpdateUser(userId, types.UpdateUserPayload{
 		IsBanned: utils.Ptr(true),
 	})
