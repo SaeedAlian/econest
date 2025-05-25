@@ -27,8 +27,10 @@ func NewHandler(db *db_manager.Manager, authHandler *auth.AuthHandler) *Handler 
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	registerRouter := router.PathPrefix("/register").Methods("POST").Subrouter()
-	registerRouter.HandleFunc("/vendor", h.register("Vendor")).Methods("POST")
-	registerRouter.HandleFunc("/customer", h.register("Customer")).Methods("POST")
+	registerRouter.HandleFunc("/vendor", h.register(types.DefaultRoleVendor.String())).
+		Methods("POST")
+	registerRouter.HandleFunc("/customer", h.register(types.DefaultRoleCustomer.String())).
+		Methods("POST")
 
 	authRouter := router.Methods("POST").Subrouter()
 	authRouter.HandleFunc("/login", h.login).Methods("POST")
