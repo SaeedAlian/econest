@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"math"
 	"net/http"
 	"os"
 	"reflect"
@@ -151,4 +152,15 @@ func PathExists(path string) (bool, error) {
 		return false, nil
 	}
 	return false, err
+}
+
+func GetPageCount(totalEntities int64, pageLimit int64) int32 {
+	pages := math.Floor(float64(totalEntities / pageLimit))
+	remainder := totalEntities % pageLimit
+
+	if remainder > 0 {
+		pages++
+	}
+
+	return int32(pages)
 }
