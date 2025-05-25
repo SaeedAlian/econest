@@ -244,12 +244,19 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(rpg, 0)
 
+	rpg, err = s.manager.AddResourcePermissionToGroup(types.CreateGroupResourcePermissionPayload{
+		GroupId:  pgroup.Id,
+		Resource: "wallet_transactions_full_access",
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(rpg, 1)
+
 	rpg2, err := s.manager.AddResourcePermissionToGroup(types.CreateGroupResourcePermissionPayload{
 		GroupId:  groupId2,
 		Resource: "wallet_transactions_full_access",
 	})
 	s.Require().NoError(err)
-	s.Require().Greater(rpg2, 0)
+	s.Require().Greater(rpg2, 2)
 
 	// add action permission to group
 	apg, err := s.manager.AddActionPermissionToGroup(types.CreateGroupActionPermissionPayload{
@@ -271,7 +278,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	for _, p := range pgroupsWithPermissions {
 		if p.Name == pgroup.Name {
 			found = true
-			s.Require().Equal(1, len(p.ResourcePermissions))
+			s.Require().Equal(2, len(p.ResourcePermissions))
 			s.Require().Equal(1, len(p.ActionPermissions))
 		}
 	}
@@ -283,7 +290,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		[]types.Resource{"roles_and_permissions", "wallet_transactions_full_access"},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(2, len(roles))
+	s.Require().Equal(3, len(roles))
 
 	roles, err = s.manager.GetRolesBasedOnResourcePermission([]types.Resource{"users_full_access"})
 	s.Require().NoError(err)
@@ -341,6 +348,20 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		[]types.Action{"users_full_access"},
 	)
 	s.Require().Error(err)
+
+	isRoleHasAllResources, err := s.manager.IsRoleHasAllResourcePermissions(
+		[]types.Resource{"wallet_transactions_full_access", "roles_and_permissions"},
+		role1Id,
+	)
+	s.Require().NoError(err)
+	s.Require().True(isRoleHasAllResources)
+
+	isRoleHasSomeResources, err := s.manager.IsRoleHasSomeResourcePermissions(
+		[]types.Resource{"wallet_transactions_full_access", "users_full_access"},
+		role1Id,
+	)
+	s.Require().NoError(err)
+	s.Require().True(isRoleHasSomeResources)
 
 	// remove resource permission from group
 	err = s.manager.RemoveResourcePermissionFromGroup("roles_and_permissions", pgroup.Id)
