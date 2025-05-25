@@ -134,6 +134,46 @@ func (h *AuthHandler) WithCSRFToken() func(next http.Handler) http.Handler {
 	}
 }
 
+func (h *AuthHandler) WithVerifiedEmail(
+	manager *db_manager.Manager,
+) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "GET" || r.Method == "OPTIONS" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			ctx := r.Context()
+			userId := ctx.Value("userId")
+			if userId == nil {
+				http.Error(
+					w,
+					types.ErrAuthenticationCredentialsNotFound.Error(),
+					http.StatusUnauthorized,
+				)
+				return
+			}
+
+			user, err := manager.GetUserById(userId.(int))
+			if err != nil {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusInternalServerError,
+					types.ErrInternalServer,
+				)
+				return
+			}
+			if !user.EmailVerified {
+				utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrEmailNotVerified)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (h *AuthHandler) WithActionPermissionAuth(
 	handler http.HandlerFunc,
 	manager *db_manager.Manager,

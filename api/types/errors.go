@@ -75,4 +75,5 @@ var (
 	ErrInvalidProfilePayload             = errors.New("")
 	ErrInvalidUserSettingsPayload        = errors.New("")
 	ErrCannotBanThisUser                 = errors.New("")
+	ErrEmailNotVerified                  = errors.New("")
 )
