@@ -22,6 +22,10 @@ type Config struct {
 	RefreshTokenExpirationInMin float64
 	CSRFTokenExpirationInMin    float64
 	MaxUsersInPage              int32
+	SMTPHost                    string
+	SMTPPort                    string
+	SMTPEmail                   string
+	SMTPPassword                string
 }
 
 var Env = InitConfig()
@@ -44,6 +48,10 @@ func InitConfig() Config {
 		RefreshTokenExpirationInMin: float64(60 * 24 * 7),
 		CSRFTokenExpirationInMin:    float64(30),
 		MaxUsersInPage:              int32(10),
+		SMTPHost:                    getEnv("SMTP_HOST", ""),
+		SMTPPort:                    getEnv("SMTP_PORT", ""),
+		SMTPEmail:                   getEnv("SMTP_MAIL", ""),
+		SMTPPassword:                getEnv("SMTP_PASS", ""),
 	}
 }
 
