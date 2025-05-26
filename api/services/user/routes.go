@@ -203,6 +203,11 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if user.IsBanned {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrUserIsBanned)
+		return
+	}
+
 	if isPasswordCorrect := auth.ComparePassword(payload.Password, user.Password); !isPasswordCorrect {
 		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidCredentials)
 		return
