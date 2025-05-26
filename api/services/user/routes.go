@@ -124,7 +124,7 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 			return
 		}
 
-		customerRole, err := h.db.GetRoleByName(roleName)
+		role, err := h.db.GetRoleByName(roleName)
 		if err != nil {
 			utils.WriteErrorInResponse(
 				w,
@@ -140,7 +140,7 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 			FullName:  user.FullName,
 			BirthDate: user.BirthDate,
 			Password:  hashedPassword,
-			RoleId:    customerRole.Id,
+			RoleId:    role.Id,
 		})
 		if err != nil {
 			utils.WriteErrorInResponse(
