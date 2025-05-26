@@ -114,6 +114,11 @@ type UpdateUserPayload struct {
 	IsBanned      *bool      `json:"isBanned"`
 }
 
+type UpdateUserPasswordPayload struct {
+	CurrentPassword *string `json:"currentPassword" validate:"min=6,max=130"`
+	NewPassword     *string `json:"newPassword"     validate:"min=6,max=130"`
+}
+
 type UpdateUserSettingsPayload struct {
 	PublicEmail      *bool   `json:"publicEmail"`
 	PublicBirthDate  *bool   `json:"publicBirthDate"`

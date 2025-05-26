@@ -11,6 +11,7 @@ import (
 	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
 	"github.com/SaeedAlian/econest/api/services/auth"
+	"github.com/SaeedAlian/econest/api/services/smtp"
 	"github.com/SaeedAlian/econest/api/services/user"
 )
 
@@ -39,8 +40,14 @@ func (s *Server) Run() error {
 
 	authHandler := auth.NewAuthHandler(authCache, s.keyServer)
 	dbManager := db_manager.NewManager(s.db)
+	smtpServer := smtp.NewSMTPServer(
+		config.Env.SMTPHost,
+		config.Env.SMTPPort,
+		config.Env.SMTPEmail,
+		config.Env.SMTPPassword,
+	)
 
-	userService := user.NewHandler(dbManager, authHandler)
+	userService := user.NewHandler(dbManager, authHandler, smtpServer)
 	userService.RegisterRoutes(userSubrouter)
 
 	log.Println("API Listening on ", s.addr)

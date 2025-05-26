@@ -8,24 +8,30 @@ import (
 )
 
 type Config struct {
-	Host                        string
-	Port                        string
-	DBHost                      string
-	DBUser                      string
-	DBPassword                  string
-	DBName                      string
-	DBPort                      string
-	KeyServerRedisAddr          string
-	AuthRedisAddr               string
-	RotateKeyDays               int64
-	AccessTokenExpirationInMin  float64
-	RefreshTokenExpirationInMin float64
-	CSRFTokenExpirationInMin    float64
-	MaxUsersInPage              int32
-	SMTPHost                    string
-	SMTPPort                    string
-	SMTPEmail                   string
-	SMTPPassword                string
+	Host                                  string
+	Port                                  string
+	DBHost                                string
+	DBUser                                string
+	DBPassword                            string
+	DBName                                string
+	DBPort                                string
+	KeyServerRedisAddr                    string
+	AuthRedisAddr                         string
+	RotateKeyDays                         int64
+	AccessTokenExpirationInMin            float64
+	RefreshTokenExpirationInMin           float64
+	CSRFTokenExpirationInMin              float64
+	ForgotPasswordTokenExpirationInMin    float64
+	EmailVerificationTokenExpirationInMin float64
+	MaxUsersInPage                        int32
+	SMTPHost                              string
+	SMTPPort                              string
+	SMTPEmail                             string
+	SMTPPassword                          string
+	WebsiteUrl                            string
+	WebsiteName                           string
+	ResetPasswordWebsitePageUrl           string
+	EmailVerificationWebsitePageUrl       string
 }
 
 var Env = InitConfig()
@@ -34,24 +40,36 @@ func InitConfig() Config {
 	godotenv.Load()
 
 	return Config{
-		Host:                        getEnv("HOST", "http://localhost"),
-		Port:                        getEnv("PORT", "8080"),
-		DBUser:                      getEnv("DB_USER", "postgres"),
-		DBHost:                      getEnv("DB_HOST", "localhost"),
-		DBPassword:                  getEnv("DB_PASSWORD", "postgres"),
-		DBName:                      getEnv("DB_NAME", "postgres"),
-		DBPort:                      getEnv("DB_PORT", "5432"),
-		KeyServerRedisAddr:          getEnv("KEY_SERVER_REDIS_ADDRESS", "localhost:6379"),
-		AuthRedisAddr:               getEnv("AUTH_REDIS_ADDRESS", "localhost:6379"),
-		RotateKeyDays:               getEnvAsInt("ROTATE_KEY_DAYS", 2),
-		AccessTokenExpirationInMin:  float64(15),
-		RefreshTokenExpirationInMin: float64(60 * 24 * 7),
-		CSRFTokenExpirationInMin:    float64(30),
-		MaxUsersInPage:              int32(10),
-		SMTPHost:                    getEnv("SMTP_HOST", ""),
-		SMTPPort:                    getEnv("SMTP_PORT", ""),
-		SMTPEmail:                   getEnv("SMTP_MAIL", ""),
-		SMTPPassword:                getEnv("SMTP_PASS", ""),
+		Host:                                  getEnv("HOST", "http://localhost"),
+		Port:                                  getEnv("PORT", "8080"),
+		DBUser:                                getEnv("DB_USER", "postgres"),
+		DBHost:                                getEnv("DB_HOST", "localhost"),
+		DBPassword:                            getEnv("DB_PASSWORD", "postgres"),
+		DBName:                                getEnv("DB_NAME", "postgres"),
+		DBPort:                                getEnv("DB_PORT", "5432"),
+		KeyServerRedisAddr:                    getEnv("KEY_SERVER_REDIS_ADDRESS", "localhost:6379"),
+		AuthRedisAddr:                         getEnv("AUTH_REDIS_ADDRESS", "localhost:6379"),
+		RotateKeyDays:                         getEnvAsInt("ROTATE_KEY_DAYS", 2),
+		AccessTokenExpirationInMin:            float64(15),
+		RefreshTokenExpirationInMin:           float64(60 * 24 * 7),
+		CSRFTokenExpirationInMin:              float64(30),
+		ForgotPasswordTokenExpirationInMin:    float64(10),
+		EmailVerificationTokenExpirationInMin: float64(10),
+		MaxUsersInPage:                        int32(10),
+		SMTPHost:                              getEnv("SMTP_HOST", ""),
+		SMTPPort:                              getEnv("SMTP_PORT", ""),
+		SMTPEmail:                             getEnv("SMTP_MAIL", ""),
+		SMTPPassword:                          getEnv("SMTP_PASS", ""),
+		WebsiteUrl:                            getEnv("SMTP_PASS", "http://localhost:5173"),
+		WebsiteName:                           getEnv("SMTP_PASS", "EcoNest"),
+		ResetPasswordWebsitePageUrl: getEnv(
+			"SMTP_PASS",
+			"http://localhost:5173/reset-password",
+		),
+		EmailVerificationWebsitePageUrl: getEnv(
+			"SMTP_PASS",
+			"http://localhost:5173/email-verify",
+		),
 	}
 }
 

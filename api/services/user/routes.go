@@ -1,6 +1,7 @@
 package user
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
 	"github.com/SaeedAlian/econest/api/services/auth"
+	"github.com/SaeedAlian/econest/api/services/smtp"
 	"github.com/SaeedAlian/econest/api/types"
 	"github.com/SaeedAlian/econest/api/utils"
 )
@@ -19,10 +21,15 @@ import (
 type Handler struct {
 	db          *db_manager.Manager
 	authHandler *auth.AuthHandler
+	smtpServer  *smtp.SMTPServer
 }
 
-func NewHandler(db *db_manager.Manager, authHandler *auth.AuthHandler) *Handler {
-	return &Handler{db: db, authHandler: authHandler}
+func NewHandler(
+	db *db_manager.Manager,
+	authHandler *auth.AuthHandler,
+	smtpServer *smtp.SMTPServer,
+) *Handler {
+	return &Handler{db: db, authHandler: authHandler, smtpServer: smtpServer}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
@@ -34,7 +41,10 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 	authRouter := router.Methods("POST").Subrouter()
 	authRouter.HandleFunc("/login", h.login).Methods("POST")
+	authRouter.HandleFunc("/forgotpass", h.forgotPasswordRequest).Methods("POST")
+	authRouter.HandleFunc("/forgotpass", h.resetPassword).Methods("PATCH")
 	authRouter.HandleFunc("/refresh", h.refresh).Methods("POST")
+	authRouter.HandleFunc("/email/verify", h.verifyEmail).Methods("PATCH")
 
 	logoutRouter := router.Methods("POST").Subrouter()
 	logoutRouter.HandleFunc("/logout", h.logout).Methods("POST")
@@ -46,7 +56,10 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	withAuthRouter.HandleFunc("/pages", h.getUsersPages).Methods("GET")
 	withAuthRouter.HandleFunc("/me", h.getMe).Methods("GET")
 	withAuthRouter.HandleFunc("/{userId}", h.getUser).Methods("GET")
+	withAuthRouter.HandleFunc("/email/verify", h.verifyEmailRequest).Methods("POST")
 	withAuthRouter.HandleFunc("/", h.updateProfile).Methods("PATCH")
+	withAuthRouter.HandleFunc("/email", h.updateEmail).Methods("PATCH")
+	withAuthRouter.HandleFunc("/password", h.updatePassword).Methods("PATCH")
 	withAuthRouter.HandleFunc(
 		"/ban/{userId}",
 		h.authHandler.WithActionPermissionAuth(
@@ -1314,6 +1327,142 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
+	var payload types.UpdateUserPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidProfilePayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	if payload.Email == nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidProfilePayload)
+		return
+	}
+
+	existingUser, err := h.db.GetUserByEmail(*payload.Email)
+	if err == nil && existingUser.Id != -1 {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrDuplicateEmail,
+		)
+		return
+	}
+	if err != types.ErrUserNotFound {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	err = h.db.UpdateUser(userId, types.UpdateUserPayload{
+		Email:         payload.Email,
+		EmailVerified: utils.Ptr(false),
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) updatePassword(w http.ResponseWriter, r *http.Request) {
+	var payload types.UpdateUserPasswordPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPasswordPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	user, err := h.db.GetUserById(userId)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrInvalidCredentials)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if isPasswordCorrect := auth.ComparePassword(*payload.CurrentPassword, user.Password); !isPasswordCorrect {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidCredentials)
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(*payload.NewPassword)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	err = h.db.UpdateUser(userId, types.UpdateUserPayload{
+		Password: &hashedPassword,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
 func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserSettingsPayload
 	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
@@ -1497,4 +1646,247 @@ func (h *Handler) getMySettings(w http.ResponseWriter, r *http.Request) {
 	})
 
 	utils.WriteJSONInResponse(w, http.StatusOK, settingsRes, nil)
+}
+
+func (h *Handler) forgotPasswordRequest(w http.ResponseWriter, r *http.Request) {
+	var payload types.ForgotPasswordRequestPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidForgotPasswordRequestPayload,
+		)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	user, err := h.db.GetUserByEmail(payload.Email)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrInvalidCredentials)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+	if !user.EmailVerified {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrEmailNotVerified)
+		return
+	}
+
+	expirationInMin := config.Env.ForgotPasswordTokenExpirationInMin
+
+	resetToken, _, err := h.authHandler.GenerateToken(user.Id, expirationInMin)
+
+	resetLink := fmt.Sprintf("%s?token=%s", config.Env.ResetPasswordWebsitePageUrl, resetToken)
+
+	err = h.smtpServer.SendPasswordResetRequestMail(
+		user.FullName.String,
+		user.Email,
+		resetLink,
+		config.Env.WebsiteName,
+		config.Env.WebsiteUrl,
+		int(expirationInMin),
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrOnSendingMail,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrTokenIsMissing,
+		)
+		return
+	}
+
+	var payload types.ResetPasswordPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidResetPasswordPayload,
+		)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	claims := types.UserJWTClaims{}
+
+	_, err := h.authHandler.ValidateToken(token, &claims)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidTokenReceived,
+		)
+		return
+	}
+
+	user, err := h.db.GetUserById(claims.UserId)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrInvalidCredentials)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	hashedPassword, err := auth.HashPassword(payload.NewPassword)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	err = h.db.UpdateUser(user.Id, types.UpdateUserPayload{
+		Password: &hashedPassword,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) verifyEmailRequest(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	user, err := h.db.GetUserById(userId)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrInvalidCredentials)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+	if user.EmailVerified {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrEmailAlreadyVerified)
+		return
+	}
+
+	expirationInMin := config.Env.EmailVerificationTokenExpirationInMin
+
+	verificationToken, _, err := h.authHandler.GenerateToken(user.Id, expirationInMin)
+
+	verificationLink := fmt.Sprintf(
+		"%s?token=%s",
+		config.Env.EmailVerificationWebsitePageUrl,
+		verificationToken,
+	)
+
+	err = h.smtpServer.SendEmailVerificationRequestMail(
+		user.FullName.String,
+		user.Email,
+		verificationLink,
+		config.Env.WebsiteName,
+		config.Env.WebsiteUrl,
+		int(expirationInMin),
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrOnSendingMail,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.URL.Query().Get("token")
+	if token == "" {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrTokenIsMissing,
+		)
+		return
+	}
+
+	claims := types.UserJWTClaims{}
+
+	_, err := h.authHandler.ValidateToken(token, &claims)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidTokenReceived,
+		)
+		return
+	}
+
+	user, err := h.db.GetUserById(claims.UserId)
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrInvalidCredentials)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	err = h.db.UpdateUser(user.Id, types.UpdateUserPayload{
+		EmailVerified: utils.Ptr(true),
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }

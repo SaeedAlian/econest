@@ -15,6 +15,14 @@ type LoginUserPayload struct {
 	Password string `json:"password" validate:"required,min=6,max=130"`
 }
 
+type ForgotPasswordRequestPayload struct {
+	Email string `json:"email" validate:"required,email"`
+}
+
+type ResetPasswordPayload struct {
+	NewPassword string `json:"newPassword" validate:"required,min=6,max=130"`
+}
+
 type UserJWTClaims struct {
 	UserId    int    `json:"userId"`
 	ExpiresAt int64  `json:"expiresAt"`
