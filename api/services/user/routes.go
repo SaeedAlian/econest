@@ -1277,6 +1277,26 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 
 	userId := cUserId.(int)
 
+	if payload.Username != nil {
+		existingUser, err := h.db.GetUserByUsername(*payload.Username)
+		if err == nil && existingUser.Id != -1 {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusUnauthorized,
+				types.ErrDuplicateUsername,
+			)
+			return
+		}
+		if err != types.ErrUserNotFound {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusInternalServerError,
+				types.ErrInternalServer,
+			)
+			return
+		}
+	}
+
 	err := h.db.UpdateUser(userId, types.UpdateUserPayload{
 		Username:  payload.Username,
 		FullName:  payload.FullName,

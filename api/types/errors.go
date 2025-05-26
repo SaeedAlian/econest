@@ -37,6 +37,7 @@ var (
 		"inconsistent attribute presence: some but not all pvos have attribute_id",
 	)
 	ErrDuplicateUsernameOrEmail = errors.New("another user with this username/email already exists")
+	ErrDuplicateUsername        = errors.New("another user with this username already exists")
 	ErrInternalServer           = errors.New("internal server error")
 	ErrValidateTokenFailure     = errors.New("failed to validate token")
 	ErrInvalidTokenReceived     = errors.New("invalid token received")
