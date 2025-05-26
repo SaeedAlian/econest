@@ -883,6 +883,12 @@ func buildStoreSearchQuery(query types.StoreSearchQuery, base string) (string, [
 		argsPos++
 	}
 
+	if query.OwnerId != nil {
+		clauses = append(clauses, fmt.Sprintf("owner_id = $%d", argsPos))
+		args = append(args, *query.OwnerId)
+		argsPos++
+	}
+
 	q := base
 	if len(clauses) > 0 {
 		q += " WHERE " + strings.Join(clauses, " AND ")

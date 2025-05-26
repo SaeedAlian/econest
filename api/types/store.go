@@ -86,9 +86,10 @@ type CreateStoreAddressPayload struct {
 }
 
 type StoreSearchQuery struct {
-	Name   *string `json:"name"`
-	Limit  *int    `json:"limit"`
-	Offset *int    `json:"offset"`
+	Name    *string `json:"name"`
+	OwnerId *int    `json:"ownerId"`
+	Limit   *int    `json:"limit"`
+	Offset  *int    `json:"offset"`
 }
 
 type UpdateStorePhoneNumberPayload struct {
