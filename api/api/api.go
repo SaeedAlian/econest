@@ -12,6 +12,7 @@ import (
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
 	"github.com/SaeedAlian/econest/api/services/auth"
 	"github.com/SaeedAlian/econest/api/services/smtp"
+	"github.com/SaeedAlian/econest/api/services/store"
 	"github.com/SaeedAlian/econest/api/services/user"
 )
 
@@ -33,6 +34,7 @@ func (s *Server) Run() error {
 	router := mux.NewRouter()
 
 	userSubrouter := router.PathPrefix("/user").Subrouter()
+	storeSubrouter := router.PathPrefix("/store").Subrouter()
 
 	authCache := redis.NewClient(&redis.Options{
 		Addr: config.Env.KeyServerRedisAddr,
@@ -49,6 +51,9 @@ func (s *Server) Run() error {
 
 	userService := user.NewHandler(dbManager, authHandler, smtpServer)
 	userService.RegisterRoutes(userSubrouter)
+
+	storeService := store.NewHandler(dbManager, authHandler, smtpServer)
+	storeService.RegisterRoutes(storeSubrouter)
 
 	log.Println("API Listening on ", s.addr)
 

@@ -91,4 +91,12 @@ var (
 	ErrEmailAlreadyVerified                = errors.New("email is already verified")
 	ErrInvalidPasswordPayload              = errors.New("invalid password payload")
 	ErrUserIsBanned                        = errors.New("this user is banned")
+	ErrInvalidStorePayload                 = errors.New("invalid store payload")
+	ErrInvalidStoreId                      = errors.New("invalid store id")
+	ErrInvalidOwnerIdQuery                 = errors.New("invalid owner id")
+	ErrCannotAccessStore                   = errors.New("you cannot access this store")
+	ErrDuplicateStoreName                  = errors.New(
+		"another store with this name already exists",
+	)
+	ErrInvalidStoreSettingsPayload = errors.New("invalid store settings payload")
 )

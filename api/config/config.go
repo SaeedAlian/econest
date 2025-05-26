@@ -24,6 +24,7 @@ type Config struct {
 	ForgotPasswordTokenExpirationInMin    float64
 	EmailVerificationTokenExpirationInMin float64
 	MaxUsersInPage                        int32
+	MaxStoresInPage                       int32
 	SMTPHost                              string
 	SMTPPort                              string
 	SMTPEmail                             string
@@ -56,6 +57,7 @@ func InitConfig() Config {
 		ForgotPasswordTokenExpirationInMin:    float64(10),
 		EmailVerificationTokenExpirationInMin: float64(10),
 		MaxUsersInPage:                        int32(10),
+		MaxStoresInPage:                       int32(5),
 		SMTPHost:                              getEnv("SMTP_HOST", ""),
 		SMTPPort:                              getEnv("SMTP_PORT", ""),
 		SMTPEmail:                             getEnv("SMTP_MAIL", ""),

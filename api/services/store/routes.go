@@ -1,0 +1,1549 @@
+package store
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gorilla/mux"
+
+	"github.com/SaeedAlian/econest/api/config"
+	db_manager "github.com/SaeedAlian/econest/api/db/manager"
+	"github.com/SaeedAlian/econest/api/services/auth"
+	"github.com/SaeedAlian/econest/api/services/smtp"
+	"github.com/SaeedAlian/econest/api/types"
+	"github.com/SaeedAlian/econest/api/utils"
+)
+
+type Handler struct {
+	db          *db_manager.Manager
+	authHandler *auth.AuthHandler
+	smtpServer  *smtp.SMTPServer
+}
+
+func NewHandler(
+	db *db_manager.Manager,
+	authHandler *auth.AuthHandler,
+	smtpServer *smtp.SMTPServer,
+) *Handler {
+	return &Handler{db: db, authHandler: authHandler, smtpServer: smtpServer}
+}
+
+func (h *Handler) RegisterRoutes(router *mux.Router) {
+	optionalAuthRouter := router.Methods("GET", "POST", "PATCH", "DELETE").Subrouter()
+	optionalAuthRouter.HandleFunc("/", h.getStores).Methods("GET")
+	optionalAuthRouter.HandleFunc("/pages", h.getStoresPages).Methods("GET")
+	optionalAuthRouter.HandleFunc("/{storeId}", h.getStore).Methods("GET")
+	optionalAuthRouter.HandleFunc("/settings/{storeId}", h.getStoreSettings).Methods("GET")
+	optionalAuthRouter.HandleFunc("/address/{storeId}", h.getStoreAddresses).Methods("GET")
+	optionalAuthRouter.HandleFunc("/phonenumber/{storeId}", h.getStorePhoneNumbers).Methods("GET")
+	optionalAuthRouter.Use(h.authHandler.WithJWTAuthOptional(h.db))
+
+	registerRouter := router.PathPrefix("/register").Methods("POST").Subrouter()
+	registerRouter.HandleFunc("/",
+		h.authHandler.WithActionPermissionAuth(
+			h.register,
+			h.db,
+			[]types.Action{types.ActionCanAddStore},
+		),
+	).Methods("POST")
+	registerRouter.Use(h.authHandler.WithJWTAuth(h.db))
+	registerRouter.Use(h.authHandler.WithCSRFToken())
+
+	withAuthRouter := router.Methods("GET", "POST", "PATCH", "DELETE").Subrouter()
+	withAuthRouter.HandleFunc("/me", h.getMyStores).Methods("GET")
+	withAuthRouter.HandleFunc("/me/{storeId}", h.getMyStore).Methods("GET")
+	withAuthRouter.HandleFunc("/{storeId}", h.authHandler.WithActionPermissionAuth(
+		h.updateStore,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("PATCH")
+	withAuthRouter.HandleFunc("/{storeId}", h.authHandler.WithActionPermissionAuth(
+		h.deleteStore,
+		h.db,
+		[]types.Action{types.ActionCanDeleteStore},
+	)).Methods("DELETE")
+	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
+	withAuthRouter.Use(h.authHandler.WithCSRFToken())
+
+	settingsRouter := withAuthRouter.PathPrefix("/settings").Subrouter()
+	settingsRouter.HandleFunc("/me/{storeId}", h.getMyStoreSettings).Methods("GET")
+	settingsRouter.HandleFunc("/{storeId}", h.authHandler.WithActionPermissionAuth(
+		h.updateSettings,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("PATCH")
+
+	addressHandlerRouter := withAuthRouter.PathPrefix("/address").Subrouter()
+	addressHandlerRouter.HandleFunc("/{storeId}", h.authHandler.WithActionPermissionAuth(
+		h.createAddress,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("POST")
+	addressHandlerRouter.HandleFunc("/me/{storeId}", h.getMyStoreAddresses).Methods("GET")
+	addressHandlerRouter.HandleFunc("/{addrId}", h.authHandler.WithActionPermissionAuth(
+		h.updateAddress,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("PATCH")
+	addressHandlerRouter.HandleFunc("/{addrId}", h.authHandler.WithActionPermissionAuth(
+		h.deleteAddress,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("DELETE")
+
+	phoneNumberHandlerRouter := withAuthRouter.PathPrefix("/phonenumber").Subrouter()
+	phoneNumberHandlerRouter.HandleFunc("/{storeId}", h.authHandler.WithActionPermissionAuth(
+		h.createPhoneNumber,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("POST")
+	phoneNumberHandlerRouter.HandleFunc("/me/{storeId}", h.getMyStorePhoneNumbers).Methods("GET")
+	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.authHandler.WithActionPermissionAuth(
+		h.updatePhoneNumber,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("PATCH")
+	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.authHandler.WithActionPermissionAuth(
+		h.deletePhoneNumber,
+		h.db,
+		[]types.Action{types.ActionCanUpdateStore},
+	)).Methods("DELETE")
+}
+
+func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
+	var store types.CreateStorePayload
+	if err := utils.ParseJSONFromRequest(r, &store); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidStorePayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(store); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidPayload(errors[0]),
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	user, err := h.db.GetUserById(userId.(int))
+	if err != nil {
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	createdStore, err := h.db.CreateStore(types.CreateStorePayload{
+		Name:        store.Name,
+		Description: store.Description,
+		OwnerId:     user.Id,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, createdStore, nil)
+}
+
+func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId.(int) {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	var payload types.CreateStoreAddressPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidAddressPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	addrId, err := h.db.CreateStoreAddress(types.CreateStoreAddressPayload{
+		City:    payload.City,
+		State:   payload.State,
+		Street:  payload.Street,
+		Zipcode: payload.Zipcode,
+		Details: payload.Details,
+		StoreId: store.Id,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrCreateAddress)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"addressId": addrId}, nil)
+}
+
+func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId.(int) {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	var payload types.CreateStorePhoneNumberPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPhoneNumberPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	phoneId, err := h.db.CreateStorePhoneNumber(types.CreateStorePhoneNumberPayload{
+		CountryCode: payload.CountryCode,
+		Number:      payload.Number,
+		StoreId:     store.Id,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrCreatePhoneNumber)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"phoneNumberId": phoneId}, nil)
+}
+
+func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	visibilityStatusQuery := r.URL.Query().Get("visibility")
+	var visibilityStatus *types.SettingVisibilityStatus = nil
+
+	if visibilityStatusQuery != "" {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
+		if !visibilityStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVisibilityStatusOption,
+			)
+			return
+		}
+	}
+
+	query := types.StoreAddressSearchQuery{
+		VisibilityStatus: visibilityStatus,
+	}
+
+	addresses, err := h.db.GetStoreAddresses(store.Id, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, addresses, nil)
+}
+
+func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	visibilityStatusQuery := r.URL.Query().Get("visibility")
+	var visibilityStatus *types.SettingVisibilityStatus = nil
+
+	verificationStatusQuery := r.URL.Query().Get("verified")
+	var verificationStatus *types.CredentialVerificationStatus = nil
+
+	if visibilityStatusQuery != "" {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
+		if !visibilityStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVisibilityStatusOption,
+			)
+			return
+		}
+	}
+
+	if verificationStatusQuery != "" {
+		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
+		if !verificationStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVerificationStatusOption,
+			)
+			return
+		}
+	}
+
+	query := types.StorePhoneNumberSearchQuery{
+		VerificationStatus: verificationStatus,
+		VisibilityStatus:   visibilityStatus,
+	}
+
+	phones, err := h.db.GetStorePhoneNumbers(store.Id, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, phones, nil)
+}
+
+func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
+	addrIdParam := mux.Vars(r)["addrId"]
+
+	addrId, err := strconv.Atoi(addrIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidAddressId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	var payload types.UpdateStoreAddressPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidAddressPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	storeAddr, err := h.db.GetStoreAddressById(addrId)
+	if err != nil {
+		if err == types.ErrStoreAddressNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeAddr.StoreId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessAddress)
+		return
+	}
+
+	err = h.db.UpdateStoreAddress(addrId, store.Id, types.UpdateStoreAddressPayload{
+		State:    payload.State,
+		City:     payload.City,
+		Street:   payload.Street,
+		Zipcode:  payload.Zipcode,
+		Details:  payload.Details,
+		IsPublic: payload.IsPublic,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrUpdateAddress)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
+	phoneIdParam := mux.Vars(r)["phoneId"]
+
+	phoneId, err := strconv.Atoi(phoneIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidPhoneNumberId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	var payload types.UpdateStorePhoneNumberPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPhoneNumberPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	storePhone, err := h.db.GetStorePhoneNumberById(phoneId)
+	if err != nil {
+		if err == types.ErrStorePhoneNumberNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	store, err := h.db.GetStoreById(storePhone.StoreId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessPhoneNumber)
+		return
+	}
+
+	err = h.db.UpdateStorePhoneNumber(phoneId, store.Id, types.UpdateStorePhoneNumberPayload{
+		CountryCode: payload.CountryCode,
+		Number:      payload.Number,
+		IsPublic:    payload.IsPublic,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrUpdatePhoneNumber)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
+	addrIdParam := mux.Vars(r)["addrId"]
+
+	addrId, err := strconv.Atoi(addrIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidAddressId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	storeAddr, err := h.db.GetStoreAddressById(addrId)
+	if err != nil {
+		if err == types.ErrStoreAddressNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeAddr.StoreId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessAddress)
+		return
+	}
+
+	err = h.db.DeleteStoreAddress(addrId, store.Id)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrDeleteAddress)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
+	phoneIdParam := mux.Vars(r)["phoneId"]
+
+	phoneId, err := strconv.Atoi(phoneIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidPhoneNumberId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	storePhone, err := h.db.GetStorePhoneNumberById(phoneId)
+	if err != nil {
+		if err == types.ErrStorePhoneNumberNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	store, err := h.db.GetStoreById(storePhone.StoreId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessPhoneNumber)
+		return
+	}
+
+	err = h.db.DeleteStorePhoneNumber(phoneId, store.Id)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrDeletePhoneNumber)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+	userHasFullAccess := false
+
+	if cLoggedUserRoleId != nil {
+		loggedUserRoleId := cLoggedUserRoleId.(int)
+
+		loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+			[]types.Resource{types.ResourceStoresFullAccess},
+			loggedUserRoleId,
+		)
+		if err != nil {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			return
+		}
+
+		userHasFullAccess = loggedUserHasFullAccess
+	}
+
+	visibilityStatusQuery := r.URL.Query().Get("visibility")
+	var visibilityStatus *types.SettingVisibilityStatus = nil
+
+	if visibilityStatusQuery != "" {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
+		if !visibilityStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVisibilityStatusOption,
+			)
+			return
+		}
+	}
+
+	if !userHasFullAccess {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
+	}
+
+	query := types.StoreAddressSearchQuery{
+		VisibilityStatus: visibilityStatus,
+	}
+
+	addresses, err := h.db.GetStoreAddresses(storeId, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredAddresses := []map[string]any{}
+
+	for _, a := range addresses {
+		f := utils.FilterStruct(a, map[string]bool{
+			"public":         true,
+			"isPublic":       a.IsPublic,
+			"needPermission": userHasFullAccess,
+		})
+
+		filteredAddresses = append(filteredAddresses, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredAddresses, nil)
+}
+
+func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+	userHasFullAccess := false
+
+	if cLoggedUserRoleId != nil {
+		loggedUserRoleId := cLoggedUserRoleId.(int)
+
+		loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+			[]types.Resource{types.ResourceStoresFullAccess},
+			loggedUserRoleId,
+		)
+		if err != nil {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			return
+		}
+
+		userHasFullAccess = loggedUserHasFullAccess
+	}
+
+	visibilityStatusQuery := r.URL.Query().Get("visibility")
+	var visibilityStatus *types.SettingVisibilityStatus = nil
+
+	verificationStatusQuery := r.URL.Query().Get("verified")
+	var verificationStatus *types.CredentialVerificationStatus = nil
+
+	if visibilityStatusQuery != "" {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
+		if !visibilityStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVisibilityStatusOption,
+			)
+			return
+		}
+	}
+
+	if verificationStatusQuery != "" {
+		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
+		if !verificationStatus.IsValid() {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidVerificationStatusOption,
+			)
+			return
+		}
+	}
+
+	if !userHasFullAccess {
+		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
+		verificationStatus = utils.Ptr(types.CredentialVerificationStatusVerified)
+	}
+
+	query := types.StorePhoneNumberSearchQuery{
+		VerificationStatus: verificationStatus,
+		VisibilityStatus:   visibilityStatus,
+	}
+
+	phones, err := h.db.GetStorePhoneNumbers(storeId, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredPhones := []map[string]any{}
+
+	for _, p := range phones {
+		f := utils.FilterStruct(p, map[string]bool{
+			"public":         true,
+			"isPublic":       p.IsPublic,
+			"needPermission": userHasFullAccess,
+		})
+
+		filteredPhones = append(filteredPhones, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredPhones, nil)
+}
+
+func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+	userHasFullAccess := false
+
+	if cLoggedUserRoleId != nil {
+		loggedUserRoleId := cLoggedUserRoleId.(int)
+
+		loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+			[]types.Resource{types.ResourceStoresFullAccess},
+			loggedUserRoleId,
+		)
+		if err != nil {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			return
+		}
+
+		userHasFullAccess = loggedUserHasFullAccess
+	}
+
+	nameQuery := r.URL.Query().Get("name")
+	ownerIdQuery := r.URL.Query().Get("owner")
+	pageQuery := r.URL.Query().Get("p")
+
+	var name *string = nil
+	var ownerId *int = nil
+	var limit *int = nil
+	var offset *int = nil
+
+	if nameQuery != "" {
+		name = utils.Ptr(nameQuery)
+	}
+
+	if ownerIdQuery != "" && userHasFullAccess {
+		intOwnerId, err := strconv.Atoi(ownerIdQuery)
+		if err != nil {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidOwnerIdQuery,
+			)
+			return
+		}
+
+		ownerId = utils.Ptr(intOwnerId)
+	}
+
+	limit = utils.Ptr(int(config.Env.MaxStoresInPage))
+
+	if pageQuery != "" {
+		intPage, err := strconv.Atoi(pageQuery)
+		if err != nil {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidPageQuery,
+			)
+			return
+		}
+
+		offset = utils.Ptr((*limit) * (intPage - 1))
+	} else {
+		offset = utils.Ptr(0)
+	}
+
+	query := types.StoreSearchQuery{
+		Name:    name,
+		OwnerId: ownerId,
+		Limit:   limit,
+		Offset:  offset,
+	}
+
+	stores, err := h.db.GetStoresWithSettings(query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredStores := []map[string]any{}
+
+	for _, s := range stores {
+		f := utils.FilterStruct(s.Store, map[string]bool{
+			"public":         true,
+			"publicOwner":    s.PublicOwner,
+			"needPermission": userHasFullAccess,
+		})
+
+		filteredStores = append(filteredStores, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredStores, nil)
+}
+
+func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+	userHasFullAccess := false
+
+	if cLoggedUserRoleId != nil {
+		loggedUserRoleId := cLoggedUserRoleId.(int)
+
+		loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+			[]types.Resource{types.ResourceStoresFullAccess},
+			loggedUserRoleId,
+		)
+		if err != nil {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			return
+		}
+
+		userHasFullAccess = loggedUserHasFullAccess
+	}
+
+	nameQuery := r.URL.Query().Get("name")
+	ownerIdQuery := r.URL.Query().Get("owner")
+
+	var name *string = nil
+	var ownerId *int = nil
+
+	if nameQuery != "" {
+		name = utils.Ptr(nameQuery)
+	}
+
+	if ownerIdQuery != "" && userHasFullAccess {
+		intOwnerId, err := strconv.Atoi(ownerIdQuery)
+		if err != nil {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrInvalidOwnerIdQuery,
+			)
+			return
+		}
+
+		ownerId = utils.Ptr(intOwnerId)
+	}
+
+	query := types.StoreSearchQuery{
+		Name:    name,
+		OwnerId: ownerId,
+	}
+
+	count, err := h.db.GetStoresCount(query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxStoresInPage))
+
+	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
+		"pages": pageCount,
+	}, nil)
+}
+
+func (h *Handler) getStore(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	cLoggedUserRoleId := ctx.Value("userRoleId")
+	userHasFullAccess := false
+
+	if cLoggedUserRoleId != nil {
+		loggedUserRoleId := cLoggedUserRoleId.(int)
+
+		loggedUserHasFullAccess, err := h.db.IsRoleHasAllResourcePermissions(
+			[]types.Resource{types.ResourceStoresFullAccess},
+			loggedUserRoleId,
+		)
+		if err != nil {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			return
+		}
+
+		userHasFullAccess = loggedUserHasFullAccess
+	}
+
+	store, err := h.db.GetStoreWithSettingsById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	filteredStore := utils.FilterStruct(store.Store, map[string]bool{
+		"public":         true,
+		"publicOwner":    store.PublicOwner,
+		"needPermission": userHasFullAccess,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredStore, nil)
+}
+
+func (h *Handler) getMyStores(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	nameQuery := r.URL.Query().Get("name")
+
+	var name *string = nil
+
+	if nameQuery != "" {
+		name = utils.Ptr(nameQuery)
+	}
+
+	query := types.StoreSearchQuery{
+		Name:    name,
+		OwnerId: utils.Ptr(userId.(int)),
+	}
+
+	stores, err := h.db.GetStores(query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		return
+	}
+
+	filteredStores := []map[string]any{}
+
+	for _, s := range stores {
+		f := utils.FilterStruct(s, map[string]bool{
+			"public":         true,
+			"publicOwner":    true,
+			"needPermission": true,
+		})
+
+		filteredStores = append(filteredStores, f)
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredStores, nil)
+}
+
+func (h *Handler) getMyStore(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId.(int) {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	filteredStore := utils.FilterStruct(store, map[string]bool{
+		"public":         true,
+		"publicOwner":    true,
+		"needPermission": true,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredStore, nil)
+}
+
+func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
+	var payload types.UpdateStorePayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidStorePayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	if payload.Name != nil {
+		existingStore, err := h.db.GetStoreByName(*payload.Name)
+		if err == nil && existingStore.Id != -1 {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusUnauthorized,
+				types.ErrDuplicateStoreName,
+			)
+			return
+		}
+		if err != types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(
+				w,
+				http.StatusInternalServerError,
+				types.ErrInternalServer,
+			)
+			return
+		}
+	}
+
+	err = h.db.UpdateStore(storeId, types.UpdateStorePayload{
+		Name:        payload.Name,
+		Description: payload.Description,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
+	var payload types.UpdateStoreSettingsPayload
+	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidStoreSettingsPayload)
+		return
+	}
+
+	if err := utils.Validator.Struct(payload); err != nil {
+		errors := err.(validator.ValidationErrors)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+		return
+	}
+
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	err = h.db.UpdateStoreSettings(store.Id, payload)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) getStoreSettings(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	settings, err := h.db.GetStoreSettings(storeId)
+	if err != nil {
+		if err == types.ErrStoreSettingsNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	filteredSettings := utils.FilterStruct(settings, map[string]bool{
+		"public": true,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, filteredSettings, nil)
+}
+
+func (h *Handler) getMyStoreSettings(w http.ResponseWriter, r *http.Request) {
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId.(int) {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	settings, err := h.db.GetStoreSettings(store.Id)
+	if err != nil {
+		if err == types.ErrStoreSettingsNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	settingsRes := utils.FilterStruct(settings, map[string]bool{
+		"public":         true,
+		"private":        true,
+		"needPermission": true,
+	})
+
+	utils.WriteJSONInResponse(w, http.StatusOK, settingsRes, nil)
+}
+
+func (h *Handler) deleteStore(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	cUserId := ctx.Value("userId")
+
+	if cUserId == nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
+		)
+		return
+	}
+
+	userId := cUserId.(int)
+
+	storeIdParam := mux.Vars(r)["storeId"]
+
+	storeId, err := strconv.Atoi(storeIdParam)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			types.ErrInvalidStoreId,
+		)
+		return
+	}
+
+	store, err := h.db.GetStoreById(storeId)
+	if err != nil {
+		if err == types.ErrStoreNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
+		return
+	}
+
+	if store.OwnerId != userId {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessStore)
+		return
+	}
+
+	err = h.db.DeleteStore(storeId)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
