@@ -174,6 +174,57 @@ func (h *AuthHandler) WithVerifiedEmail(
 	}
 }
 
+func (h *AuthHandler) WithUnbannedProfile(
+	manager *db_manager.Manager,
+) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == "GET" || r.Method == "OPTIONS" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			ctx := r.Context()
+			userId := ctx.Value("userId")
+			if userId == nil {
+				http.Error(
+					w,
+					types.ErrAuthenticationCredentialsNotFound.Error(),
+					http.StatusUnauthorized,
+				)
+				return
+			}
+
+			user, err := manager.GetUserById(userId.(int))
+			if err != nil {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusInternalServerError,
+					types.ErrInternalServer,
+				)
+				return
+			}
+			if user.IsBanned {
+				refreshToken, err := r.Cookie("refresh_token")
+
+				if err == nil && refreshToken != nil {
+					claims := types.UserJWTClaims{}
+					_, err := h.ValidateToken(refreshToken.Value, &claims)
+					if err == nil {
+						h.RevokeRefreshToken(claims.JTI)
+						h.RevokeCSRFToken(claims.UserId)
+					}
+				}
+
+				utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrUserIsBanned)
+				return
+			}
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (h *AuthHandler) WithActionPermissionAuth(
 	handler http.HandlerFunc,
 	manager *db_manager.Manager,

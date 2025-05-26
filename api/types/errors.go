@@ -90,4 +90,5 @@ var (
 	ErrInvalidResetPasswordPayload         = errors.New("")
 	ErrEmailAlreadyVerified                = errors.New("")
 	ErrInvalidPasswordPayload              = errors.New("")
+	ErrUserIsBanned                        = errors.New("")
 )
