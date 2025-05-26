@@ -81,7 +81,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	phoneNumberHandlerRouter := withAuthRouter.PathPrefix("/phonenumber").Subrouter()
 	phoneNumberHandlerRouter.HandleFunc("/", h.createPhoneNumber).Methods("POST")
 	phoneNumberHandlerRouter.HandleFunc("/", h.getMyPhoneNumbers).Methods("GET")
-	addressHandlerRouter.HandleFunc("/{userId}", h.getUserPhoneNumbers).Methods("GET")
+	phoneNumberHandlerRouter.HandleFunc("/{userId}", h.getUserPhoneNumbers).Methods("GET")
 	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.updatePhoneNumber).Methods("PATCH")
 	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.deletePhoneNumber).Methods("DELETE")
 }
