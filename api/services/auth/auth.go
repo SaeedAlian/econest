@@ -90,6 +90,49 @@ func (h *AuthHandler) WithJWTAuth(
 	}
 }
 
+func (h *AuthHandler) WithJWTAuthOptional(
+	manager *db_manager.Manager,
+) func(next http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			authHeader := r.Header.Get("Authorization")
+			if authHeader == "" {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			tokenStr := strings.Split(authHeader, "Bearer ")[1]
+
+			claims := types.UserJWTClaims{}
+			token, err := h.ValidateToken(tokenStr, &claims)
+			if err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			if !token.Valid {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			userId := claims.UserId
+
+			u, err := manager.GetUserById(userId)
+			if u == nil || err != nil {
+				next.ServeHTTP(w, r)
+				return
+			}
+
+			ctx := r.Context()
+			ctx = context.WithValue(ctx, "userId", u.Id)
+			ctx = context.WithValue(ctx, "userRoleId", u.RoleId)
+			r = r.WithContext(ctx)
+
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
 func (h *AuthHandler) WithCSRFToken() func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
