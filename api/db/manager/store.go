@@ -154,6 +154,33 @@ func (m *Manager) GetStoreById(id int) (*types.Store, error) {
 	return store, nil
 }
 
+func (m *Manager) GetStoreByName(name string) (*types.Store, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM stores WHERE name = $1;",
+		name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	store := new(types.Store)
+	store.Id = -1
+
+	for rows.Next() {
+		store, err = scanStoreRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if store.Id == -1 {
+		return nil, types.ErrStoreNotFound
+	}
+
+	return store, nil
+}
+
 func (m *Manager) GetStoresWithSettings(
 	query types.StoreSearchQuery,
 ) ([]types.StoreWithSettings, error) {
@@ -307,6 +334,33 @@ func (m *Manager) GetStorePhoneNumbers(
 	return phoneNumbers, nil
 }
 
+func (m *Manager) GetStorePhoneNumberById(id int) (*types.StorePhoneNumber, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM phonenumbers WHERE id = $1 AND store_id IS NOT NULL;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	phone := new(types.StorePhoneNumber)
+	phone.Id = -1
+
+	for rows.Next() {
+		phone, err = scanStorePhoneNumberRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if phone.Id == -1 {
+		return nil, types.ErrStorePhoneNumberNotFound
+	}
+
+	return phone, nil
+}
+
 func (m *Manager) GetStoreAddresses(
 	storeId int,
 	query types.StoreAddressSearchQuery,
@@ -365,6 +419,33 @@ func (m *Manager) GetStoreAddresses(
 	}
 
 	return addresses, nil
+}
+
+func (m *Manager) GetStoreAddressById(id int) (*types.StoreAddress, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM addresses WHERE id = $1 AND store_id IS NOT NULL;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	addr := new(types.StoreAddress)
+	addr.Id = -1
+
+	for rows.Next() {
+		addr, err = scanStoreAddressRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if addr.Id == -1 {
+		return nil, types.ErrStoreAddressNotFound
+	}
+
+	return addr, nil
 }
 
 func (m *Manager) GetStoreSettings(storeId int) (*types.StoreSettings, error) {
