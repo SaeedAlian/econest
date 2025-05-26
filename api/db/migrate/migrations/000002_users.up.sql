@@ -37,7 +37,9 @@ CREATE TABLE phonenumbers (
   country_code VARCHAR(5) NOT NULL,
   number VARCHAR(15) NOT NULL UNIQUE,
   is_public BOOLEAN NOT NULL DEFAULT FALSE,
-  verified BOOLEAN NOT NULL DEFAULT FALSE,
+  -- FIX: must turn the default to false
+  -- TODO: create a verification system for phone numbers 
+  verified BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 

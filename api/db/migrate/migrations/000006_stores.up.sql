@@ -2,7 +2,9 @@ CREATE TABLE stores (
   id SERIAL PRIMARY KEY,
   name VARCHAR(255) UNIQUE NOT NULL,
   description VARCHAR(1023) NOT NULL,
-  verified BOOLEAN DEFAULT FALSE,
+  -- FIX: must turn the default to false
+  -- TODO: create a verification system for stores
+  verified BOOLEAN DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
