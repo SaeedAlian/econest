@@ -708,7 +708,14 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.db.UpdateUserAddress(addrId, userId, payload)
+	err = h.db.UpdateUserAddress(addrId, userId, types.UpdateUserAddressPayload{
+		State:    payload.State,
+		City:     payload.City,
+		Street:   payload.Street,
+		Zipcode:  payload.Zipcode,
+		Details:  payload.Details,
+		IsPublic: payload.IsPublic,
+	})
 	if err != nil {
 		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrUpdateAddress)
 		return
@@ -773,7 +780,11 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.db.UpdateUserPhoneNumber(phoneId, userId, payload)
+	err = h.db.UpdateUserPhoneNumber(phoneId, userId, types.UpdateUserPhoneNumberPayload{
+		CountryCode: payload.CountryCode,
+		Number:      payload.Number,
+		IsPublic:    payload.IsPublic,
+	})
 	if err != nil {
 		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrUpdatePhoneNumber)
 		return
