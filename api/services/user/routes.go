@@ -156,7 +156,7 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 			return
 		}
 
-		created_user, err := h.db.CreateUser(types.CreateUserPayload{
+		createdUser, err := h.db.CreateUser(types.CreateUserPayload{
 			Username:  strings.ToLower(user.Username),
 			Email:     strings.ToLower(user.Email),
 			FullName:  user.FullName,
@@ -173,7 +173,7 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 			return
 		}
 
-		utils.WriteJSONInResponse(w, http.StatusCreated, created_user, nil)
+		utils.WriteJSONInResponse(w, http.StatusCreated, createdUser, nil)
 	}
 
 	return callback
@@ -1646,7 +1646,7 @@ func (h *Handler) getMySettings(w http.ResponseWriter, r *http.Request) {
 
 	settings, err := h.db.GetUserSettings(userId.(int))
 	if err != nil {
-		if err == types.ErrUserNotFound {
+		if err == types.ErrUserSettingsNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
 			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
