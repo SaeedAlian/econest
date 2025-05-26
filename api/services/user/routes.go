@@ -126,11 +126,20 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 
 		role, err := h.db.GetRoleByName(roleName)
 		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusInternalServerError,
-				err,
-			)
+			if err == types.ErrRoleNotFound {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusBadRequest,
+					err,
+				)
+			} else {
+				utils.WriteErrorInResponse(
+					w,
+					http.StatusInternalServerError,
+					types.ErrInternalServer,
+				)
+			}
+
 			return
 		}
 
@@ -172,7 +181,12 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.db.GetUserByUsername(payload.Username)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidCredentials)
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrInvalidCredentials)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
 		return
 	}
 
@@ -280,7 +294,12 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 
 	user, err := h.db.GetUserById(claims.UserId)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrInvalidRefreshToken)
+		if err == types.ErrUserNotFound {
+			utils.WriteErrorInResponse(w, http.StatusUnauthorized, types.ErrInvalidRefreshToken)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
 		return
 	}
 
@@ -657,7 +676,12 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 
 	userAddr, err := h.db.GetUserAddressById(addrId)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrUserAddressNotFound)
+		if err == types.ErrUserAddressNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
 		return
 	}
 
@@ -717,7 +741,12 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 
 	userPhone, err := h.db.GetUserPhoneNumberById(phoneId)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrUserPhoneNumberNotFound)
+		if err == types.ErrUserPhoneNumberNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
 		return
 	}
 
@@ -765,7 +794,12 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	userAddr, err := h.db.GetUserAddressById(addrId)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrUserAddressNotFound)
+		if err == types.ErrUserAddressNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
 		return
 	}
 
@@ -813,7 +847,12 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 
 	userPhone, err := h.db.GetUserPhoneNumberById(phoneId)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusNotFound, types.ErrUserPhoneNumberNotFound)
+		if err == types.ErrUserPhoneNumberNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		}
+
 		return
 	}
 
