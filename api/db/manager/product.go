@@ -4,12 +4,61 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"maps"
 	"strings"
 	"time"
 
 	"github.com/SaeedAlian/econest/api/types"
 )
+
+func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return -1, err
+	}
+
+	rowId, err := createProductBaseAsDBTx(tx, p.Base)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	err = createProductTagAssignmentsAsDBTx(tx, rowId, p.TagIds)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	for _, img := range p.Images {
+		_, err := createProductImageAsDBTx(tx, rowId, img)
+		if err != nil {
+			tx.Rollback()
+			return -1, err
+		}
+	}
+
+	for _, spec := range p.Specs {
+		_, err := createProductSpecAsDBTx(tx, rowId, spec)
+		if err != nil {
+			tx.Rollback()
+			return -1, err
+		}
+	}
+
+	for _, variant := range p.Variants {
+		_, err := createProductVariantAsDBTx(tx, rowId, variant)
+		if err != nil {
+			tx.Rollback()
+			return -1, err
+		}
+	}
+
+	if err = tx.Commit(); err != nil {
+		return -1, err
+	}
+
+	return rowId, nil
+}
 
 func (m *Manager) CreateProductCategory(p types.CreateProductCategoryPayload) (int, error) {
 	rowId := -1
@@ -33,27 +82,18 @@ func (m *Manager) CreateProductCategory(p types.CreateProductCategoryPayload) (i
 	return rowId, nil
 }
 
-func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
+func (m *Manager) CreateProductBase(p types.CreateProductBasePayload) (int, error) {
 	rowId := -1
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return -1, err
 	}
+
 	err = tx.QueryRow("INSERT INTO products (name, slug, price, description, subcategory_id) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
 		p.Name, p.Slug, p.Price, p.Description, p.SubcategoryId,
 	).
 		Scan(&rowId)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-
-	_, err = tx.Exec(
-		"INSERT INTO product_variants (quantity, product_id) VALUES ($1, $2);",
-		p.Quantity,
-		rowId,
-	)
 	if err != nil {
 		tx.Rollback()
 		return -1, err
@@ -69,9 +109,7 @@ func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
 		return -1, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+	if err = tx.Commit(); err != nil {
 		return -1, err
 	}
 
@@ -91,29 +129,44 @@ func (m *Manager) CreateProductTag(p types.CreateProductTagPayload) (int, error)
 	return rowId, nil
 }
 
-func (m *Manager) CreateProductTagAssignment(p types.CreateProductTagAssignment) error {
+func (m *Manager) CreateProductTagAssignments(productId int, tagIds []int) error {
+	tagIdsLen := len(tagIds)
+	if tagIdsLen == 0 {
+		return nil
+	}
+
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec("INSERT INTO product_tag_assignments (product_id, tag_id) VALUES ($1, $2);",
-		p.ProductId, p.TagId,
+	valueSqls := make([]string, 0, tagIdsLen)
+	valueArgs := make([]any, 0, tagIdsLen*2)
+
+	for i, tagId := range tagIds {
+		valueSqls = append(valueSqls, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, productId, tagId)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO product_tag_assignments (product_id, tag_id) VALUES %s",
+		strings.Join(valueSqls, ", "),
 	)
+
+	_, err = tx.Exec(query, valueArgs...)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -133,16 +186,31 @@ func (m *Manager) CreateProductOffer(p types.CreateProductOfferPayload) (int, er
 	return rowId, nil
 }
 
-func (m *Manager) CreateProductImage(p types.CreateProductImagePayload) (int, error) {
+func (m *Manager) CreateProductImage(
+	productId int,
+	p types.CreateProductImagePayload,
+) (int, error) {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return -1, err
 	}
 
+	if p.IsMain {
+		_, err := tx.Exec(
+			"UPDATE product_images SET is_main = $1 WHERE product_id = $2",
+			false,
+			productId,
+		)
+		if err != nil {
+			tx.Rollback()
+			return -1, err
+		}
+	}
+
 	rowId := -1
 	err = tx.QueryRow("INSERT INTO product_images (image_name, is_main, product_id) VALUES ($1, $2, $3) RETURNING id;",
-		p.ImageName, p.IsMain, p.ProductId,
+		p.ImageName, p.IsMain, productId,
 	).
 		Scan(&rowId)
 	if err != nil {
@@ -150,21 +218,20 @@ func (m *Manager) CreateProductImage(p types.CreateProductImagePayload) (int, er
 		return -1, err
 	}
 
-	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return -1, err
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return -1, err
 	}
 
 	return rowId, nil
 }
 
-func (m *Manager) CreateProductSpec(p types.CreateProductSpecPayload) (int, error) {
+func (m *Manager) CreateProductSpec(productId int, p types.CreateProductSpecPayload) (int, error) {
 	rowId := -1
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
@@ -173,7 +240,7 @@ func (m *Manager) CreateProductSpec(p types.CreateProductSpecPayload) (int, erro
 	}
 
 	err = tx.QueryRow("INSERT INTO product_specs (label, value, product_id) VALUES ($1, $2, $3) RETURNING id;",
-		p.Label, p.Value, p.ProductId,
+		p.Label, p.Value, productId,
 	).
 		Scan(&rowId)
 	if err != nil {
@@ -181,14 +248,13 @@ func (m *Manager) CreateProductSpec(p types.CreateProductSpecPayload) (int, erro
 		return -1, err
 	}
 
-	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
+	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
 	if err != nil {
 		tx.Rollback()
 		return -1, err
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return -1, err
 	}
 
@@ -203,8 +269,8 @@ func (m *Manager) CreateProductAttribute(p types.CreateProductAttributePayload) 
 		return -1, err
 	}
 
-	err = tx.QueryRow("INSERT INTO product_attributes (label, product_id) VALUES ($1, $2) RETURNING id;",
-		p.Label, p.ProductId,
+	err = tx.QueryRow("INSERT INTO product_attributes (label) VALUES ($1) RETURNING id;",
+		p.Label,
 	).
 		Scan(&rowId)
 	if err != nil {
@@ -212,22 +278,27 @@ func (m *Manager) CreateProductAttribute(p types.CreateProductAttributePayload) 
 		return -1, err
 	}
 
-	err = updateProductUpdatedAtColumnAsDBTx(tx, p.ProductId, time.Now())
-	if err != nil {
-		tx.Rollback()
-		return -1, err
+	for _, o := range p.Options {
+		_, err := tx.Exec(
+			"INSERT INTO product_attribute_options (value, attribute_id) VALUES ($1, $2);",
+			o, rowId,
+		)
+		if err != nil {
+			tx.Rollback()
+			return -1, err
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return -1, err
 	}
 
 	return rowId, nil
 }
 
-func (m *Manager) CreateProductAttributeOption(
-	p types.CreateProductAttributeOptionPayload,
+func (m *Manager) CreateProductVariant(
+	productId int,
+	p types.CreateProductVariantPayload,
 ) (int, error) {
 	rowId := -1
 	ctx := context.Background()
@@ -236,174 +307,39 @@ func (m *Manager) CreateProductAttributeOption(
 		return -1, err
 	}
 
-	var productId int
-	err = tx.QueryRow(
-		"SELECT product_id FROM product_attributes WHERE id = $1;",
-		p.AttributeId,
-	).Scan(&productId)
+	err = tx.QueryRow("INSERT INTO product_variants (quantity, product_id) VALUES ($1, $2) RETURNING id;",
+		p.Quantity, productId,
+	).
+		Scan(&rowId)
 	if err != nil {
 		tx.Rollback()
 		return -1, err
 	}
 
-	variantRows, err := tx.Query(
-		"SELECT id FROM product_variants WHERE product_id = $1;",
-		productId,
-	)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-	defer variantRows.Close()
-
-	variantIds := []int{}
-	for variantRows.Next() {
-		var id int
-		if err := variantRows.Scan(&id); err != nil {
+	for _, attrSet := range p.AttributeSets {
+		attrId := -1
+		err := tx.QueryRow(
+			"SELECT attribute_id FROM product_attribute_options WHERE id = $1",
+			attrSet.OptionId,
+		).Scan(&attrId)
+		if err != nil {
 			tx.Rollback()
 			return -1, err
 		}
-		variantIds = append(variantIds, id)
-	}
-
-	attrRows, err := tx.Query(`
-    SELECT id FROM product_attributes pa 
-    WHERE product_id = $1 AND EXISTS (
-      SELECT 1 FROM product_attribute_options pao WHERE pao.attribute_id = pa.id
-    );
-  `, productId)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-	defer attrRows.Close()
-
-	attributeIds := []int{}
-	for attrRows.Next() {
-		var id int
-		if err := attrRows.Scan(&id); err != nil {
+		if attrId != attrSet.AttributeId {
 			tx.Rollback()
-			return -1, err
+			return -1, types.ErrInvalidOptionId
 		}
-		attributeIds = append(attributeIds, id)
-	}
 
-	optionMap := map[int][]int{}
-	for _, attrId := range attributeIds {
-		rows, err := tx.Query(
-			"SELECT id FROM product_attribute_options WHERE attribute_id = $1;",
-			attrId,
+		_, err = tx.Exec(
+			"INSERT INTO product_variant_attribute_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
+			rowId,
+			attrSet.AttributeId,
+			attrSet.OptionId,
 		)
 		if err != nil {
 			tx.Rollback()
 			return -1, err
-		}
-		defer rows.Close()
-
-		var opts []int
-		for rows.Next() {
-			var optId int
-			if err := rows.Scan(&optId); err != nil {
-				tx.Rollback()
-				return -1, err
-			}
-			opts = append(opts, optId)
-		}
-		optionMap[attrId] = opts
-	}
-
-	err = tx.QueryRow(
-		"INSERT INTO product_attribute_options (attribute_id, value) VALUES ($1, $2) RETURNING id;",
-		p.AttributeId,
-		p.Value,
-	).Scan(&rowId)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-
-	pvoRows, err := tx.Query(`SELECT 
-    pvo.* FROM product_variant_options pvo 
-    JOIN product_variants pv ON pvo.variant_id = pv.id
-    WHERE pv.product_id = $1;
-  `, productId)
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-	defer pvoRows.Close()
-
-	pvos := []types.ProductVariantOption{}
-	for pvoRows.Next() {
-		pvo, err := scanProductVariantOptionRow(pvoRows)
-		if err != nil {
-			tx.Rollback()
-			return -1, err
-		}
-		pvos = append(pvos, *pvo)
-	}
-
-	pvoFound, err := allOrNoneHaveAttribute(pvos, p.AttributeId, len(variantIds))
-	if err != nil {
-		tx.Rollback()
-		return -1, err
-	}
-
-	if !pvoFound {
-		for _, variantId := range variantIds {
-			_, err := tx.Exec(
-				"INSERT INTO product_variant_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
-				variantId,
-				p.AttributeId,
-				rowId,
-			)
-			if err != nil {
-				tx.Rollback()
-				return -1, err
-			}
-		}
-	} else {
-		// attribute exists already in variants
-		// remove the current attribute from option map
-		filteredOptionMap := make(map[int][]int)
-
-		for k, v := range optionMap {
-			if k != p.AttributeId {
-				filteredOptionMap[k] = v
-			}
-		}
-
-		combinations := createAttributeCombinations(filteredOptionMap)
-
-		for _, combo := range combinations {
-			var variantId int
-			err := tx.QueryRow("INSERT INTO product_variants (product_id) VALUES ($1) RETURNING id;", productId).Scan(&variantId)
-			if err != nil {
-				tx.Rollback()
-				return -1, err
-			}
-
-			for _, keymap := range combo {
-				for attributeId, optionId := range keymap {
-					_, err := tx.Exec(
-						"INSERT INTO product_variant_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
-						variantId, attributeId, optionId,
-					)
-					if err != nil {
-						tx.Rollback()
-						return -1, err
-					}
-				}
-			}
-
-			_, err = tx.Exec(
-				"INSERT INTO product_variant_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
-				variantId, p.AttributeId, rowId,
-			)
-			if err != nil {
-				tx.Rollback()
-				return -1, err
-			}
 		}
 	}
 
@@ -413,9 +349,7 @@ func (m *Manager) CreateProductAttributeOption(
 		return -1, err
 	}
 
-	err = tx.Commit()
-	if err != nil {
-		tx.Rollback()
+	if err = tx.Commit(); err != nil {
 		return -1, err
 	}
 
@@ -435,7 +369,35 @@ func (m *Manager) CreateProductComment(p types.CreateProductCommentPayload) (int
 	return rowId, nil
 }
 
-func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, error) {
+func (m *Manager) GetProductsBase(query types.ProductSearchQuery) ([]types.ProductBase, error) {
+	var base string
+	base = "SELECT p.* FROM products p"
+
+	q, args := buildProductSearchQuery(query, base)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	products := []types.ProductBase{}
+
+	for rows.Next() {
+		product, err := scanProductBaseRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		products = append(products, *product)
+	}
+
+	return products, nil
+}
+
+func (m *Manager) GetProducts(
+	query types.ProductSearchQuery,
+) ([]types.Product, error) {
 	var base string
 	base = "SELECT p.* FROM products p"
 
@@ -450,35 +412,7 @@ func (m *Manager) GetProducts(query types.ProductSearchQuery) ([]types.Product, 
 	products := []types.Product{}
 
 	for rows.Next() {
-		product, err := scanProductRow(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		products = append(products, *product)
-	}
-
-	return products, nil
-}
-
-func (m *Manager) GetProductsWithMainInfo(
-	query types.ProductSearchQuery,
-) ([]types.ProductWithMainInfo, error) {
-	var base string
-	base = "SELECT p.* FROM products p"
-
-	q, args := buildProductSearchQuery(query, base)
-
-	rows, err := m.db.Query(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	products := []types.ProductWithMainInfo{}
-
-	for rows.Next() {
-		product, err := scanProductRow(rows)
+		productBase, err := scanProductBaseRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -486,7 +420,7 @@ func (m *Manager) GetProductsWithMainInfo(
 		var totalQuantity int
 		err = m.db.QueryRow(
 			"SELECT COALESCE(SUM(quantity), 0) FROM product_variants WHERE product_id = $1;",
-			product.Id,
+			productBase.Id,
 		).Scan(&totalQuantity)
 		if err != nil {
 			return nil, err
@@ -495,57 +429,54 @@ func (m *Manager) GetProductsWithMainInfo(
 		var offer *types.ProductOffer
 		offerRows, err := m.db.Query(
 			"SELECT * FROM product_offers WHERE product_id = $1;",
-			product.Id,
+			productBase.Id,
 		)
 		if err != nil {
 			return nil, err
 		}
+		defer offerRows.Close()
 		if offerRows.Next() {
 			offer, err = scanProductOfferRow(offerRows)
 			if err != nil {
-				offerRows.Close()
 				return nil, err
 			}
 		}
-		offerRows.Close()
 
 		var mainImage *types.ProductImage
 		imageRows, err := m.db.Query(
 			"SELECT * FROM product_images WHERE product_id = $1 AND is_main = true;",
-			product.Id,
+			productBase.Id,
 		)
 		if err != nil {
 			return nil, err
 		}
+		defer imageRows.Close()
 		if imageRows.Next() {
 			mainImage, err = scanProductImageRow(imageRows)
 			if err != nil {
-				imageRows.Close()
 				return nil, err
 			}
 		}
-		imageRows.Close()
 
 		var storeInfo *types.StoreInfo
 		storeInfoRows, err := m.db.Query(`
       SELECT s.id, s.name FROM stores s WHERE s.id IN (
         SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
       )
-    `, product.Id)
+    `, productBase.Id)
 		if err != nil {
 			return nil, err
 		}
+		defer storeInfoRows.Close()
 		if storeInfoRows.Next() {
 			storeInfo, err = scanStoreInfoRow(storeInfoRows)
 			if err != nil {
-				storeInfoRows.Close()
 				return nil, err
 			}
 		}
-		storeInfoRows.Close()
 
-		products = append(products, types.ProductWithMainInfo{
-			Product:       *product,
+		products = append(products, types.Product{
+			ProductBase:   *productBase,
 			TotalQuantity: totalQuantity,
 			Offer:         offer,
 			MainImage:     mainImage,
@@ -633,10 +564,7 @@ func (m *Manager) GetProductCategoriesWithParents(
 	result := make([]types.ProductCategoryWithParents, 0, len(allCategories))
 	for _, cat := range allCategories {
 		categoryWithParents := types.ProductCategoryWithParents{
-			Id:        cat.Id,
-			Name:      cat.Name,
-			CreatedAt: cat.CreatedAt,
-			UpdatedAt: cat.UpdatedAt,
+			ProductCategory: *cat,
 		}
 
 		currentParentId := cat.ParentCategoryId
@@ -652,14 +580,13 @@ func (m *Manager) GetProductCategoriesWithParents(
 				if err != nil {
 					return nil, err
 				}
+				defer parentRows.Close()
 
 				if !parentRows.Next() {
-					parentRows.Close()
 					break
 				}
 
 				parentCat, err = scanProductCategoryRow(parentRows)
-				parentRows.Close()
 				if err != nil {
 					return nil, err
 				}
@@ -667,10 +594,7 @@ func (m *Manager) GetProductCategoriesWithParents(
 			}
 
 			newParent := &types.ProductCategoryWithParents{
-				Id:        parentCat.Id,
-				Name:      parentCat.Name,
-				CreatedAt: parentCat.CreatedAt,
-				UpdatedAt: parentCat.UpdatedAt,
+				ProductCategory: *parentCat,
 			}
 
 			if currentParent == nil {
@@ -862,20 +786,52 @@ func (m *Manager) GetProductSpecs(productId int) ([]types.ProductSpec, error) {
 	return specs, nil
 }
 
-func (m *Manager) GetProductAttributes(productId int) ([]types.ProductAttributeWithOptions, error) {
-	attrRows, err := m.db.Query(
-		"SELECT * FROM product_attributes WHERE product_id = $1;",
-		productId,
-	)
+func (m *Manager) GetProductAttributes(
+	query types.ProductAttributeSearchQuery,
+) ([]types.ProductAttribute, error) {
+	var base string
+	base = "SELECT * FROM product_attributes"
+
+	q, args := buildProductAttributeSearchQuery(query, base)
+
+	rows, err := m.db.Query(q, args...)
 	if err != nil {
 		return nil, err
 	}
-	defer attrRows.Close()
+	defer rows.Close()
 
-	var attributes []types.ProductAttributeWithOptions
+	attrs := []types.ProductAttribute{}
 
-	for attrRows.Next() {
-		attr, err := scanProductAttributeRow(attrRows)
+	for rows.Next() {
+		attr, err := scanProductAttributeRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		attrs = append(attrs, *attr)
+	}
+
+	return attrs, nil
+}
+
+func (m *Manager) GetProductAttributesWithOptions(
+	query types.ProductAttributeSearchQuery,
+) ([]types.ProductAttributeWithOptions, error) {
+	var base string
+	base = "SELECT * FROM product_attributes"
+
+	q, args := buildProductAttributeSearchQuery(query, base)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	attrs := []types.ProductAttributeWithOptions{}
+
+	for rows.Next() {
+		attr, err := scanProductAttributeRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -887,29 +843,24 @@ func (m *Manager) GetProductAttributes(productId int) ([]types.ProductAttributeW
 		if err != nil {
 			return nil, err
 		}
+		defer optionRows.Close()
 
-		var options []types.ProductAttributeOptionInfo
+		opts := []types.ProductAttributeOption{}
 		for optionRows.Next() {
 			opt, err := scanProductAttributeOptionRow(optionRows)
 			if err != nil {
-				optionRows.Close()
 				return nil, err
 			}
-			options = append(options, types.ProductAttributeOptionInfo{
-				Id:    opt.Id,
-				Value: opt.Value,
-			})
+			opts = append(opts, *opt)
 		}
-		optionRows.Close()
 
-		attributes = append(attributes, types.ProductAttributeWithOptions{
-			Id:      attr.Id,
-			Label:   attr.Label,
-			Options: options,
+		attrs = append(attrs, types.ProductAttributeWithOptions{
+			ProductAttribute: *attr,
+			Options:          opts,
 		})
 	}
 
-	return attributes, nil
+	return attrs, nil
 }
 
 func (m *Manager) GetProductVariants(productId int) ([]types.ProductVariant, error) {
@@ -935,7 +886,9 @@ func (m *Manager) GetProductVariants(productId int) ([]types.ProductVariant, err
 	return variants, nil
 }
 
-func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVariantInfo, error) {
+func (m *Manager) GetProductVariantsWithAttributeSet(
+	productId int,
+) ([]types.ProductVariantWithAttributeSet, error) {
 	variantRows, err := m.db.Query(
 		"SELECT * FROM product_variants WHERE product_id = $1;",
 		productId,
@@ -945,7 +898,7 @@ func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVari
 	}
 	defer variantRows.Close()
 
-	var variants []types.ProductVariantInfo
+	variants := []types.ProductVariantWithAttributeSet{}
 
 	for variantRows.Next() {
 		variant, err := scanProductVariantRow(variantRows)
@@ -953,32 +906,64 @@ func (m *Manager) GetProductVariantsWithInfo(productId int) ([]types.ProductVari
 			return nil, err
 		}
 
-		optionRows, err := m.db.Query(
-			"SELECT * FROM product_variant_options WHERE variant_id = $1;",
+		attrOptionRows, err := m.db.Query(
+			"SELECT * FROM product_variant_attribute_options WHERE variant_id = $1;",
 			variant.Id,
 		)
 		if err != nil {
 			return nil, err
 		}
-		defer optionRows.Close()
+		defer attrOptionRows.Close()
 
-		var options []types.ProductVariantOptionInfo
-		for optionRows.Next() {
-			opt, err := scanProductVariantOptionRow(optionRows)
+		attrOptions := []types.ProductVariantSelectedAttributeOption{}
+
+		for attrOptionRows.Next() {
+			attrOpt, err := scanProductVariantAttributeOptionRow(attrOptionRows)
 			if err != nil {
-				optionRows.Close()
 				return nil, err
 			}
-			options = append(options, types.ProductVariantOptionInfo{
-				AttributeId: opt.AttributeId,
-				OptionId:    opt.OptionId,
+
+			var attr *types.ProductAttribute
+			attrRows, err := m.db.Query(
+				"SELECT * FROM product_attributes WHERE id = $1;",
+				attrOpt.AttributeId,
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer attrRows.Close()
+			if attrRows.Next() {
+				attr, err = scanProductAttributeRow(attrRows)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			var opt *types.ProductAttributeOption
+			optRows, err := m.db.Query(
+				"SELECT * FROM product_attribute_options WHERE id = $1;",
+				attrOpt.OptionId,
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer optRows.Close()
+			if optRows.Next() {
+				opt, err = scanProductAttributeOptionRow(optRows)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			attrOptions = append(attrOptions, types.ProductVariantSelectedAttributeOption{
+				ProductAttribute: *attr,
+				SelectedOption:   *opt,
 			})
 		}
 
-		variants = append(variants, types.ProductVariantInfo{
-			Id:       variant.Id,
-			Quantity: variant.Quantity,
-			Options:  options,
+		variants = append(variants, types.ProductVariantWithAttributeSet{
+			ProductVariant: *variant,
+			AttributeSet:   attrOptions,
 		})
 	}
 
@@ -1095,7 +1080,7 @@ func (m *Manager) GetProductCommentsCountByUserId(
 	return count, nil
 }
 
-func (m *Manager) GetProductById(id int) (*types.Product, error) {
+func (m *Manager) GetProductBaseById(id int) (*types.ProductBase, error) {
 	rows, err := m.db.Query(
 		"SELECT * FROM products WHERE id = $1;",
 		id,
@@ -1105,11 +1090,11 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	}
 	defer rows.Close()
 
-	product := new(types.Product)
+	product := new(types.ProductBase)
 	product.Id = -1
 
 	for rows.Next() {
-		product, err = scanProductRow(rows)
+		product, err = scanProductBaseRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -1122,7 +1107,7 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	return product, nil
 }
 
-func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo, error) {
+func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	productRows, err := m.db.Query(
 		"SELECT * FROM products WHERE id = $1;",
 		id,
@@ -1136,7 +1121,7 @@ func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo
 		return nil, types.ErrProductNotFound
 	}
 
-	product, err := scanProductRow(productRows)
+	productBase, err := scanProductBaseRow(productRows)
 	if err != nil {
 		return nil, err
 	}
@@ -1144,7 +1129,7 @@ func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo
 	var totalQuantity int
 	err = m.db.QueryRow(
 		"SELECT COALESCE(SUM(quantity), 0) FROM product_variants WHERE product_id = $1;",
-		product.Id,
+		productBase.Id,
 	).Scan(&totalQuantity)
 	if err != nil {
 		return nil, err
@@ -1153,57 +1138,54 @@ func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo
 	var offer *types.ProductOffer
 	offerRows, err := m.db.Query(
 		"SELECT * FROM product_offers WHERE product_id = $1;",
-		product.Id,
+		productBase.Id,
 	)
+	defer offerRows.Close()
 	if err != nil {
 		return nil, err
 	}
 	if offerRows.Next() {
 		offer, err = scanProductOfferRow(offerRows)
 		if err != nil {
-			offerRows.Close()
 			return nil, err
 		}
 	}
-	offerRows.Close()
 
 	var mainImage *types.ProductImage
 	imageRows, err := m.db.Query(
 		"SELECT * FROM product_images WHERE product_id = $1 AND is_main = true;",
-		product.Id,
+		productBase.Id,
 	)
+	defer imageRows.Close()
 	if err != nil {
 		return nil, err
 	}
 	if imageRows.Next() {
 		mainImage, err = scanProductImageRow(imageRows)
 		if err != nil {
-			imageRows.Close()
 			return nil, err
 		}
 	}
-	imageRows.Close()
 
 	var storeInfo *types.StoreInfo
 	storeInfoRows, err := m.db.Query(`
     SELECT s.id, s.name FROM stores s WHERE s.id IN (
       SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
     )
-  `, product.Id)
+  `, productBase.Id)
+	defer storeInfoRows.Close()
 	if err != nil {
 		return nil, err
 	}
 	if storeInfoRows.Next() {
 		storeInfo, err = scanStoreInfoRow(storeInfoRows)
 		if err != nil {
-			storeInfoRows.Close()
 			return nil, err
 		}
 	}
-	storeInfoRows.Close()
 
-	return &types.ProductWithMainInfo{
-		Product:       *product,
+	return &types.Product{
+		ProductBase:   *productBase,
 		TotalQuantity: totalQuantity,
 		Offer:         offer,
 		MainImage:     mainImage,
@@ -1211,7 +1193,7 @@ func (m *Manager) GetProductWithMainInfoById(id int) (*types.ProductWithMainInfo
 	}, nil
 }
 
-func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, error) {
+func (m *Manager) GetProductExtendedById(id int) (*types.ProductExtended, error) {
 	productRows, err := m.db.Query(
 		"SELECT * FROM products WHERE id = $1;",
 		id,
@@ -1225,7 +1207,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		return nil, types.ErrProductNotFound
 	}
 
-	product, err := scanProductRow(productRows)
+	productBase, err := scanProductBaseRow(productRows)
 	if err != nil {
 		return nil, err
 	}
@@ -1242,7 +1224,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	var subcategory types.ProductCategoryWithParents
 	subcategoryRows, err := m.db.Query(
 		"SELECT * FROM product_categories WHERE id = $1;",
-		product.SubcategoryId,
+		productBase.SubcategoryId,
 	)
 	if err != nil {
 		return nil, err
@@ -1287,10 +1269,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		}
 
 		newParent := &types.ProductCategoryWithParents{
-			Id:        parentCat.Id,
-			Name:      parentCat.Name,
-			CreatedAt: parentCat.CreatedAt,
-			UpdatedAt: parentCat.UpdatedAt,
+			ProductCategory: *parentCat,
 		}
 
 		if currentParent == nil {
@@ -1312,17 +1291,13 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	}
 	defer specRows.Close()
 
-	specInfos := make([]types.ProductSpecInfo, 0)
+	specs := make([]types.ProductSpec, 0)
 	for specRows.Next() {
 		spec, err := scanProductSpecRow(specRows)
 		if err != nil {
 			return nil, err
 		}
-		specInfos = append(specInfos, types.ProductSpecInfo{
-			Id:    spec.Id,
-			Label: spec.Label,
-			Value: spec.Value,
-		})
+		specs = append(specs, *spec)
 	}
 
 	tagRows, err := m.db.Query(`
@@ -1344,51 +1319,6 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 		tags = append(tags, *tag)
 	}
 
-	attrRows, err := m.db.Query(
-		"SELECT * FROM product_attributes WHERE product_id = $1;",
-		id,
-	)
-	if err != nil {
-		return nil, err
-	}
-	defer attrRows.Close()
-
-	attributeInfos := make([]types.ProductAttributeWithOptions, 0)
-	for attrRows.Next() {
-		attr, err := scanProductAttributeRow(attrRows)
-		if err != nil {
-			return nil, err
-		}
-
-		optionRows, err := m.db.Query(
-			"SELECT * FROM product_attribute_options WHERE attribute_id = $1;",
-			attr.Id,
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		optionInfos := make([]types.ProductAttributeOptionInfo, 0)
-		for optionRows.Next() {
-			opt, err := scanProductAttributeOptionRow(optionRows)
-			if err != nil {
-				optionRows.Close()
-				return nil, err
-			}
-			optionInfos = append(optionInfos, types.ProductAttributeOptionInfo{
-				Id:    opt.Id,
-				Value: opt.Value,
-			})
-		}
-		optionRows.Close()
-
-		attributeInfos = append(attributeInfos, types.ProductAttributeWithOptions{
-			Id:      attr.Id,
-			Label:   attr.Label,
-			Options: optionInfos,
-		})
-	}
-
 	variantRows, err := m.db.Query(
 		"SELECT * FROM product_variants WHERE product_id = $1;",
 		id,
@@ -1398,39 +1328,72 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	}
 	defer variantRows.Close()
 
-	variantInfos := make([]types.ProductVariantInfo, 0)
+	variants := make([]types.ProductVariantWithAttributeSet, 0)
+
 	for variantRows.Next() {
 		variant, err := scanProductVariantRow(variantRows)
 		if err != nil {
 			return nil, err
 		}
 
-		optionRows, err := m.db.Query(
-			"SELECT * FROM product_variant_options WHERE variant_id = $1;",
+		attrOptionRows, err := m.db.Query(
+			"SELECT * FROM product_variant_attribute_options WHERE variant_id = $1;",
 			variant.Id,
 		)
 		if err != nil {
 			return nil, err
 		}
+		defer attrOptionRows.Close()
 
-		optionInfos := make([]types.ProductVariantOptionInfo, 0)
-		for optionRows.Next() {
-			opt, err := scanProductVariantOptionRow(optionRows)
+		attrOptions := []types.ProductVariantSelectedAttributeOption{}
+
+		for attrOptionRows.Next() {
+			attrOpt, err := scanProductVariantAttributeOptionRow(attrOptionRows)
 			if err != nil {
-				optionRows.Close()
 				return nil, err
 			}
-			optionInfos = append(optionInfos, types.ProductVariantOptionInfo{
-				AttributeId: opt.AttributeId,
-				OptionId:    opt.OptionId,
+
+			var attr *types.ProductAttribute
+			attrRows, err := m.db.Query(
+				"SELECT * FROM product_attributes WHERE id = $1;",
+				attrOpt.AttributeId,
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer attrRows.Close()
+			if attrRows.Next() {
+				attr, err = scanProductAttributeRow(attrRows)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			var opt *types.ProductAttributeOption
+			optRows, err := m.db.Query(
+				"SELECT * FROM product_attribute_options WHERE id = $1;",
+				attrOpt.OptionId,
+			)
+			if err != nil {
+				return nil, err
+			}
+			defer optRows.Close()
+			if optRows.Next() {
+				opt, err = scanProductAttributeOptionRow(optRows)
+				if err != nil {
+					return nil, err
+				}
+			}
+
+			attrOptions = append(attrOptions, types.ProductVariantSelectedAttributeOption{
+				ProductAttribute: *attr,
+				SelectedOption:   *opt,
 			})
 		}
-		optionRows.Close()
 
-		variantInfos = append(variantInfos, types.ProductVariantInfo{
-			Id:       variant.Id,
-			Quantity: variant.Quantity,
-			Options:  optionInfos,
+		variants = append(variants, types.ProductVariantWithAttributeSet{
+			ProductVariant: *variant,
+			AttributeSet:   attrOptions,
 		})
 	}
 
@@ -1474,7 +1437,7 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
       SELECT s.id, s.name FROM stores s WHERE s.id IN (
         SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
       )
-    `, product.Id)
+    `, productBase.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -1487,13 +1450,12 @@ func (m *Manager) GetProductWithAllInfoById(id int) (*types.ProductWithAllInfo, 
 	}
 	storeInfoRows.Close()
 
-	return &types.ProductWithAllInfo{
-		Product:     *product,
+	return &types.ProductExtended{
+		ProductBase: *productBase,
 		Subcategory: subcategory,
-		Specs:       specInfos,
+		Specs:       specs,
 		Tags:        tags,
-		Attributes:  attributeInfos,
-		Variants:    variantInfos,
+		Variants:    variants,
 		Offer:       offer,
 		Images:      images,
 		Store:       *storeInfo,
@@ -1549,10 +1511,7 @@ func (m *Manager) GetProductCategoryWithParentsById(
 	}
 
 	result := &types.ProductCategoryWithParents{
-		Id:        cat.Id,
-		Name:      cat.Name,
-		CreatedAt: cat.CreatedAt,
-		UpdatedAt: cat.UpdatedAt,
+		ProductCategory: *cat,
 	}
 
 	currentParentId := cat.ParentCategoryId
@@ -1579,10 +1538,7 @@ func (m *Manager) GetProductCategoryWithParentsById(
 		}
 
 		newParent := &types.ProductCategoryWithParents{
-			Id:        parentCat.Id,
-			Name:      parentCat.Name,
-			CreatedAt: parentCat.CreatedAt,
-			UpdatedAt: parentCat.UpdatedAt,
+			ProductCategory: *parentCat,
 		}
 
 		if currentParent == nil {
@@ -1623,6 +1579,84 @@ func (m *Manager) GetProductTagById(id int) (*types.ProductTag, error) {
 	}
 
 	return tag, nil
+}
+
+func (m *Manager) GetProductAttributeById(id int) (*types.ProductAttribute, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM product_attributes WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	attr := new(types.ProductAttribute)
+	attr.Id = -1
+
+	for rows.Next() {
+		attr, err = scanProductAttributeRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if attr.Id == -1 {
+		return nil, types.ErrProductAttributeNotFound
+	}
+
+	return attr, nil
+}
+
+func (m *Manager) GetProductAttributeWithOptionsById(
+	id int,
+) (*types.ProductAttributeWithOptions, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM product_attributes WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	attr := new(types.ProductAttributeWithOptions)
+	attr.Id = -1
+
+	for rows.Next() {
+		a, err := scanProductAttributeRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		attr.ProductAttribute = *a
+	}
+
+	if attr.Id == -1 {
+		return nil, types.ErrProductAttributeNotFound
+	}
+
+	optionRows, err := m.db.Query(
+		"SELECT * FROM product_attribute_options WHERE attribute_id = $1;",
+		attr.Id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer optionRows.Close()
+
+	opts := []types.ProductAttributeOption{}
+	for optionRows.Next() {
+		opt, err := scanProductAttributeOptionRow(optionRows)
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, *opt)
+	}
+
+	attr.Options = opts
+
+	return attr, nil
 }
 
 func (m *Manager) GetProductOfferById(id int) (*types.ProductOffer, error) {
@@ -1760,10 +1794,98 @@ func (m *Manager) GetProductVariantById(id int) (*types.ProductVariant, error) {
 	return variant, nil
 }
 
-func (m *Manager) GetProductInventory(productId int) (total int, inStock bool, err error) {
+func (m *Manager) GetProductVariantWithAttributeSetById(
+	id int,
+) (*types.ProductVariantWithAttributeSet, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM product_variants WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	variant := new(types.ProductVariantWithAttributeSet)
+	variant.Id = -1
+
+	if rows.Next() {
+		v, err := scanProductVariantRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		variant.ProductVariant = *v
+	}
+
+	if variant.Id == -1 {
+		return nil, types.ErrProductVariantNotFound
+	}
+
+	attrOptionRows, err := m.db.Query(
+		"SELECT * FROM product_variant_attribute_options WHERE variant_id = $1;",
+		variant.Id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer attrOptionRows.Close()
+
+	attrOptions := []types.ProductVariantSelectedAttributeOption{}
+
+	for attrOptionRows.Next() {
+		attrOpt, err := scanProductVariantAttributeOptionRow(attrOptionRows)
+		if err != nil {
+			return nil, err
+		}
+
+		var attr *types.ProductAttribute
+		attrRows, err := m.db.Query(
+			"SELECT * FROM product_attributes WHERE id = $1;",
+			attrOpt.AttributeId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer attrRows.Close()
+		if attrRows.Next() {
+			attr, err = scanProductAttributeRow(attrRows)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		var opt *types.ProductAttributeOption
+		optRows, err := m.db.Query(
+			"SELECT * FROM product_attribute_options WHERE id = $1;",
+			attrOpt.OptionId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer optRows.Close()
+		if optRows.Next() {
+			opt, err = scanProductAttributeOptionRow(optRows)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		attrOptions = append(attrOptions, types.ProductVariantSelectedAttributeOption{
+			ProductAttribute: *attr,
+			SelectedOption:   *opt,
+		})
+	}
+
+	variant.AttributeSet = attrOptions
+
+	return variant, nil
+}
+
+func (m *Manager) GetProductInventory(id int) (total int, inStock bool, err error) {
 	err = m.db.QueryRow(
 		"SELECT COALESCE(SUM(quantity), 0) FROM product_variants WHERE product_id = $1;",
-		productId,
+		id,
 	).Scan(&total)
 	if err != nil {
 		return 0, false, err
@@ -1798,6 +1920,128 @@ func (m *Manager) GetProductCommentById(id int) (*types.ProductComment, error) {
 	}
 
 	return comment, nil
+}
+
+func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
+	ctx := context.Background()
+	tx, err := m.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+
+	if p.Base != nil {
+		err := updateProductBaseAsDBTx(tx, id, *p.Base)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	err = deleteProductTagAssignmentsAsDBTx(tx, id, p.DelTagIds)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	err = createProductTagAssignmentsAsDBTx(tx, id, p.NewTagIds)
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, delImg := range p.DelImageIds {
+		err := deleteProductImageAsDBTx(tx, id, delImg)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, newImg := range p.NewImages {
+		_, err := createProductImageAsDBTx(tx, id, newImg)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	if p.NewMainImage != nil {
+		err := updateProductMainImageAsDBTx(tx, id, *p.NewMainImage)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, delSpec := range p.DelSpecIds {
+		err := deleteProductSpecAsDBTx(tx, id, delSpec)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, updatedSpec := range p.UpdatedSpecs {
+		err := updateProductSpecAsDBTx(
+			tx,
+			id,
+			updatedSpec.Id,
+			updatedSpec.UpdateProductSpecPayload,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, newSpec := range p.NewSpecs {
+		_, err := createProductSpecAsDBTx(tx, id, newSpec)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, delVariant := range p.DelVariantIds {
+		err := deleteProductVariantAsDBTx(tx, id, delVariant)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, updatedVariant := range p.UpdatedVariants {
+		err := updateProductVariantAsDBTx(
+			tx,
+			id,
+			updatedVariant.Id,
+			updatedVariant.UpdateProductVariantPayload,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, newVariant := range p.NewVariants {
+		_, err := createProductVariantAsDBTx(tx, id, newVariant)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	err = updateProductUpdatedAtColumnAsDBTx(tx, id, time.Now())
+	if err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (m *Manager) UpdateProductTag(id int, p types.UpdateProductTagPayload) error {
@@ -1868,7 +2112,7 @@ func (m *Manager) UpdateProductCategory(id int, p types.UpdateProductCategoryPay
 	return nil
 }
 
-func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
+func (m *Manager) UpdateProductBase(id int, p types.UpdateProductBasePayload) error {
 	clauses := []string{}
 	args := []any{}
 	argsPos := 1
@@ -1932,7 +2176,11 @@ func (m *Manager) UpdateProduct(id int, p types.UpdateProductPayload) error {
 	return nil
 }
 
-func (m *Manager) UpdateProductOffer(id int, p types.UpdateProductOfferPayload) error {
+func (m *Manager) UpdateProductOffer(
+	productId int,
+	offerId int,
+	p types.UpdateProductOfferPayload,
+) error {
 	clauses := []string{}
 	args := []any{}
 	argsPos := 1
@@ -1957,11 +2205,13 @@ func (m *Manager) UpdateProductOffer(id int, p types.UpdateProductOfferPayload) 
 	args = append(args, time.Now())
 	argsPos++
 
-	args = append(args, id)
+	args = append(args, offerId)
+	args = append(args, productId)
 	q := fmt.Sprintf(
-		"UPDATE product_offers SET %s WHERE id = $%d",
+		"UPDATE product_offers SET %s WHERE id = $%d AND product_id = $%d",
 		strings.Join(clauses, ", "),
 		argsPos,
+		argsPos+1,
 	)
 
 	_, err := m.db.Exec(q, args...)
@@ -1972,48 +2222,29 @@ func (m *Manager) UpdateProductOffer(id int, p types.UpdateProductOfferPayload) 
 	return nil
 }
 
-func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) error {
+func (m *Manager) UpdateProductMainImage(productId int, imageId int) error {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	productId := -1
-	err = tx.QueryRow("SELECT product_id FROM product_images WHERE id = $1;", id).Scan(&productId)
+	_, err = tx.Exec(
+		"UPDATE product_images SET is_main = $1 WHERE product_id = $2",
+		false,
+		productId,
+	)
 	if err != nil {
 		tx.Rollback()
 		return err
 	}
 
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
-	}
-
-	clauses := []string{}
-	args := []any{}
-	argsPos := 1
-
-	if p.IsMain != nil {
-		clauses = append(clauses, fmt.Sprintf("is_main = $%d", argsPos))
-		args = append(args, *p.IsMain)
-		argsPos++
-	}
-
-	if len(clauses) == 0 {
-		tx.Rollback()
-		return types.ErrNoFieldsReceivedToUpdate
-	}
-
-	args = append(args, id)
-	q := fmt.Sprintf(
-		"UPDATE product_images SET %s WHERE id = $%d",
-		strings.Join(clauses, ", "),
-		argsPos,
+	_, err = tx.Exec(
+		"UPDATE product_images SET is_main = $1 WHERE id = $2 AND product_id = $3",
+		true,
+		imageId,
+		productId,
 	)
-
-	_, err = tx.Exec(q, args...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -2026,30 +2257,21 @@ func (m *Manager) UpdateProductImage(id int, p types.UpdateProductImagePayload) 
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	return nil
 }
 
-func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) error {
+func (m *Manager) UpdateProductSpec(
+	productId int,
+	specId int,
+	p types.UpdateProductSpecPayload,
+) error {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
-	}
-
-	productId := -1
-	err = tx.QueryRow("SELECT product_id FROM product_specs WHERE id = $1;", id).Scan(&productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
 	}
 
 	clauses := []string{}
@@ -2073,11 +2295,13 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
-	args = append(args, id)
+	args = append(args, specId)
+	args = append(args, productId)
 	q := fmt.Sprintf(
-		"UPDATE product_specs SET %s WHERE id = $%d",
+		"UPDATE product_specs SET %s WHERE id = $%d AND product_id = $%d",
 		strings.Join(clauses, ", "),
 		argsPos,
+		argsPos+1,
 	)
 
 	_, err = tx.Exec(q, args...)
@@ -2093,7 +2317,6 @@ func (m *Manager) UpdateProductSpec(id int, p types.UpdateProductSpecPayload) er
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -2107,19 +2330,6 @@ func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributeP
 		return err
 	}
 
-	productId := -1
-	err = tx.QueryRow("SELECT product_id FROM product_attributes WHERE id = $1;", id).
-		Scan(&productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
-	}
-
 	clauses := []string{}
 	args := []any{}
 	argsPos := 1
@@ -2130,41 +2340,96 @@ func (m *Manager) UpdateProductAttribute(id int, p types.UpdateProductAttributeP
 		argsPos++
 	}
 
-	if len(clauses) == 0 {
+	clausesLen := len(clauses)
+	newOptionsLen := len(p.NewOptions)
+	updatedOptionsLen := len(p.UpdatedOptions)
+	delOptionsLen := len(p.DelOptionIds)
+
+	if clausesLen == 0 && delOptionsLen == 0 && newOptionsLen == 0 && updatedOptionsLen == 0 {
 		tx.Rollback()
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
-	args = append(args, id)
-	q := fmt.Sprintf(
-		"UPDATE product_attributes SET %s WHERE id = $%d",
-		strings.Join(clauses, ", "),
-		argsPos,
-	)
+	if clausesLen > 0 {
+		args = append(args, id)
+		q := fmt.Sprintf(
+			"UPDATE product_attributes SET %s WHERE id = $%d",
+			strings.Join(clauses, ", "),
+			argsPos,
+		)
 
-	_, err = tx.Exec(q, args...)
-	if err != nil {
-		tx.Rollback()
-		return err
+		_, err := tx.Exec(q, args...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
-	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
-	if err != nil {
-		tx.Rollback()
-		return err
+	for _, d := range p.DelOptionIds {
+		_, err := tx.Exec(
+			"DELETE FROM product_attribute_options WHERE attribute_id = $1 AND id = $2",
+			id, d,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, u := range p.UpdatedOptions {
+		optClauses := []string{}
+		optArgs := []any{}
+		optArgsPos := 1
+
+		if u.Value != nil {
+			optClauses = append(optClauses, fmt.Sprintf("value = $%d", optArgsPos))
+			optArgs = append(optArgs, *u.Value)
+			optArgsPos++
+		}
+
+		if len(optClauses) == 0 {
+			tx.Rollback()
+			return types.ErrNoFieldsReceivedToUpdate
+		}
+
+		optArgs = append(optArgs, u.Id)
+		optArgs = append(optArgs, id)
+		optQ := fmt.Sprintf(
+			"UPDATE product_attribute_options SET %s WHERE id = $%d AND attribute_id = $%d",
+			strings.Join(optClauses, ", "),
+			optArgsPos,
+			optArgsPos+1,
+		)
+
+		_, err := tx.Exec(optQ, optArgs...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, n := range p.NewOptions {
+		_, err := tx.Exec(
+			"INSERT INTO product_attribute_options (value, attribute_id) VALUES ($1, $2);",
+			n, id,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	return nil
 }
 
-func (m *Manager) UpdateProductAttributeOption(
-	id int,
-	p types.UpdateProductAttributeOptionPayload,
+func (m *Manager) UpdateProductVariant(
+	productId int,
+	variantId int,
+	p types.UpdateProductVariantPayload,
 ) error {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
@@ -2172,47 +2437,65 @@ func (m *Manager) UpdateProductAttributeOption(
 		return err
 	}
 
-	productId := -1
-	err = tx.QueryRow(`
-    SELECT pa.product_id FROM product_attribute_options pao 
-    JOIN product_attributes pa ON pao.attribute_id = pa.id
-    WHERE pao.id = $1;
-  `, id).Scan(&productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
-	}
-
 	clauses := []string{}
 	args := []any{}
 	argsPos := 1
 
-	if p.Value != nil {
-		clauses = append(clauses, fmt.Sprintf("value = $%d", argsPos))
-		args = append(args, *p.Value)
+	if p.Quantity != nil {
+		clauses = append(clauses, fmt.Sprintf("quantity = $%d", argsPos))
+		args = append(args, *p.Quantity)
 		argsPos++
 	}
 
-	if len(clauses) == 0 {
+	clausesLen := len(clauses)
+	newAttributeSetsLen := len(p.NewAttributeSets)
+	delAttributeIdsLen := len(p.DelAttributeIds)
+
+	if clausesLen == 0 && newAttributeSetsLen == 0 && delAttributeIdsLen == 0 {
 		tx.Rollback()
 		return types.ErrNoFieldsReceivedToUpdate
 	}
 
-	args = append(args, id)
-	q := fmt.Sprintf(
-		"UPDATE product_attribute_options SET %s WHERE id = $%d",
-		strings.Join(clauses, ", "),
-		argsPos,
-	)
+	if clausesLen > 0 {
+		args = append(args, variantId)
+		args = append(args, productId)
+		q := fmt.Sprintf(
+			"UPDATE product_variants SET %s WHERE id = $%d AND product_id = $%d",
+			strings.Join(clauses, ", "),
+			argsPos,
+			argsPos+1,
+		)
 
-	_, err = tx.Exec(q, args...)
-	if err != nil {
-		return err
+		_, err := tx.Exec(q, args...)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, delSet := range p.DelAttributeIds {
+		_, err := tx.Exec(
+			"DELETE FROM product_variant_attribute_options WHERE variant_id = $1 AND attribute_id = $2",
+			variantId,
+			delSet,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
+	}
+
+	for _, newSet := range p.NewAttributeSets {
+		_, err := tx.Exec(
+			"INSERT INTO product_variant_attribute_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
+			variantId,
+			newSet.AttributeId,
+			newSet.OptionId,
+		)
+		if err != nil {
+			tx.Rollback()
+			return err
+		}
 	}
 
 	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
@@ -2222,7 +2505,6 @@ func (m *Manager) UpdateProductAttributeOption(
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -2296,18 +2578,34 @@ func (m *Manager) DeleteProductTag(id int) error {
 	return nil
 }
 
-func (m *Manager) DeleteProductTagAssignment(productId int, tagId int) error {
+func (m *Manager) DeleteProductTagAssignments(productId int, tagIds []int) error {
+	tagIdsLen := len(tagIds)
+	if tagIdsLen == 0 {
+		return nil
+	}
+
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	_, err = tx.Exec(
-		"DELETE FROM product_tag_assignments WHERE product_id = $1 AND tag_id = $2;",
-		productId,
-		tagId,
+	valueArgs := make([]any, 0, len(tagIds)+1)
+	placeholders := make([]string, len(tagIds))
+
+	for i, tagId := range tagIds {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		valueArgs = append(valueArgs, tagId)
+	}
+
+	query := fmt.Sprintf(
+		"DELETE FROM product_tag_assignments WHERE product_id = $1 AND tag_id IN (%s)",
+		strings.Join(placeholders, ", "),
 	)
+
+	valueArgs = append([]any{productId}, valueArgs...)
+
+	_, err = tx.Exec(query, valueArgs...)
 	if err != nil {
 		tx.Rollback()
 		return err
@@ -2320,7 +2618,6 @@ func (m *Manager) DeleteProductTagAssignment(productId int, tagId int) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -2339,10 +2636,13 @@ func (m *Manager) DeleteProduct(id int) error {
 	return nil
 }
 
-func (m *Manager) DeleteProductOffer(id int) error {
+func (m *Manager) DeleteProductOffer(
+	productId int,
+	offerId int,
+) error {
 	_, err := m.db.Exec(
-		"DELETE FROM product_offers WHERE id = $1;",
-		id,
+		"DELETE FROM product_offers WHERE id = $1 AND product_id = $2;",
+		offerId, productId,
 	)
 	if err != nil {
 		return err
@@ -2351,28 +2651,19 @@ func (m *Manager) DeleteProductOffer(id int) error {
 	return nil
 }
 
-func (m *Manager) DeleteProductImage(id int) error {
+func (m *Manager) DeleteProductImage(
+	productId int,
+	imageId int,
+) error {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
-	}
-
-	productId := -1
-	err = tx.QueryRow("SELECT product_id FROM product_images WHERE id = $1;", id).Scan(&productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
 	}
 
 	_, err = tx.Exec(
-		"DELETE FROM product_images WHERE id = $1;",
-		id,
+		"DELETE FROM product_images WHERE id = $1 AND product_id = $2;",
+		imageId, productId,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -2386,35 +2677,25 @@ func (m *Manager) DeleteProductImage(id int) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	return nil
 }
 
-func (m *Manager) DeleteProductSpec(id int) error {
+func (m *Manager) DeleteProductSpec(
+	productId int,
+	specId int,
+) error {
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return err
 	}
 
-	productId := -1
-	err = tx.QueryRow("SELECT product_id FROM product_specs WHERE id = $1;", id).Scan(&productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
-	}
-
-	_, err = m.db.Exec(
-		"DELETE FROM product_specs WHERE id = $1;",
-		id,
+	_, err = tx.Exec(
+		"DELETE FROM product_specs WHERE id = $1 AND product_id = $2;",
+		specId, productId,
 	)
 	if err != nil {
 		tx.Rollback()
@@ -2428,7 +2709,6 @@ func (m *Manager) DeleteProductSpec(id int) error {
 	}
 
 	if err = tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -2436,148 +2716,21 @@ func (m *Manager) DeleteProductSpec(id int) error {
 }
 
 func (m *Manager) DeleteProductAttribute(id int) error {
-	ctx := context.Background()
-	tx, err := m.db.BeginTx(ctx, nil)
+	_, err := m.db.Exec(`DELETE FROM product_attributes WHERE id = $1;`, id)
 	if err != nil {
-		return err
-	}
-
-	productId := -1
-	err = tx.QueryRow("SELECT product_id FROM product_attributes WHERE id = $1;", id).
-		Scan(&productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if productId == -1 {
-		tx.Rollback()
-		return types.ErrProductNotFound
-	}
-
-	_, err = tx.Exec(`
-		DELETE FROM product_variant_options WHERE attribute_id = $1;
-	`, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`DELETE FROM product_attribute_options WHERE attribute_id = $1;`, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`DELETE FROM product_attributes WHERE id = $1;`, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	// Delete all the orphaned variants
-	// by getting all the duplicated (attribute_id, option_id) tuples
-	_, err = tx.Exec(`
-		DELETE FROM product_variants 
-		WHERE id IN (
-      WITH normalized_variants AS (
-        SELECT
-          variant_id,
-          ARRAY_AGG((attribute_id, option_id) ORDER BY attribute_id, option_id) AS opt_set
-        FROM product_variant_options GROUP BY variant_id
-      ),
-      dup_sets AS (
-        SELECT 
-          opt_set,
-          ARRAY_AGG((variant_id) ORDER BY variant_id) as variant_ids
-        FROM normalized_variants GROUP BY opt_set HAVING COUNT(*) > 1
-      )
-      SELECT unnest(variant_ids[2:]) AS dup_variant_id FROM dup_sets
-		);
-	`)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
 	return nil
 }
 
-func (m *Manager) DeleteProductAttributeOption(id int) error {
-	ctx := context.Background()
-	tx, err := m.db.BeginTx(ctx, nil)
+func (m *Manager) DeleteProductVariant(productId int, variantId int) error {
+	_, err := m.db.Exec(
+		`DELETE FROM product_variants WHERE id = $1 AND product_id = $2;`,
+		variantId,
+		productId,
+	)
 	if err != nil {
-		return err
-	}
-
-	var attributeId, productId int
-	err = tx.QueryRow(`
-		SELECT pa.id, pa.product_id FROM product_attribute_options pao
-		JOIN product_attributes pa ON pa.id = pao.attribute_id
-		WHERE pao.id = $1;
-	`, id).Scan(&attributeId, &productId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	var count int
-	err = tx.QueryRow(`
-		SELECT COUNT(*) FROM product_attribute_options WHERE attribute_id = $1;
-	`, attributeId).Scan(&count)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if count > 1 {
-		_, err = tx.Exec(`
-			DELETE FROM product_variants 
-			WHERE id IN (
-				SELECT variant_id FROM product_variant_options WHERE attribute_id = $1 AND option_id = $2
-			);
-		`, attributeId, id)
-		if err != nil {
-			tx.Rollback()
-			return err
-		}
-	}
-
-	_, err = tx.Exec(`
-		DELETE FROM product_variant_options WHERE option_id = $1;
-	`, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	_, err = tx.Exec(`
-		DELETE FROM product_attribute_options WHERE id = $1;
-	`, id)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = updateProductUpdatedAtColumnAsDBTx(tx, productId, time.Now())
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 
@@ -2614,8 +2767,8 @@ func scanProductCategoryRow(rows *sql.Rows) (*types.ProductCategory, error) {
 	return n, nil
 }
 
-func scanProductRow(rows *sql.Rows) (*types.Product, error) {
-	n := new(types.Product)
+func scanProductBaseRow(rows *sql.Rows) (*types.ProductBase, error) {
+	n := new(types.ProductBase)
 
 	err := rows.Scan(
 		&n.Id,
@@ -2701,27 +2854,12 @@ func scanProductTagRow(rows *sql.Rows) (*types.ProductTag, error) {
 	return n, nil
 }
 
-func scanProductTagAssignmentRow(rows *sql.Rows) (*types.ProductTagAssignment, error) {
-	n := new(types.ProductTagAssignment)
-
-	err := rows.Scan(
-		&n.ProductId,
-		&n.TagId,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return n, nil
-}
-
 func scanProductAttributeRow(rows *sql.Rows) (*types.ProductAttribute, error) {
 	n := new(types.ProductAttribute)
 
 	err := rows.Scan(
 		&n.Id,
 		&n.Label,
-		&n.ProductId,
 	)
 	if err != nil {
 		return nil, err
@@ -2760,8 +2898,10 @@ func scanProductVariantRow(rows *sql.Rows) (*types.ProductVariant, error) {
 	return n, nil
 }
 
-func scanProductVariantOptionRow(rows *sql.Rows) (*types.ProductVariantOption, error) {
-	n := new(types.ProductVariantOption)
+func scanProductVariantAttributeOptionRow(
+	rows *sql.Rows,
+) (*types.ProductVariantAttributeOption, error) {
+	n := new(types.ProductVariantAttributeOption)
 
 	err := rows.Scan(
 		&n.VariantId,
@@ -2794,78 +2934,6 @@ func scanProductCommentRow(rows *sql.Rows) (*types.ProductComment, error) {
 	return n, nil
 }
 
-func allOrNoneHaveAttribute(
-	pvos []types.ProductVariantOption,
-	attributeId int,
-	variantsLen int,
-) (bool, error) {
-	if len(pvos) == 0 {
-		return false, nil
-	}
-
-	countWithAttr := 0
-	for _, pvo := range pvos {
-		if pvo.AttributeId == attributeId {
-			countWithAttr++
-		}
-	}
-
-	switch {
-	case countWithAttr == variantsLen:
-		return true, nil
-	case countWithAttr == 0:
-		return false, nil
-	default:
-		return false, fmt.Errorf(
-			"%w %d",
-			types.ErrInconsistentAttributePresence,
-			attributeId,
-		)
-	}
-}
-
-func createAttributeCombinations(attributeOptionsMap map[int][]int) [][]map[int]int {
-	var res [][]map[int]int
-
-	if len(attributeOptionsMap) == 0 {
-		res = append(res, []map[int]int{})
-		return res
-	}
-
-	keys := make([]int, 0, len(attributeOptionsMap))
-
-	for k := range attributeOptionsMap {
-		keys = append(keys, k)
-	}
-
-	var backtrack func(index int, curr []map[int]int)
-	backtrack = func(index int, curr []map[int]int) {
-		if index == len(attributeOptionsMap) {
-			comb := make([]map[int]int, len(curr))
-			for i, c := range curr {
-				cpmap := make(map[int]int)
-				maps.Copy(cpmap, c)
-				comb[i] = cpmap
-			}
-
-			res = append(res, comb)
-			return
-		}
-
-		key := keys[index]
-		values := attributeOptionsMap[key]
-
-		for _, v := range values {
-			curr = append(curr, map[int]int{key: v})
-			backtrack(index+1, curr)
-			curr = curr[:len(curr)-1]
-		}
-	}
-
-	backtrack(0, []map[int]int{})
-	return res
-}
-
 func buildProductSearchQuery(
 	query types.ProductSearchQuery,
 	base string,
@@ -2873,6 +2941,43 @@ func buildProductSearchQuery(
 	clauses := []string{}
 	args := []any{}
 	argsPos := 1
+
+	if query.Keyword != nil {
+		keywordClauses := []string{
+			"p.name ILIKE $%d",
+			"p.slug ILIKE $%d",
+			`EXISTS (SELECT 1 FROM product_tag_assignments pta
+				JOIN product_tags pt ON pta.tag_id = pt.id
+				WHERE pt.name ILIKE $%d AND pta.product_id = p.id
+			)`,
+			`EXISTS (
+				SELECT 1 FROM product_categories pc WHERE 
+				(pc.id = p.subcategory_id AND pc.name ILIKE $%d)
+			)`,
+			`p.subcategory_id IN (
+				WITH RECURSIVE cat_tree AS (
+					SELECT id, parent_category_id FROM product_categories WHERE name ILIKE $%d
+					UNION ALL SELECT pc.id, pc.parent_category_id FROM product_categories pc
+					JOIN cat_tree ct ON pc.id = ct.parent_category_id
+				)
+				SELECT id FROM cat_tree
+			)`,
+		}
+
+		for i, c := range keywordClauses {
+			c = fmt.Sprintf(c, argsPos)
+			args = append(
+				args,
+				fmt.Sprintf("%%%s%%", *query.Keyword),
+			)
+			argsPos++
+			keywordClauses[i] = c
+		}
+
+		keywordQ := fmt.Sprintf("(%s)", strings.Join(keywordClauses, " OR "))
+
+		clauses = append(clauses, keywordQ)
+	}
 
 	if query.Name != nil {
 		clauses = append(clauses, fmt.Sprintf("p.name ILIKE $%d", argsPos))
@@ -3126,6 +3231,41 @@ func buildProductOfferSearchQuery(
 	return q, args
 }
 
+func buildProductAttributeSearchQuery(
+	query types.ProductAttributeSearchQuery,
+	base string,
+) (string, []any) {
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if query.Label != nil {
+		clauses = append(clauses, fmt.Sprintf("label ILIKE $%d", argsPos))
+		args = append(args, fmt.Sprintf("%%%s%%", *query.Label))
+		argsPos++
+	}
+
+	q := base
+	if len(clauses) > 0 {
+		q += " WHERE " + strings.Join(clauses, " AND ")
+	}
+
+	if query.Offset != nil {
+		q += fmt.Sprintf(" OFFSET $%d", argsPos)
+		args = append(args, *query.Offset)
+		argsPos++
+	}
+
+	if query.Limit != nil {
+		q += fmt.Sprintf(" LIMIT $%d", argsPos)
+		args = append(args, *query.Limit)
+		argsPos++
+	}
+
+	q += ";"
+	return q, args
+}
+
 func buildProductCommentSearchQueryByProductId(
 	query types.ProductCommentSearchQuery,
 	base string,
@@ -3216,6 +3356,431 @@ func updateProductUpdatedAtColumnAsDBTx(
 	updatedAt time.Time,
 ) error {
 	_, err := tx.Exec("UPDATE products SET updated_at = $1 WHERE id = $2", updatedAt, productId)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createProductBaseAsDBTx(
+	tx *sql.Tx,
+	p types.CreateProductBasePayload,
+) (int, error) {
+	rowId := -1
+
+	err := tx.QueryRow("INSERT INTO products (name, slug, price, description, subcategory_id) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
+		p.Name, p.Slug, p.Price, p.Description, p.SubcategoryId,
+	).
+		Scan(&rowId)
+	if err != nil {
+		return -1, err
+	}
+
+	_, err = tx.Exec(
+		"INSERT INTO store_owned_products (store_id, product_id) VALUES ($1, $2);",
+		p.StoreId,
+		rowId,
+	)
+	if err != nil {
+		return -1, err
+	}
+
+	return rowId, nil
+}
+
+func updateProductBaseAsDBTx(
+	tx *sql.Tx,
+	id int,
+	p types.UpdateProductBasePayload,
+) error {
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if p.Name != nil {
+		clauses = append(clauses, fmt.Sprintf("name = $%d", argsPos))
+		args = append(args, *p.Name)
+		argsPos++
+	}
+
+	if p.Slug != nil {
+		clauses = append(clauses, fmt.Sprintf("slug = $%d", argsPos))
+		args = append(args, *p.Slug)
+		argsPos++
+	}
+
+	if p.Price != nil {
+		clauses = append(clauses, fmt.Sprintf("price = $%d", argsPos))
+		args = append(args, *p.Price)
+		argsPos++
+	}
+
+	if p.Description != nil {
+		clauses = append(clauses, fmt.Sprintf("description = $%d", argsPos))
+		args = append(args, *p.Description)
+		argsPos++
+	}
+
+	if p.IsActive != nil {
+		clauses = append(clauses, fmt.Sprintf("is_active = $%d", argsPos))
+		args = append(args, *p.IsActive)
+		argsPos++
+	}
+
+	if p.SubcategoryId != nil {
+		clauses = append(clauses, fmt.Sprintf("subcategory_id = $%d", argsPos))
+		args = append(args, *p.SubcategoryId)
+		argsPos++
+	}
+
+	if len(clauses) == 0 {
+		return types.ErrNoFieldsReceivedToUpdate
+	}
+
+	args = append(args, id)
+	q := fmt.Sprintf(
+		"UPDATE products SET %s WHERE id = $%d",
+		strings.Join(clauses, ", "),
+		argsPos,
+	)
+
+	_, err := tx.Exec(q, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createProductTagAssignmentsAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	tagIds []int,
+) error {
+	tagIdsLen := len(tagIds)
+	if tagIdsLen == 0 {
+		return nil
+	}
+
+	valueSqls := make([]string, 0, tagIdsLen)
+	valueArgs := make([]any, 0, tagIdsLen*2)
+
+	for i, tagId := range tagIds {
+		valueSqls = append(valueSqls, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, productId, tagId)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO product_tag_assignments (product_id, tag_id) VALUES %s",
+		strings.Join(valueSqls, ", "),
+	)
+
+	_, err := tx.Exec(query, valueArgs...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deleteProductTagAssignmentsAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	tagIds []int,
+) error {
+	tagIdsLen := len(tagIds)
+	if tagIdsLen == 0 {
+		return nil
+	}
+
+	valueArgs := make([]any, 0, len(tagIds)+1)
+	placeholders := make([]string, len(tagIds))
+
+	for i, tagId := range tagIds {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		valueArgs = append(valueArgs, tagId)
+	}
+
+	query := fmt.Sprintf(
+		"DELETE FROM product_tag_assignments WHERE product_id = $1 AND tag_id IN (%s)",
+		strings.Join(placeholders, ", "),
+	)
+
+	valueArgs = append([]any{productId}, valueArgs...)
+
+	_, err := tx.Exec(query, valueArgs...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createProductImageAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	p types.CreateProductImagePayload,
+) (int, error) {
+	if p.IsMain {
+		_, err := tx.Exec(
+			"UPDATE product_images SET is_main = $1 WHERE product_id = $2",
+			false,
+			productId,
+		)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	rowId := -1
+	err := tx.QueryRow("INSERT INTO product_images (image_name, is_main, product_id) VALUES ($1, $2, $3) RETURNING id;",
+		p.ImageName, p.IsMain, productId,
+	).
+		Scan(&rowId)
+	if err != nil {
+		return -1, err
+	}
+
+	return rowId, nil
+}
+
+func updateProductMainImageAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	imageId int,
+) error {
+	_, err := tx.Exec(
+		"UPDATE product_images SET is_main = $1 WHERE product_id = $2",
+		false,
+		productId,
+	)
+	if err != nil {
+		return err
+	}
+
+	_, err = tx.Exec(
+		"UPDATE product_images SET is_main = $1 WHERE id = $2 AND product_id = $3",
+		true,
+		imageId,
+		productId,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deleteProductImageAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	imageId int,
+) error {
+	_, err := tx.Exec(
+		"DELETE FROM product_images WHERE id = $1 AND product_id = $2;",
+		imageId, productId,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createProductSpecAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	p types.CreateProductSpecPayload,
+) (int, error) {
+	rowId := -1
+	err := tx.QueryRow("INSERT INTO product_specs (label, value, product_id) VALUES ($1, $2, $3) RETURNING id;",
+		p.Label, p.Value, productId,
+	).
+		Scan(&rowId)
+	if err != nil {
+		return -1, err
+	}
+
+	return rowId, nil
+}
+
+func updateProductSpecAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	specId int,
+	p types.UpdateProductSpecPayload,
+) error {
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if p.Label != nil {
+		clauses = append(clauses, fmt.Sprintf("label = $%d", argsPos))
+		args = append(args, *p.Label)
+		argsPos++
+	}
+
+	if p.Value != nil {
+		clauses = append(clauses, fmt.Sprintf("value = $%d", argsPos))
+		args = append(args, *p.Value)
+		argsPos++
+	}
+
+	if len(clauses) == 0 {
+		return types.ErrNoFieldsReceivedToUpdate
+	}
+
+	args = append(args, specId)
+	args = append(args, productId)
+	q := fmt.Sprintf(
+		"UPDATE product_specs SET %s WHERE id = $%d AND product_id = $%d",
+		strings.Join(clauses, ", "),
+		argsPos,
+		argsPos+1,
+	)
+
+	_, err := tx.Exec(q, args...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func deleteProductSpecAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	specId int,
+) error {
+	_, err := tx.Exec(
+		"DELETE FROM product_specs WHERE id = $1 AND product_id = $2;",
+		specId, productId,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func createProductVariantAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	p types.CreateProductVariantPayload,
+) (int, error) {
+	rowId := -1
+	err := tx.QueryRow("INSERT INTO product_variants (quantity, product_id) VALUES ($1, $2) RETURNING id;",
+		p.Quantity, productId,
+	).
+		Scan(&rowId)
+	if err != nil {
+		return -1, err
+	}
+
+	for _, attrSet := range p.AttributeSets {
+		attrId := -1
+		err := tx.QueryRow(
+			"SELECT attribute_id FROM product_attribute_options WHERE id = $1",
+			attrSet.OptionId,
+		).Scan(&attrId)
+		if err != nil {
+			return -1, err
+		}
+		if attrId != attrSet.AttributeId {
+			return -1, types.ErrInvalidOptionId
+		}
+
+		_, err = tx.Exec(
+			"INSERT INTO product_variant_attribute_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
+			rowId,
+			attrSet.AttributeId,
+			attrSet.OptionId,
+		)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	return rowId, nil
+}
+
+func updateProductVariantAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	variantId int,
+	p types.UpdateProductVariantPayload,
+) error {
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if p.Quantity != nil {
+		clauses = append(clauses, fmt.Sprintf("quantity = $%d", argsPos))
+		args = append(args, *p.Quantity)
+		argsPos++
+	}
+
+	clausesLen := len(clauses)
+	newAttributeSetsLen := len(p.NewAttributeSets)
+	delAttributeIdsLen := len(p.DelAttributeIds)
+
+	if clausesLen == 0 && newAttributeSetsLen == 0 && delAttributeIdsLen == 0 {
+		return types.ErrNoFieldsReceivedToUpdate
+	}
+
+	if clausesLen > 0 {
+		args = append(args, variantId)
+		args = append(args, productId)
+		q := fmt.Sprintf(
+			"UPDATE product_variants SET %s WHERE id = $%d AND product_id = $%d",
+			strings.Join(clauses, ", "),
+			argsPos,
+			argsPos+1,
+		)
+
+		_, err := tx.Exec(q, args...)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, delSet := range p.DelAttributeIds {
+		_, err := tx.Exec(
+			"DELETE FROM product_variant_attribute_options WHERE variant_id = $1 AND attribute_id = $2",
+			variantId,
+			delSet,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	for _, newSet := range p.NewAttributeSets {
+		_, err := tx.Exec(
+			"INSERT INTO product_variant_attribute_options (variant_id, attribute_id, option_id) VALUES ($1, $2, $3);",
+			variantId,
+			newSet.AttributeId,
+			newSet.OptionId,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func deleteProductVariantAsDBTx(
+	tx *sql.Tx,
+	productId int,
+	variantId int,
+) error {
+	_, err := tx.Exec(
+		`DELETE FROM product_variants WHERE id = $1 AND product_id = $2;`,
+		variantId,
+		productId,
+	)
 	if err != nil {
 		return err
 	}

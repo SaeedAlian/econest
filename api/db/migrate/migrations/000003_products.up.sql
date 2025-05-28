@@ -62,9 +62,7 @@ CREATE TABLE product_tag_assignments (
 
 CREATE TABLE product_attributes (
   id SERIAL PRIMARY KEY,
-  label VARCHAR(255) NOT NULL,
-
-  product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE
+  label VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE product_attribute_options (
@@ -83,8 +81,8 @@ CREATE TABLE product_variants (
 
 CREATE TABLE product_variant_attribute_options (
   variant_id INTEGER NOT NULL REFERENCES product_variants(id) ON DELETE CASCADE,
-  attribute_id INTEGER NOT NULL REFERENCES product_attributes(id) ON DELETE CASCADE,
-  option_id INTEGER NOT NULL REFERENCES product_attribute_options(id) ON DELETE CASCADE,
+  attribute_id INTEGER NOT NULL REFERENCES product_attributes(id) ON DELETE RESTRICT,
+  option_id INTEGER NOT NULL REFERENCES product_attribute_options(id) ON DELETE RESTRICT,
   PRIMARY KEY (variant_id, attribute_id)
 );
 

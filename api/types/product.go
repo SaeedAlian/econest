@@ -6,7 +6,7 @@ import (
 	json_types "github.com/SaeedAlian/econest/api/types/json"
 )
 
-type Product struct {
+type ProductBase struct {
 	Id            int       `json:"id"            exposure:"public"`
 	Name          string    `json:"name"          exposure:"public"`
 	Slug          string    `json:"slug"          exposure:"public"`
@@ -28,10 +28,7 @@ type ProductCategory struct {
 }
 
 type ProductCategoryWithParents struct {
-	Id             int                         `json:"id"                       exposure:"public"`
-	Name           string                      `json:"name"                     exposure:"public"`
-	CreatedAt      time.Time                   `json:"createdAt"                exposure:"public"`
-	UpdatedAt      time.Time                   `json:"updatedAt"                exposure:"public"`
+	ProductCategory
 	ParentCategory *ProductCategoryWithParents `json:"parentCategory,omitempty" exposure:"public"`
 }
 
@@ -58,12 +55,6 @@ type ProductSpec struct {
 	ProductId int    `json:"productId" exposure:"public"`
 }
 
-type ProductSpecInfo struct {
-	Id    int    `json:"id"    exposure:"public"`
-	Label string `json:"label" exposure:"public"`
-	Value string `json:"value" exposure:"public"`
-}
-
 type ProductTag struct {
 	Id        int       `json:"id"        exposure:"public"`
 	Name      string    `json:"name"      exposure:"public"`
@@ -77,9 +68,8 @@ type ProductTagAssignment struct {
 }
 
 type ProductAttribute struct {
-	Id        int    `json:"id"        exposure:"public"`
-	Label     string `json:"label"     exposure:"public"`
-	ProductId int    `json:"productId" exposure:"public"`
+	Id    int    `json:"id"    exposure:"public"`
+	Label string `json:"label" exposure:"public"`
 }
 
 type ProductAttributeOption struct {
@@ -88,15 +78,9 @@ type ProductAttributeOption struct {
 	AttributeId int    `json:"attributeId" exposure:"public"`
 }
 
-type ProductAttributeOptionInfo struct {
-	Id    int    `json:"id"    exposure:"public"`
-	Value string `json:"value" exposure:"public"`
-}
-
 type ProductAttributeWithOptions struct {
-	Id      int                          `json:"id"      exposure:"public"`
-	Label   string                       `json:"label"   exposure:"public"`
-	Options []ProductAttributeOptionInfo `json:"options" exposure:"public"`
+	ProductAttribute
+	Options []ProductAttributeOption `json:"options" exposure:"public"`
 }
 
 type ProductVariant struct {
@@ -105,21 +89,20 @@ type ProductVariant struct {
 	ProductId int `json:"productId" exposure:"public"`
 }
 
-type ProductVariantOption struct {
+type ProductVariantAttributeOption struct {
 	VariantId   int `json:"variantId"   exposure:"public"`
 	AttributeId int `json:"attributeId" exposure:"public"`
 	OptionId    int `json:"optionId"    exposure:"public"`
 }
 
-type ProductVariantOptionInfo struct {
-	AttributeId int `json:"attributeId" exposure:"public"`
-	OptionId    int `json:"optionId"    exposure:"public"`
+type ProductVariantSelectedAttributeOption struct {
+	ProductAttribute
+	SelectedOption ProductAttributeOption `json:"selectedOption" exposure:"public"`
 }
 
-type ProductVariantInfo struct {
-	Id       int                        `json:"id"       exposure:"public"`
-	Quantity int                        `json:"quantity" exposure:"public"`
-	Options  []ProductVariantOptionInfo `json:"options"  exposure:"public"`
+type ProductVariantWithAttributeSet struct {
+	ProductVariant
+	AttributeSet []ProductVariantSelectedAttributeOption `json:"attributeSet" exposure:"public"`
 }
 
 type ProductComment struct {
@@ -132,24 +115,23 @@ type ProductComment struct {
 	UserId    int                       `json:"userId"    exposure:"public"`
 }
 
-type ProductWithMainInfo struct {
-	Product       `              json:"product"             exposure:"public"`
+type Product struct {
+	ProductBase
 	TotalQuantity int           `json:"totalQuantity"       exposure:"public"`
 	Offer         *ProductOffer `json:"offer,omitempty"     exposure:"public"`
 	MainImage     *ProductImage `json:"mainImage,omitempty" exposure:"public"`
 	Store         StoreInfo     `json:"store"               exposure:"public"`
 }
 
-type ProductWithAllInfo struct {
-	Product     `                              json:"product"         exposure:"public"`
-	Subcategory ProductCategoryWithParents    `json:"subcategory"     exposure:"public"`
-	Specs       []ProductSpecInfo             `json:"specs"           exposure:"public"`
-	Tags        []ProductTag                  `json:"tags"            exposure:"public"`
-	Attributes  []ProductAttributeWithOptions `json:"attributes"      exposure:"public"`
-	Variants    []ProductVariantInfo          `json:"variants"        exposure:"public"`
-	Offer       *ProductOffer                 `json:"offer,omitempty" exposure:"public"`
-	Images      []ProductImage                `json:"images"          exposure:"public"`
-	Store       StoreInfo                     `json:"store"           exposure:"public"`
+type ProductExtended struct {
+	ProductBase
+	Subcategory ProductCategoryWithParents       `json:"subcategory"     exposure:"public"`
+	Specs       []ProductSpec                    `json:"specs"           exposure:"public"`
+	Tags        []ProductTag                     `json:"tags"            exposure:"public"`
+	Variants    []ProductVariantWithAttributeSet `json:"variants"        exposure:"public"`
+	Offer       *ProductOffer                    `json:"offer,omitempty" exposure:"public"`
+	Images      []ProductImage                   `json:"images"          exposure:"public"`
+	Store       StoreInfo                        `json:"store"           exposure:"public"`
 }
 
 type CreateProductTagPayload struct {
@@ -165,11 +147,6 @@ type ProductTagSearchQuery struct {
 	ProductId *int    `json:"productId"`
 	Limit     *int    `json:"limit"`
 	Offset    *int    `json:"offset"`
-}
-
-type CreateProductTagAssignment struct {
-	ProductId int `json:"productId" validate:"required"`
-	TagId     int `json:"tagId"     validate:"required"`
 }
 
 type CreateProductCategoryPayload struct {
@@ -189,17 +166,44 @@ type ProductCategorySearchQuery struct {
 	Offset           *int    `json:"offset"`
 }
 
-type CreateProductPayload struct {
+type CreateProductBasePayload struct {
 	Name          string  `json:"name"          validate:"required"`
 	Slug          string  `json:"slug"`
 	Price         float64 `json:"price"         validate:"required"`
 	Description   string  `json:"description"`
 	SubcategoryId int     `json:"subcategoryId" validate:"required"`
-	Quantity      int     `json:"quantity"      validate:"min=0,required"`
 	StoreId       int     `json:"storeId"       validate:"required"`
 }
 
-type UpdateProductPayload struct {
+type CreateProductImagePayload struct {
+	ImageName string `json:"imageName" validate:"required"`
+	IsMain    bool   `json:"isMain"    validate:"required"`
+}
+
+type CreateProductSpecPayload struct {
+	Label string `json:"label" validate:"required"`
+	Value string `json:"value" validate:"required"`
+}
+
+type ProductVariantAttributeSetPayload struct {
+	AttributeId int `json:"attributeId" validate:"required"`
+	OptionId    int `json:"optionId"    validate:"required"`
+}
+
+type CreateProductVariantPayload struct {
+	Quantity      int                                 `json:"quantity"      validate:"required"`
+	AttributeSets []ProductVariantAttributeSetPayload `json:"attributeSets" validate:"required"`
+}
+
+type CreateProductPayload struct {
+	Base     CreateProductBasePayload      `json:"base"     validate:"required"`
+	TagIds   []int                         `json:"tagIds"   validate:"required"`
+	Images   []CreateProductImagePayload   `json:"images"   validate:"required"`
+	Specs    []CreateProductSpecPayload    `json:"specs"    validate:"required"`
+	Variants []CreateProductVariantPayload `json:"variants" validate:"required"`
+}
+
+type UpdateProductBasePayload struct {
 	Name          *string  `json:"name"`
 	Slug          *string  `json:"slug"`
 	Price         *float64 `json:"price"`
@@ -208,7 +212,44 @@ type UpdateProductPayload struct {
 	IsActive      *bool    `json:"isActive"`
 }
 
+type UpdateProductSpecPayload struct {
+	Label *string `json:"label"`
+	Value *string `json:"value"`
+}
+
+type UpdateProductVariantPayload struct {
+	Quantity         *int                                `json:"quantity"`
+	NewAttributeSets []ProductVariantAttributeSetPayload `json:"newAttributeSets"`
+	DelAttributeIds  []int                               `json:"delAttributeIds"`
+}
+
+type UpdatedProductSpecPayload struct {
+	Id int
+	UpdateProductSpecPayload
+}
+
+type UpdatedProductVariantPayload struct {
+	Id int
+	UpdateProductVariantPayload
+}
+
+type UpdateProductPayload struct {
+	Base            *UpdateProductBasePayload      `json:"base"`
+	NewTagIds       []int                          `json:"newTagIds"`
+	DelTagIds       []int                          `json:"delTagIds"`
+	NewImages       []CreateProductImagePayload    `json:"newImages"`
+	NewMainImage    *int                           `json:"newMainImage"`
+	DelImageIds     []int                          `json:"delImageIds"`
+	NewSpecs        []CreateProductSpecPayload     `json:"newSpecs"`
+	UpdatedSpecs    []UpdatedProductSpecPayload    `json:"updatedSpecs"`
+	DelSpecIds      []int                          `json:"delSpecIds"`
+	NewVariants     []CreateProductVariantPayload  `json:"newVariants"`
+	UpdatedVariants []UpdatedProductVariantPayload `json:"updatedVariants"`
+	DelVariantIds   []int                          `json:"delVariantIds"`
+}
+
 type ProductSearchQuery struct {
+	Keyword       *string `json:"keyword"`
 	Name          *string `json:"name"`
 	Slug          *string `json:"slug"`
 	MinQuantity   *int    `json:"minQuantity"`
@@ -244,43 +285,31 @@ type ProductOfferSearchQuery struct {
 	Offset           *int       `json:"offset"`
 }
 
-type CreateProductImagePayload struct {
-	ImageName string `json:"imageName" validate:"required"`
-	IsMain    bool   `json:"isMain"    validate:"required"`
-	ProductId int    `json:"productId" validate:"required"`
-}
-
-type UpdateProductImagePayload struct {
-	IsMain *bool `json:"isMain"`
-}
-
-type CreateProductSpecPayload struct {
-	Label     string `json:"label"     validate:"required"`
-	Value     string `json:"value"     validate:"required"`
-	ProductId int    `json:"productId" validate:"required"`
-}
-
-type UpdateProductSpecPayload struct {
-	Label *string `json:"label"`
-	Value *string `json:"value"`
-}
-
 type CreateProductAttributePayload struct {
-	Label     string `json:"label"     validate:"required"`
-	ProductId int    `json:"productId" validate:"required"`
-}
-
-type UpdateProductAttributePayload struct {
-	Label *string `json:"label"`
-}
-
-type CreateProductAttributeOptionPayload struct {
-	Value       string `json:"value"       validate:"required"`
-	AttributeId int    `json:"attributeId" validate:"required"`
+	Label   string   `json:"label"   validate:"required"`
+	Options []string `json:"options" validate:"required"`
 }
 
 type UpdateProductAttributeOptionPayload struct {
 	Value *string `json:"value"`
+}
+
+type UpdatedProductAttributeOptionPayload struct {
+	Id int
+	UpdateProductAttributeOptionPayload
+}
+
+type UpdateProductAttributePayload struct {
+	Label          *string                                `json:"label"`
+	NewOptions     []string                               `json:"newOptions"`
+	UpdatedOptions []UpdatedProductAttributeOptionPayload `json:"updatedOptions"`
+	DelOptionIds   []int                                  `json:"delOptionIds"`
+}
+
+type ProductAttributeSearchQuery struct {
+	Label  *string `json:"label"`
+	Limit  *int    `json:"limit"`
+	Offset *int    `json:"offset"`
 }
 
 type CreateProductCommentPayload struct {
