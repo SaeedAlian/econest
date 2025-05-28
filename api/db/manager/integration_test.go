@@ -2,6 +2,7 @@ package db_manager_test
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"testing"
 	"time"
@@ -30,7 +31,8 @@ func TestDBIntegrationSuite(t *testing.T) {
 }
 
 func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
-	log.Println("Start Tests...")
+	fmt.Print("\n...\n\n")
+	log.Println("Start DB Tests...")
 
 	// create default roles
 	role1Id, err := s.manager.CreateRole(types.CreateRolePayload{
@@ -531,7 +533,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		VerificationStatus: utils.Ptr(types.CredentialVerificationStatusVerified),
 	})
 	s.Require().NoError(err)
-	s.Require().Len(userPhones, 0)
+	s.Require().Len(userPhones, 1)
 
 	tx1Id, err := s.manager.CreateWalletTransaction(types.CreateWalletTransactionPayload{
 		Amount:   100,
@@ -689,7 +691,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Len(storeAddressses, 1)
 
 	prodCat1Id, err := s.manager.CreateProductCategory(types.CreateProductCategoryPayload{
-		Name:             "cat1",
+		Name:             "microsoft",
 		ImageName:        "imageName1",
 		ParentCategoryId: nil,
 	})
@@ -697,7 +699,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Greater(prodCat1Id, 0)
 
 	prodCat2Id, err := s.manager.CreateProductCategory(types.CreateProductCategoryPayload{
-		Name:             "cat2",
+		Name:             "gaming console",
 		ImageName:        "imageName2",
 		ParentCategoryId: &prodCat1Id,
 	})
@@ -705,7 +707,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Greater(prodCat2Id, 1)
 
 	prodCat3Id, err := s.manager.CreateProductCategory(types.CreateProductCategoryPayload{
-		Name:             "cat3",
+		Name:             "furniture",
 		ImageName:        "imageName3",
 		ParentCategoryId: nil,
 	})
@@ -724,64 +726,52 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(prodTag2Id, 1)
 
-	product1Id, err := s.manager.CreateProduct(types.CreateProductPayload{
-		Name:          "prod1",
-		Slug:          "prod1",
+	prodTag3Id, err := s.manager.CreateProductTag(types.CreateProductTagPayload{
+		Name: "tag3",
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(prodTag3Id, 2)
+
+	product1Id, err := s.manager.CreateProductBase(types.CreateProductBasePayload{
+		Name:          "furniture",
+		Slug:          "furniture",
 		Price:         1000,
 		Description:   "PRODUCT1",
 		SubcategoryId: prodCat3Id,
-		Quantity:      5,
 		StoreId:       storeId,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(product1Id, 0)
 
-	product2Id, err := s.manager.CreateProduct(types.CreateProductPayload{
-		Name:          "prod2",
-		Slug:          "prod2",
+	product2Id, err := s.manager.CreateProductBase(types.CreateProductBasePayload{
+		Name:          "xbox controller",
+		Slug:          "xbox-controller",
 		Price:         1000,
 		Description:   "PRODUCT2",
 		SubcategoryId: prodCat1Id,
-		Quantity:      10,
 		StoreId:       storeId,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(product2Id, 1)
 
-	product3Id, err := s.manager.CreateProduct(types.CreateProductPayload{
-		Name:          "prod3",
-		Slug:          "prod3",
+	product3Id, err := s.manager.CreateProductBase(types.CreateProductBasePayload{
+		Name:          "xbox series x",
+		Slug:          "xbox-series-x",
 		Price:         5000,
 		Description:   "PRODUCT3",
 		SubcategoryId: prodCat2Id,
-		Quantity:      7,
 		StoreId:       storeId,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(product3Id, 2)
 
-	err = s.manager.CreateProductTagAssignment(types.CreateProductTagAssignment{
-		ProductId: product1Id,
-		TagId:     prodTag1Id,
-	})
+	err = s.manager.CreateProductTagAssignments(product1Id, []int{prodTag1Id, prodTag2Id})
 	s.Require().NoError(err)
 
-	err = s.manager.CreateProductTagAssignment(types.CreateProductTagAssignment{
-		ProductId: product1Id,
-		TagId:     prodTag2Id,
-	})
+	err = s.manager.CreateProductTagAssignments(product2Id, []int{prodTag1Id})
 	s.Require().NoError(err)
 
-	err = s.manager.CreateProductTagAssignment(types.CreateProductTagAssignment{
-		ProductId: product2Id,
-		TagId:     prodTag1Id,
-	})
-	s.Require().NoError(err)
-
-	err = s.manager.CreateProductTagAssignment(types.CreateProductTagAssignment{
-		ProductId: product3Id,
-		TagId:     prodTag2Id,
-	})
+	err = s.manager.CreateProductTagAssignments(product3Id, []int{prodTag2Id})
 	s.Require().NoError(err)
 
 	offer1Id, err := s.manager.CreateProductOffer(types.CreateProductOfferPayload{
@@ -792,42 +782,37 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(offer1Id, 0)
 
-	spec11Id, err := s.manager.CreateProductSpec(types.CreateProductSpecPayload{
-		Label:     "speclabel1",
-		Value:     "specval1",
-		ProductId: product1Id,
+	spec11Id, err := s.manager.CreateProductSpec(product1Id, types.CreateProductSpecPayload{
+		Label: "speclabel1",
+		Value: "specval1",
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(spec11Id, 0)
 
-	spec12Id, err := s.manager.CreateProductSpec(types.CreateProductSpecPayload{
-		Label:     "speclabel2",
-		Value:     "specval2",
-		ProductId: product1Id,
+	spec12Id, err := s.manager.CreateProductSpec(product1Id, types.CreateProductSpecPayload{
+		Label: "speclabel2",
+		Value: "specval2",
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(spec12Id, 1)
 
-	spec21Id, err := s.manager.CreateProductSpec(types.CreateProductSpecPayload{
-		Label:     "speclabel3",
-		Value:     "specval3",
-		ProductId: product2Id,
+	spec21Id, err := s.manager.CreateProductSpec(product2Id, types.CreateProductSpecPayload{
+		Label: "speclabel3",
+		Value: "specval3",
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(spec21Id, 2)
 
-	spec22Id, err := s.manager.CreateProductSpec(types.CreateProductSpecPayload{
-		Label:     "speclabel4",
-		Value:     "specval4",
-		ProductId: product2Id,
+	spec22Id, err := s.manager.CreateProductSpec(product2Id, types.CreateProductSpecPayload{
+		Label: "speclabel4",
+		Value: "specval4",
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(spec22Id, 3)
 
-	spec23Id, err := s.manager.CreateProductSpec(types.CreateProductSpecPayload{
-		Label:     "speclabel5",
-		Value:     "specval5",
-		ProductId: product1Id,
+	spec23Id, err := s.manager.CreateProductSpec(product2Id, types.CreateProductSpecPayload{
+		Label: "speclabel5",
+		Value: "specval5",
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(spec23Id, 4)
@@ -842,7 +827,32 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	products, err = s.manager.GetProducts(types.ProductSearchQuery{
 		Limit:  utils.Ptr(2),
 		Offset: utils.Ptr(0),
-		Name:   utils.Ptr("1"),
+		Name:   utils.Ptr("xbox"),
+	})
+	s.Require().NoError(err)
+	s.Require().Len(products, 2)
+
+	products, err = s.manager.GetProducts(types.ProductSearchQuery{
+		Limit:   utils.Ptr(2),
+		Offset:  utils.Ptr(0),
+		Keyword: utils.Ptr("xbox"),
+	})
+	s.Require().NoError(err)
+	s.Require().Len(products, 2)
+
+	products, err = s.manager.GetProducts(types.ProductSearchQuery{
+		Limit:   utils.Ptr(2),
+		Offset:  utils.Ptr(0),
+		Keyword: utils.Ptr("console"),
+	})
+	s.Require().NoError(err)
+	s.Require().Len(products, 2)
+
+	products, err = s.manager.GetProducts(types.ProductSearchQuery{
+		Limit:   utils.Ptr(2),
+		Offset:  utils.Ptr(0),
+		Keyword: utils.Ptr("xbox"),
+		Name:    utils.Ptr("controller"),
 	})
 	s.Require().NoError(err)
 	s.Require().Len(products, 1)
@@ -865,133 +875,220 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Len(prodCatsWithParents, 3)
 
-	att11Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
-		Label:     "ATR1",
-		ProductId: product1Id,
+	att1Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
+		Label:   "ATR1",
+		Options: []string{"opt1", "opt2", "opt3"},
 	})
 	s.Require().NoError(err)
-	s.Require().Greater(att11Id, 0)
+	s.Require().Greater(att1Id, 0)
 
-	att12Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
-		Label:     "ATR2",
-		ProductId: product1Id,
+	att2Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
+		Label:   "ATR2",
+		Options: []string{"opt4", "opt5", "opt1"},
 	})
 	s.Require().NoError(err)
-	s.Require().Greater(att12Id, 1)
+	s.Require().Greater(att2Id, 1)
 
-	att13Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
-		Label:     "ATR3",
-		ProductId: product1Id,
+	att3Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
+		Label:   "ATR3",
+		Options: []string{"opt8", "opt7", "opt6"},
 	})
 	s.Require().NoError(err)
-	s.Require().Greater(att13Id, 2)
+	s.Require().Greater(att3Id, 2)
 
-	attOpt111, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL1",
-			AttributeId: att11Id,
-		},
+	att4Id, err := s.manager.CreateProductAttribute(types.CreateProductAttributePayload{
+		Label:   "ATR4",
+		Options: []string{"opt9", "opt10", "opt3"},
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(att4Id, 3)
+
+	attrs, err := s.manager.GetProductAttributes(types.ProductAttributeSearchQuery{})
+	s.Require().NoError(err)
+	s.Require().Len(attrs, 4)
+
+	attrsWithOpts, err := s.manager.GetProductAttributesWithOptions(
+		types.ProductAttributeSearchQuery{},
 	)
 	s.Require().NoError(err)
-	s.Require().Greater(attOpt111, 0)
+	s.Require().Len(attrsWithOpts, 4)
+	s.Require().Len(attrsWithOpts[0].Options, 3)
 
-	attOpt112, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL2",
-			AttributeId: att11Id,
+	attr1, err := s.manager.GetProductAttributeWithOptionsById(att1Id)
+	s.Require().NoError(err)
+	s.Require().Equal(attr1.Id, att1Id)
+
+	attr2, err := s.manager.GetProductAttributeWithOptionsById(att2Id)
+	s.Require().NoError(err)
+	s.Require().Equal(attr2.Id, att2Id)
+
+	attr3, err := s.manager.GetProductAttributeWithOptionsById(att3Id)
+	s.Require().NoError(err)
+	s.Require().Equal(attr3.Id, att3Id)
+
+	attr4, err := s.manager.GetProductAttributeWithOptionsById(att4Id)
+	s.Require().NoError(err)
+	s.Require().Equal(attr4.Id, att4Id)
+
+	err = s.manager.UpdateProductAttribute(attr1.Id, types.UpdateProductAttributePayload{
+		Label:      utils.Ptr("new atr 1"),
+		NewOptions: []string{"new opt 1", "new opt 2"},
+		UpdatedOptions: []types.UpdatedProductAttributeOptionPayload{
+			{
+				Id: attr1.Options[1].Id,
+				UpdateProductAttributeOptionPayload: types.UpdateProductAttributeOptionPayload{
+					Value: utils.Ptr("updated opt 2"),
+				},
+			},
 		},
-	)
+		DelOptionIds: []int{attr1.Options[0].Id},
+	})
 	s.Require().NoError(err)
-	s.Require().Greater(attOpt112, 1)
 
-	attOpt121, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL3",
-			AttributeId: att12Id,
+	attr1, err = s.manager.GetProductAttributeWithOptionsById(att1Id)
+	s.Require().NoError(err)
+	s.Require().Equal(attr1.Id, att1Id)
+	s.Require().Len(attr1.Options, 4)
+	s.Require().Equal(attr1.Options[1].Value, "updated opt 2")
+
+	var11Id, err := s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
+		Quantity: 5,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr1.Id,
+				OptionId:    attr1.Options[1].Id,
+			},
+			{
+				AttributeId: attr2.Id,
+				OptionId:    attr2.Options[0].Id,
+			},
+			{
+				AttributeId: attr3.Id,
+				OptionId:    attr3.Options[2].Id,
+			},
 		},
-	)
+	})
 	s.Require().NoError(err)
-	s.Require().Greater(attOpt121, 2)
+	s.Require().Greater(var11Id, 0)
 
-	attOpt113, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL4",
-			AttributeId: att11Id,
+	var12Id, err := s.manager.CreateProductVariant(product2Id, types.CreateProductVariantPayload{
+		Quantity: 15,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr2.Id,
+				OptionId:    attr2.Options[1].Id,
+			},
+			{
+				AttributeId: attr1.Id,
+				OptionId:    attr1.Options[1].Id,
+			},
 		},
-	)
+	})
 	s.Require().NoError(err)
-	s.Require().Greater(attOpt113, 3)
+	s.Require().Greater(var12Id, 1)
 
-	attOpt122, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL5",
-			AttributeId: att12Id,
+	var21Id, err := s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
+		Quantity: 50,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr1.Id,
+				OptionId:    attr1.Options[2].Id,
+			},
+			{
+				AttributeId: attr2.Id,
+				OptionId:    attr2.Options[1].Id,
+			},
 		},
-	)
+	})
 	s.Require().NoError(err)
-	s.Require().Greater(attOpt122, 4)
+	s.Require().Greater(var21Id, 2)
 
-	attOpt123, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL5",
-			AttributeId: att12Id,
+	_, err = s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
+		Quantity: 50,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr1.Id,
+				OptionId:    attr1.Options[2].Id,
+			},
+			{
+				AttributeId: attr1.Id,
+				OptionId:    attr1.Options[1].Id,
+			},
 		},
-	)
-	s.Require().NoError(err)
-	s.Require().Greater(attOpt123, 5)
-
-	attOpt131, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL6",
-			AttributeId: att13Id,
-		},
-	)
-	s.Require().NoError(err)
-	s.Require().Greater(attOpt131, 6)
-
-	attOpt132, err := s.manager.CreateProductAttributeOption(
-		types.CreateProductAttributeOptionPayload{
-			Value:       "VAL7",
-			AttributeId: att13Id,
-		},
-	)
-	s.Require().NoError(err)
-	s.Require().Greater(attOpt132, 7)
-
-	prod1, err := s.manager.GetProductWithAllInfoById(1)
-	s.Require().NoError(err)
-	s.Require().Len(prod1.Variants, 18)
-
-	err = s.manager.DeleteProductAttribute(att11Id)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteProductAttributeOption(attOpt112)
+	})
 	s.Require().Error(err)
 
-	err = s.manager.DeleteProductAttributeOption(attOpt122)
+	_, err = s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
+		Quantity: 50,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr2.Id,
+				OptionId:    attr1.Options[2].Id,
+			},
+		},
+	})
+	s.Require().Error(err)
+
+	_, err = s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
+		Quantity: 50,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr1.Id,
+				OptionId:    99999,
+			},
+		},
+	})
+	s.Require().Error(err)
+
+	err = s.manager.UpdateProductVariant(product1Id, var11Id, types.UpdateProductVariantPayload{
+		Quantity: utils.Ptr(120),
+		NewAttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr4.Id,
+				OptionId:    attr4.Options[1].Id,
+			},
+		},
+		DelAttributeIds: []int{
+			attr3.Id,
+			attr2.Id,
+		},
+	})
+
+	prod1, err := s.manager.GetProductExtendedById(1)
+	s.Require().NoError(err)
+	s.Require().Len(prod1.Variants, 2)
+
+	err = s.manager.DeleteProductVariant(product1Id, var21Id)
 	s.Require().NoError(err)
 
-	prod1, err = s.manager.GetProductWithAllInfoById(1)
+	prod1, err = s.manager.GetProductExtendedById(1)
 	s.Require().NoError(err)
-	s.Require().Len(prod1.Variants, 4)
+	s.Require().Len(prod1.Variants, 1)
+
+	prod2, err := s.manager.GetProductExtendedById(2)
+	s.Require().NoError(err)
+	s.Require().Len(prod2.Variants, 1)
+
+	err = s.manager.DeleteProductAttribute(att3Id)
+	s.Require().NoError(err)
 
 	storeOwnedProds, err := s.manager.GetStoreOwnedProducts(storeId)
 	s.Require().NoError(err)
 	s.Require().Len(storeOwnedProds, 3)
 
-	productsMainInfo, err := s.manager.GetProductsWithMainInfo(types.ProductSearchQuery{})
+	productsMainInfo, err := s.manager.GetProducts(types.ProductSearchQuery{})
 	s.Require().NoError(err)
 	s.Require().Len(productsMainInfo, 3)
 
-	product3AllInfo, err := s.manager.GetProductWithAllInfoById(product3Id)
+	product3AllInfo, err := s.manager.GetProductExtendedById(product3Id)
 	s.Require().NoError(err)
 	s.Require().Equal(product3AllInfo.Id, product3Id)
 
 	productsCount, err := s.manager.GetProductsCount(types.ProductSearchQuery{
-		Name: utils.Ptr("1"),
+		Name: utils.Ptr("xbox"),
 	})
 	s.Require().NoError(err)
-	s.Require().Equal(productsCount, 1)
+	s.Require().Equal(productsCount, 2)
 
 	productsCount, err = s.manager.GetProductsCount(types.ProductSearchQuery{})
 	s.Require().NoError(err)
@@ -999,41 +1096,16 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 
 	prodTags, err := s.manager.GetProductTags(types.ProductTagSearchQuery{})
 	s.Require().NoError(err)
-	s.Require().Len(prodTags, 2)
+	s.Require().Len(prodTags, 3)
 
 	productOffers, err := s.manager.GetProductOffers(types.ProductOfferSearchQuery{})
 	s.Require().NoError(err)
 	s.Require().Len(productOffers, 1)
 
-	prod1Attrs, err := s.manager.GetProductAttributes(prod1.Id)
-	s.Require().NoError(err)
-	s.Require().Len(prod1Attrs, 2)
-
-	prod1Variants, err := s.manager.GetProductVariantsWithInfo(prod1.Id)
-	s.Require().NoError(err)
-	s.Require().Len(prod1Variants, 4)
-
-	prod2Variants, err := s.manager.GetProductVariantsWithInfo(product2Id)
-	s.Require().NoError(err)
-	s.Require().Len(prod2Variants, 1)
-
 	prod1Inv, prod1InStock, err := s.manager.GetProductInventory(prod1.Id)
 	s.Require().NoError(err)
-	s.Require().Equal(prod1Inv, 5)
+	s.Require().Equal(prod1Inv, 120)
 	s.Require().Equal(prod1InStock, true)
-
-	err = s.manager.UpdateProductAttributeOption(
-		attOpt131,
-		types.UpdateProductAttributeOptionPayload{
-			Value: utils.Ptr("New val"),
-		},
-	)
-	s.Require().NoError(err)
-
-	err = s.manager.UpdateProductAttribute(att13Id, types.UpdateProductAttributePayload{
-		Label: utils.Ptr("New Label"),
-	})
-	s.Require().NoError(err)
 
 	orderTxId, err := s.manager.CreateWalletTransaction(types.CreateWalletTransactionPayload{
 		Amount:   11200,
@@ -1047,11 +1119,11 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		ProductVariants: []types.OrderProductVariantAssignmentPayload{
 			{
 				Quantity:  1,
-				VariantId: prod1Variants[0].Id,
+				VariantId: prod1.Variants[0].Id,
 			},
 			{
-				Quantity:  2,
-				VariantId: prod2Variants[0].Id,
+				Quantity:  1,
+				VariantId: prod2.Variants[0].Id,
 			},
 		},
 	})
@@ -1094,6 +1166,63 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	})
 	s.Require().NoError(err)
 
+	newProductId, err := s.manager.CreateProduct(types.CreateProductPayload{
+		Base: types.CreateProductBasePayload{
+			Name:          "new prod",
+			Slug:          "new-prod",
+			Price:         10310,
+			Description:   "NEW PRODUCT",
+			SubcategoryId: prodCat1Id,
+			StoreId:       storeWithSettings.Id,
+		},
+		TagIds: []int{prodTag1Id},
+		Images: []types.CreateProductImagePayload{
+			{
+				ImageName: "newimage",
+				IsMain:    false,
+			},
+			{
+				ImageName: "mainimage",
+				IsMain:    true,
+			},
+		},
+		Specs: []types.CreateProductSpecPayload{
+			{
+				Label: "newspec",
+				Value: "newspecval",
+			},
+		},
+		Variants: []types.CreateProductVariantPayload{
+			{
+				Quantity: 100,
+				AttributeSets: []types.ProductVariantAttributeSetPayload{
+					{
+						AttributeId: attr1.Id,
+						OptionId:    attr1.Options[0].Id,
+					},
+					{
+						AttributeId: attr2.Id,
+						OptionId:    attr2.Options[1].Id,
+					},
+				},
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(newProductId, 3)
+
+	err = s.manager.UpdateProduct(newProductId, types.UpdateProductPayload{
+		Base: &types.UpdateProductBasePayload{
+			Name: utils.Ptr("NEW UPDATED NAME"),
+		},
+		NewTagIds: []int{prodTag2Id, prodTag3Id},
+		DelTagIds: []int{prodTag1Id},
+	})
+
+	newProduct, err := s.manager.GetProductExtendedById(newProductId)
+	s.Require().NoError(err)
+	s.Require().Equal(newProduct.Id, newProductId)
+
 	err = s.manager.DeleteOrderShipment(orderShipId)
 	s.Require().NoError(err)
 
@@ -1107,6 +1236,9 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 
 	err = s.manager.DeleteProduct(product3Id)
+	s.Require().NoError(err)
+
+	err = s.manager.DeleteProduct(newProductId)
 	s.Require().NoError(err)
 
 	err = s.manager.DeleteUser(userId)
