@@ -18,7 +18,7 @@ type Store struct {
 
 type StoreInfo struct {
 	Id   int    `json:"id"   exposure:"public"`
-	Name string `json:"name" exposure:"private"`
+	Name string `json:"name" exposure:"public"`
 }
 
 type StoreSettings struct {
