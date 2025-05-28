@@ -101,4 +101,36 @@ var (
 	)
 	ErrInvalidStoreSettingsPayload = errors.New("invalid store settings payload")
 	ErrInvalidOptionId             = errors.New("invalid option id")
+	ErrUploadSizeTooBig            = func(maxSize int) error {
+		return errors.New(
+			fmt.Sprintf(
+				"uploaded file is too big, choose a file that's less than %d MB in size",
+				maxSize,
+			),
+		)
+	}
+	ErrCannotRetrieveFile = func(err error) error {
+		return errors.New(
+			fmt.Sprintf(
+				"cannot retrieve the file: %v",
+				err,
+			),
+		)
+	}
+	ErrFileUpload = func(err error) error {
+		return errors.New(
+			fmt.Sprintf(
+				"error in file uploading: %v",
+				err,
+			),
+		)
+	}
+	ErrNotAllowedFileType = func(allowedFileTypes string) error {
+		return errors.New(
+			fmt.Sprintf(
+				"cannot upload this file, please upload only %s files",
+				allowedFileTypes,
+			),
+		)
+	}
 )
