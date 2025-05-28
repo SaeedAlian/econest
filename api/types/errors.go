@@ -21,6 +21,7 @@ var (
 	ErrProductTagNotFound              = errors.New("product tag not found")
 	ErrProductOfferNotFound            = errors.New("product offer not found")
 	ErrProductImageNotFound            = errors.New("product image not found")
+	ErrProductAttributeNotFound        = errors.New("product attribute not found")
 	ErrProductSpecNotFound             = errors.New("product spec not found")
 	ErrProductVariantNotFound          = errors.New("product variant not found")
 	ErrProductCommentNotFound          = errors.New("product comment not found")
@@ -99,4 +100,5 @@ var (
 		"another store with this name already exists",
 	)
 	ErrInvalidStoreSettingsPayload = errors.New("invalid store settings payload")
+	ErrInvalidOptionId             = errors.New("invalid option id")
 )
