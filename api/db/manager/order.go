@@ -447,24 +447,6 @@ func scanOrderProductVariantRow(rows *sql.Rows) (*types.OrderProductVariant, err
 	return n, nil
 }
 
-func scanOrderProductSelectedAttributeRow(
-	rows *sql.Rows,
-) (*types.OrderProductSelectedAttribute, error) {
-	n := new(types.OrderProductSelectedAttribute)
-
-	err := rows.Scan(
-		&n.AttributeId,
-		&n.OptionId,
-		&n.Label,
-		&n.Value,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return n, nil
-}
-
 func buildOrderSearchQuery(
 	query types.OrderSearchQuery,
 	base string,

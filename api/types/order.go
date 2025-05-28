@@ -29,20 +29,6 @@ type OrderShipment struct {
 	SenderAddressId   int          `json:"senderAddressId"   exposure:"private,needPermission"`
 }
 
-type OrderProductInfo struct {
-	Id            int           `json:"id"                  exposure:"private,needPermission"`
-	Name          string        `json:"name"                exposure:"private,needPermission"`
-	Slug          string        `json:"slug"                exposure:"private,needPermission"`
-	Price         float64       `json:"price"               exposure:"private,needPermission"`
-	Description   string        `json:"description"         exposure:"private,needPermission"`
-	CreatedAt     time.Time     `json:"createdAt"           exposure:"private,needPermission"`
-	UpdatedAt     time.Time     `json:"updatedAt"           exposure:"private,needPermission"`
-	SubcategoryId int           `json:"subcategoryId"       exposure:"private,needPermission"`
-	TotalQuantity int           `json:"totalQuantity"       exposure:"private,needPermission"`
-	Offer         *ProductOffer `json:"offer,omitempty"     exposure:"private,needPermission"`
-	MainImage     *ProductImage `json:"mainImage,omitempty" exposure:"private,needPermission"`
-}
-
 type OrderProductSelectedAttribute struct {
 	Label       string `json:"label"       exposure:"private,needPermission"`
 	Value       string `json:"value"       exposure:"private,needPermission"`

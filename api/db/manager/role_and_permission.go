@@ -811,36 +811,6 @@ func scanPermissionGroupRow(rows *sql.Rows) (*types.PermissionGroup, error) {
 	return n, nil
 }
 
-func scanResourcePermissionRow(rows *sql.Rows) (*types.GroupResourcePermission, error) {
-	n := new(types.GroupResourcePermission)
-
-	err := rows.Scan(
-		&n.CreatedAt,
-		&n.Resource,
-		&n.GroupId,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return n, nil
-}
-
-func scanActionPermissionRow(rows *sql.Rows) (*types.GroupActionPermission, error) {
-	n := new(types.GroupActionPermission)
-
-	err := rows.Scan(
-		&n.CreatedAt,
-		&n.Action,
-		&n.GroupId,
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return n, nil
-}
-
 func scanResourcePermissionInfoRow(rows *sql.Rows) (*types.GroupResourcePermissionInfo, error) {
 	n := new(types.GroupResourcePermissionInfo)
 
