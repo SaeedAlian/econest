@@ -2,14 +2,18 @@ package utils
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"math"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"slices"
 	"strings"
 	"time"
 
+	"github.com/gabriel-vasile/mimetype"
 	"github.com/go-playground/validator/v10"
 
 	"github.com/SaeedAlian/econest/api/types"
@@ -141,6 +145,138 @@ func FilterStruct(input any, exposures map[string]bool) map[string]any {
 
 func Ptr[T any](v T) *T {
 	return &v
+}
+
+func CreateSlug(title string) string {
+	slug := strings.ToLower(title)
+	slug = strings.ReplaceAll(slug, " ", "-")
+
+	slug = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return -1
+	}, slug)
+
+	return slug
+}
+
+func FileUploadHandler(
+	field string,
+	maxSizeInMB int64,
+	mimeTypes []string,
+	directory string,
+) http.HandlerFunc {
+	return func(
+		w http.ResponseWriter,
+		r *http.Request,
+	) {
+		maxSizeInBytes := maxSizeInMB * 1024 * 1024
+
+		r.Body = http.MaxBytesReader(w, r.Body, maxSizeInBytes)
+		if err := r.ParseMultipartForm(maxSizeInBytes); err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrUploadSizeTooBig(int(maxSizeInMB)),
+			)
+			return
+		}
+
+		file, handler, err := r.FormFile(field)
+		if err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrCannotRetrieveFile(err),
+			)
+			return
+		}
+		defer file.Close()
+
+		buf := make([]byte, 512)
+		_, err = file.Read(buf)
+		if err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrFileUpload(err),
+			)
+			return
+		}
+
+		mimeTypeFromHandler := handler.Header.Get("Content-Type")
+		mimeTypeFromMTLib := mimetype.Detect(buf).String()
+
+		typeFound := false
+
+		for i := range mimeTypes {
+			m := mimeTypes[i]
+
+			if mimeTypeFromHandler == m || mimeTypeFromMTLib == m {
+				typeFound = true
+			}
+		}
+
+		if !typeFound {
+			allowedMimeTypesString := strings.Join(mimeTypes, " , ")
+
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrNotAllowedFileType(allowedMimeTypesString),
+			)
+			return
+		}
+
+		_, err = file.Seek(0, io.SeekStart)
+		if err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrFileUpload(err),
+			)
+			return
+		}
+
+		err = os.MkdirAll(directory, os.ModePerm)
+		if err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrFileUpload(err),
+			)
+			return
+		}
+
+		filename := fmt.Sprintf("%d-%s", time.Now().UnixNano(), filepath.Base(handler.Filename))
+		fullpath := fmt.Sprintf("%s/%s", directory, filename)
+
+		dest, err := os.Create(fullpath)
+		if err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrFileUpload(err),
+			)
+			return
+		}
+		defer dest.Close()
+
+		_, err = io.Copy(dest, file)
+		if err != nil {
+			WriteErrorInResponse(
+				w,
+				http.StatusBadRequest,
+				types.ErrFileUpload(err),
+			)
+			return
+		}
+
+		WriteJSONInResponse(w, http.StatusOK, map[string]string{
+			"fileName": filename,
+		}, nil)
+	}
 }
 
 func PathExists(path string) (bool, error) {
