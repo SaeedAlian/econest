@@ -1,6 +1,6 @@
 DROP TABLE product_comments;
 DROP TABLE product_specs;
-DROP TABLE product_variant_options;
+DROP TABLE product_variant_attribute_options;
 DROP TABLE product_tag_assignments;
 DROP TABLE product_attribute_options;
 DROP TABLE product_variants;
