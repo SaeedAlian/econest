@@ -50,7 +50,6 @@ func (m *Manager) CreateUser(p types.CreateUserPayload) (int, error) {
 
 	err = tx.Commit()
 	if err != nil {
-		tx.Rollback()
 		return -1, err
 	}
 

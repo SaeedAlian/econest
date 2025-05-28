@@ -200,7 +200,6 @@ func (m *Manager) UpdateWalletAndTransaction(
 	}
 
 	if err := tx.Commit(); err != nil {
-		tx.Rollback()
 		return err
 	}
 	return nil
