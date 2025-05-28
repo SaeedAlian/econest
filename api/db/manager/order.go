@@ -186,47 +186,23 @@ func (m *Manager) GetOrderProductVariantsInfo(
 			return nil, err
 		}
 
-		var productId int
-		var variantQuantity int
-		err = m.db.QueryRow(
-			"SELECT product_id, quantity FROM product_variants WHERE id = $1;",
+		selectedVariant, err := m.GetProductVariantWithAttributeSetById(
 			orderProductVariant.VariantId,
-		).Scan(&productId, &variantQuantity)
+		)
 		if err != nil {
 			return nil, err
 		}
 
-		pvoRows, err := m.db.Query(`SELECT 
-      pvo.attribute_id, pvo.option_id, pa.label, pao.value FROM product_variant_options pvo
-      JOIN product_attributes pa ON pvo.attribute_id = pa.id
-      JOIN product_attribute_options pao ON pvo.option_id = pao.id
-      WHERE pvo.variant_id = $1;
-    `, orderProductVariant.VariantId)
-		if err != nil {
-			return nil, err
-		}
-		defer pvoRows.Close()
-
-		selectedAttributes := []types.OrderProductSelectedAttribute{}
-		for pvoRows.Next() {
-			selectedAttr, err := scanOrderProductSelectedAttributeRow(pvoRows)
-			if err != nil {
-				return nil, err
-			}
-			selectedAttributes = append(selectedAttributes, *selectedAttr)
-		}
-
-		product, err := m.GetProductWithMainInfoById(productId)
+		product, err := m.GetProductById(selectedVariant.ProductId)
 		if err != nil {
 			return nil, err
 		}
 
 		variantsInfo = append(variantsInfo, types.OrderProductVariantInfo{
-			Id:                 orderProductVariant.Id,
-			Quantity:           orderProductVariant.Quantity,
-			VariantQuantity:    variantQuantity,
-			SelectedAttributes: selectedAttributes,
-			Product:            *product,
+			Id:              orderProductVariant.Id,
+			Quantity:        orderProductVariant.Quantity,
+			SelectedVariant: *selectedVariant,
+			Product:         *product,
 		})
 	}
 

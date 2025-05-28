@@ -44,11 +44,10 @@ type OrderProductVariant struct {
 }
 
 type OrderProductVariantInfo struct {
-	Id                 int                             `json:"id"                 exposure:"private,needPermission"`
-	Quantity           int                             `json:"quantity"           exposure:"private,needPermission"`
-	VariantQuantity    int                             `json:"variantQuantity"    exposure:"private,needPermission"`
-	SelectedAttributes []OrderProductSelectedAttribute `json:"selectedAttributes" exposure:"private,needPermission"`
-	Product            ProductWithMainInfo             `json:"product"            exposure:"private,needPermission"`
+	Id              int                            `json:"id"              exposure:"private,needPermission"`
+	Quantity        int                            `json:"quantity"        exposure:"private,needPermission"`
+	SelectedVariant ProductVariantWithAttributeSet `json:"selectedVariant" exposure:"private,needPermission"`
+	Product         Product                        `json:"product"         exposure:"private,needPermission"`
 }
 
 type OrderProductVariantAssignmentPayload struct {
