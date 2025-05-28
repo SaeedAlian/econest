@@ -1,5 +1,7 @@
 .env
 .env.devel
 .env.prod
+.env.docker
+.env.test
 tasks.txt
 bin/
