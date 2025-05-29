@@ -3,7 +3,6 @@ package user
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -669,15 +668,9 @@ func (h *Handler) getMyPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
-	addrIdParam := mux.Vars(r)["addrId"]
-
-	addrId, err := strconv.Atoi(addrIdParam)
+	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidAddressId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -741,15 +734,9 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
-	phoneIdParam := mux.Vars(r)["phoneId"]
-
-	phoneId, err := strconv.Atoi(phoneIdParam)
+	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidPhoneNumberId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -810,15 +797,9 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
-	addrIdParam := mux.Vars(r)["addrId"]
-
-	addrId, err := strconv.Atoi(addrIdParam)
+	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidAddressId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -863,15 +844,9 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
-	phoneIdParam := mux.Vars(r)["phoneId"]
-
-	phoneId, err := strconv.Atoi(phoneIdParam)
+	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidPhoneNumberId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -916,15 +891,9 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
-	userIdParam := mux.Vars(r)["userId"]
-
-	userId, err := strconv.Atoi(userIdParam)
+	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidUserId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1007,15 +976,9 @@ func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
-	userIdParam := mux.Vars(r)["userId"]
-
-	userId, err := strconv.Atoi(userIdParam)
+	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidUserId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1220,15 +1183,9 @@ func (h *Handler) getUsersPages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
-	userIdParam := mux.Vars(r)["userId"]
-
-	userId, err := strconv.Atoi(userIdParam)
+	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidUserId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1520,15 +1477,9 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) banUser(w http.ResponseWriter, r *http.Request) {
-	userIdParam := mux.Vars(r)["userId"]
-
-	userId, err := strconv.Atoi(userIdParam)
+	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidUserId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1571,15 +1522,9 @@ func (h *Handler) banUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) unbanUser(w http.ResponseWriter, r *http.Request) {
-	userIdParam := mux.Vars(r)["userId"]
-
-	userId, err := strconv.Atoi(userIdParam)
+	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidUserId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1599,15 +1544,9 @@ func (h *Handler) unbanUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getUserSettings(w http.ResponseWriter, r *http.Request) {
-	userIdParam := mux.Vars(r)["userId"]
-
-	userId, err := strconv.Atoi(userIdParam)
+	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidUserId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 

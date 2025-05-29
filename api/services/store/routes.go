@@ -2,7 +2,6 @@ package store
 
 import (
 	"net/http"
-	"strconv"
 
 	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
@@ -170,15 +169,9 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -240,15 +233,9 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -307,15 +294,9 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -389,15 +370,9 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -483,15 +458,9 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
-	addrIdParam := mux.Vars(r)["addrId"]
-
-	addrId, err := strconv.Atoi(addrIdParam)
+	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidAddressId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -566,15 +535,9 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
-	phoneIdParam := mux.Vars(r)["phoneId"]
-
-	phoneId, err := strconv.Atoi(phoneIdParam)
+	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidPhoneNumberId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -646,15 +609,9 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
-	addrIdParam := mux.Vars(r)["addrId"]
-
-	addrId, err := strconv.Atoi(addrIdParam)
+	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidAddressId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -710,15 +667,9 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
-	phoneIdParam := mux.Vars(r)["phoneId"]
-
-	phoneId, err := strconv.Atoi(phoneIdParam)
+	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidPhoneNumberId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -774,15 +725,9 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -861,15 +806,9 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1093,15 +1032,9 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getStore(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1214,15 +1147,9 @@ func (h *Handler) getMyStore(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1279,15 +1206,9 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 
 	userId := cUserId.(int)
 
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1371,15 +1292,9 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 
 	userId := cUserId.(int)
 
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1413,15 +1328,9 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getStoreSettings(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1444,15 +1353,9 @@ func (h *Handler) getStoreSettings(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getMyStoreSettings(w http.ResponseWriter, r *http.Request) {
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1521,15 +1424,9 @@ func (h *Handler) deleteStore(w http.ResponseWriter, r *http.Request) {
 
 	userId := cUserId.(int)
 
-	storeIdParam := mux.Vars(r)["storeId"]
-
-	storeId, err := strconv.Atoi(storeIdParam)
+	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidStoreId,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 

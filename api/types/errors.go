@@ -149,4 +149,12 @@ var (
 			),
 		)
 	}
+	ErrInvalidParamValue = func(key string) error {
+		return errors.New(
+			fmt.Sprintf(
+				"invalid value for %s parameter",
+				key,
+			),
+		)
+	}
 )

@@ -303,6 +303,20 @@ func GetPageCount(totalEntities int64, pageLimit int64) int32 {
 	return int32(pages)
 }
 
+func ParseIntURLParam(name string, vars map[string]string) (int, error) {
+	param, ok := vars[name]
+	if !ok {
+		return -1, types.ErrInvalidParamValue(name)
+	}
+
+	parsed, err := strconv.Atoi(param)
+	if err != nil {
+		return -1, types.ErrInvalidParamValue(name)
+	}
+
+	return parsed, nil
+}
+
 func ParseURLQuery(mapping map[string]any, values url.Values) error {
 	for key, ptr := range mapping {
 		v := reflect.ValueOf(ptr)
