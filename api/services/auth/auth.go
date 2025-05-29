@@ -287,7 +287,10 @@ func (h *AuthHandler) WithActionPermissionAuth(
 			return
 		}
 
-		acceptedRoles, err := manager.GetRolesBasedOnActionPermission(actionPermissions)
+		isAllowed, err := manager.IsRoleHasSomeActionPermissions(
+			actionPermissions,
+			userRoleId.(int),
+		)
 		if err != nil {
 			utils.WriteErrorInResponse(
 				w,
@@ -297,16 +300,7 @@ func (h *AuthHandler) WithActionPermissionAuth(
 			return
 		}
 
-		found := false
-
-		for _, r := range acceptedRoles {
-			if r.Id == userRoleId.(int) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
+		if !isAllowed {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusForbidden,
@@ -338,7 +332,10 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 			return
 		}
 
-		acceptedRoles, err := manager.GetRolesBasedOnResourcePermission(resourcePermissions)
+		isAllowed, err := manager.IsRoleHasSomeResourcePermissions(
+			resourcePermissions,
+			userRoleId.(int),
+		)
 		if err != nil {
 			utils.WriteErrorInResponse(
 				w,
@@ -348,16 +345,7 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 			return
 		}
 
-		found := false
-
-		for _, r := range acceptedRoles {
-			if r.Id == userRoleId.(int) {
-				found = true
-				break
-			}
-		}
-
-		if !found {
+		if !isAllowed {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusForbidden,
