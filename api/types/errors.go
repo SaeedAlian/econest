@@ -78,6 +78,7 @@ var (
 	ErrUserIsBanned         = errors.New("this user is banned")
 	ErrCannotAccessStore    = errors.New("you cannot access this store")
 	ErrCannotAccessComment  = errors.New("you cannot access this comment")
+	ErrImageNotExist        = errors.New("image file does not exist")
 	ErrDuplicateStoreName   = errors.New(
 		"another store with this name already exists",
 	)

@@ -24,6 +24,12 @@ type Config struct {
 	ForgotPasswordTokenExpirationInMin    float64
 	EmailVerificationTokenExpirationInMin float64
 	MaxUsersInPage                        int32
+	MaxProductsInPage                     int32
+	MaxProductTagsInPage                  int32
+	MaxProductOffersInPage                int32
+	MaxProductAttributesInPage            int32
+	MaxProductCommentsInPage              int32
+	MaxProductCategoriesInPage            int32
 	MaxStoresInPage                       int32
 	SMTPHost                              string
 	SMTPPort                              string
@@ -33,6 +39,7 @@ type Config struct {
 	WebsiteName                           string
 	ResetPasswordWebsitePageUrl           string
 	EmailVerificationWebsitePageUrl       string
+	UploadsRootDir                        string
 }
 
 var Env = InitConfig()
@@ -58,6 +65,12 @@ func InitConfig() Config {
 		EmailVerificationTokenExpirationInMin: float64(10),
 		MaxUsersInPage:                        int32(10),
 		MaxStoresInPage:                       int32(5),
+		MaxProductsInPage:                     int32(15),
+		MaxProductTagsInPage:                  int32(20),
+		MaxProductOffersInPage:                int32(15),
+		MaxProductAttributesInPage:            int32(15),
+		MaxProductCommentsInPage:              int32(5),
+		MaxProductCategoriesInPage:            int32(15),
 		SMTPHost:                              getEnv("SMTP_HOST", ""),
 		SMTPPort:                              getEnv("SMTP_PORT", ""),
 		SMTPEmail:                             getEnv("SMTP_MAIL", ""),
@@ -72,6 +85,7 @@ func InitConfig() Config {
 			"SMTP_PASS",
 			"http://localhost:5173/email-verify",
 		),
+		UploadsRootDir: getEnv("UPLOADS_ROOT_DIR", "uploads"),
 	}
 }
 

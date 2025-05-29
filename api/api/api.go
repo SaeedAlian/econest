@@ -11,6 +11,7 @@ import (
 	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
 	"github.com/SaeedAlian/econest/api/services/auth"
+	"github.com/SaeedAlian/econest/api/services/product"
 	"github.com/SaeedAlian/econest/api/services/smtp"
 	"github.com/SaeedAlian/econest/api/services/store"
 	"github.com/SaeedAlian/econest/api/services/user"
@@ -35,6 +36,7 @@ func (s *Server) Run() error {
 
 	userSubrouter := router.PathPrefix("/user").Subrouter()
 	storeSubrouter := router.PathPrefix("/store").Subrouter()
+	productSubrouter := router.PathPrefix("/product").Subrouter()
 
 	authCache := redis.NewClient(&redis.Options{
 		Addr: config.Env.KeyServerRedisAddr,
@@ -54,6 +56,9 @@ func (s *Server) Run() error {
 
 	storeService := store.NewHandler(dbManager, authHandler, smtpServer)
 	storeService.RegisterRoutes(storeSubrouter)
+
+	productService := product.NewHandler(dbManager, authHandler, smtpServer)
+	productService.RegisterRoutes(productSubrouter)
 
 	log.Println("API Listening on ", s.addr)
 
