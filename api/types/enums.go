@@ -93,70 +93,106 @@ func (s TransactionStatus) String() string {
 type Action string
 
 const (
-	ActionFullControl                      Action = "full_control"
-	ActionCanBanUser                       Action = "can_ban_user"
-	ActionCanUnbanUser                     Action = "can_unban_user"
-	ActionCanAddStore                      Action = "can_add_store"
-	ActionCanUpdateStore                   Action = "can_update_store"
-	ActionCanDeleteStore                   Action = "can_delete_store"
-	ActionCanCreateOrder                   Action = "can_create_order"
-	ActionCanModifyOrder                   Action = "can_modify_order"
-	ActionCanCreateOrderShipment           Action = "can_create_order_shipment"
-	ActionCanModifyOrderShipment           Action = "can_modify_order_shipment"
-	ActionCanDefineProductOffer            Action = "can_define_product_offer"
-	ActionCanModifyProductOffer            Action = "can_modify_product_offer"
-	ActionCanCancelProductOffer            Action = "can_cancel_product_offer"
-	ActionCanAddRole                       Action = "can_add_role"
-	ActionCanDeleteRole                    Action = "can_delete_role"
-	ActionCanModifyRole                    Action = "can_modify_role"
-	ActionCanAddUserWithRole               Action = "can_add_user_with_role"
-	ActionCanAddPermissionGroup            Action = "can_add_permission_group"
-	ActionCanDeletePermissionGroup         Action = "can_delete_permission_group"
-	ActionCanModifyPermissionGroup         Action = "can_modify_permission_group"
+	ActionFullControl Action = "full_control"
+
+	ActionCanBanUser   Action = "can_ban_user"
+	ActionCanUnbanUser Action = "can_unban_user"
+
+	ActionCanAddStore    Action = "can_add_store"
+	ActionCanUpdateStore Action = "can_update_store"
+	ActionCanDeleteStore Action = "can_delete_store"
+
+	ActionCanCreateOrder Action = "can_create_order"
+	ActionCanUpdateOrder Action = "can_update_order"
+
+	ActionCanCreateOrderShipment Action = "can_create_order_shipment"
+	ActionCanUpdateOrderShipment Action = "can_update_order_shipment"
+
+	ActionCanAddRole    Action = "can_add_role"
+	ActionCanUpdateRole Action = "can_update_role"
+	ActionCanDeleteRole Action = "can_delete_role"
+
+	ActionCanAddUserWithRole Action = "can_add_user_with_role"
+
+	ActionCanAddPermissionGroup    Action = "can_add_permission_group"
+	ActionCanDeletePermissionGroup Action = "can_delete_permission_group"
+	ActionCanUpdatePermissionGroup Action = "can_update_permission_group"
+
 	ActionCanAssignPermissionGroupToRole   Action = "can_assign_permission_group_to_role"
 	ActionCanRemovePermissionGroupFromRole Action = "can_remove_permission_group_from_role"
-	ActionCanAddProductCategory            Action = "can_add_product_category"
-	ActionCanModifyProductCategory         Action = "can_modify_product_category"
-	ActionCanDeleteProductCategory         Action = "can_delete_product_category"
-	ActionCanAddProduct                    Action = "can_add_product"
-	ActionCanUpdateProduct                 Action = "can_update_product"
-	ActionCanDeleteProduct                 Action = "can_delete_product"
-	ActionCanCreateProductComment          Action = "can_create_product_comment"
-	ActionCanUpdateProductComment          Action = "can_update_product_comment"
-	ActionCanDeleteProductComment          Action = "can_delete_product_comment"
+
+	ActionCanAddProductCategory    Action = "can_add_product_category"
+	ActionCanUpdateProductCategory Action = "can_update_product_category"
+	ActionCanDeleteProductCategory Action = "can_delete_product_category"
+
+	ActionCanAddProduct    Action = "can_add_product"
+	ActionCanUpdateProduct Action = "can_update_product"
+	ActionCanDeleteProduct Action = "can_delete_product"
+
+	ActionCanAddProductTag    Action = "can_add_product_tag"
+	ActionCanUpdateProductTag Action = "can_update_product_tag"
+	ActionCanDeleteProductTag Action = "can_delete_product_tag"
+
+	ActionCanAddProductOffer    Action = "can_add_product_offer"
+	ActionCanUpdateProductOffer Action = "can_update_product_offer"
+	ActionCanDeleteProductOffer Action = "can_delete_product_offer"
+
+	ActionCanAddProductAttribute    Action = "can_add_product_attribute"
+	ActionCanUpdateProductAttribute Action = "can_update_product_attribute"
+	ActionCanDeleteProductAttribute Action = "can_delete_product_attribute"
+
+	ActionCanDeleteProductComment Action = "can_delete_product_comment"
 )
 
 var ValidActions = []Action{
 	ActionFullControl,
+
 	ActionCanBanUser,
 	ActionCanUnbanUser,
+
 	ActionCanAddStore,
 	ActionCanUpdateStore,
 	ActionCanDeleteStore,
+
 	ActionCanCreateOrder,
-	ActionCanModifyOrder,
+	ActionCanUpdateOrder,
+
 	ActionCanCreateOrderShipment,
-	ActionCanModifyOrderShipment,
-	ActionCanDefineProductOffer,
-	ActionCanModifyProductOffer,
-	ActionCanCancelProductOffer,
+	ActionCanUpdateOrderShipment,
+
 	ActionCanAddRole,
+	ActionCanUpdateRole,
 	ActionCanDeleteRole,
-	ActionCanModifyRole,
+
 	ActionCanAddUserWithRole,
+
 	ActionCanAddPermissionGroup,
 	ActionCanDeletePermissionGroup,
-	ActionCanModifyPermissionGroup,
+	ActionCanUpdatePermissionGroup,
+
 	ActionCanAssignPermissionGroupToRole,
 	ActionCanRemovePermissionGroupFromRole,
+
 	ActionCanAddProductCategory,
-	ActionCanModifyProductCategory,
+	ActionCanUpdateProductCategory,
 	ActionCanDeleteProductCategory,
+
 	ActionCanAddProduct,
 	ActionCanUpdateProduct,
 	ActionCanDeleteProduct,
-	ActionCanCreateProductComment,
-	ActionCanUpdateProductComment,
+
+	ActionCanAddProductTag,
+	ActionCanUpdateProductTag,
+	ActionCanDeleteProductTag,
+
+	ActionCanAddProductOffer,
+	ActionCanUpdateProductOffer,
+	ActionCanDeleteProductOffer,
+
+	ActionCanAddProductAttribute,
+	ActionCanUpdateProductAttribute,
+	ActionCanDeleteProductAttribute,
+
 	ActionCanDeleteProductComment,
 }
 
@@ -171,24 +207,25 @@ func (a Action) String() string {
 type Resource string
 
 const (
-	ResourceFullAccess                   Resource = "full_access"
-	ResourceRolesAndPermissions          Resource = "roles_and_permissions"
-	ResourceUsersFullAccess              Resource = "users_full_access"
-	ResourceUsersPublicOnly              Resource = "users_public_only"
+	ResourceFullAccess Resource = "full_access"
+
+	ResourceRolesAndPermissions Resource = "roles_and_permissions"
+
+	ResourceUsersFullAccess Resource = "users_full_access"
+
 	ResourceWalletTransactionsFullAccess Resource = "wallet_transactions_full_access"
-	ResourceStoresFullAccess             Resource = "stores_full_access"
-	ResourceStoresPublicOnly             Resource = "stores_public_only"
-	ResourceOrdersFullAccess             Resource = "orders_full_access"
+
+	ResourceStoresFullAccess Resource = "stores_full_access"
+
+	ResourceOrdersFullAccess Resource = "orders_full_access"
 )
 
 var ValidResources = []Resource{
 	ResourceFullAccess,
 	ResourceRolesAndPermissions,
 	ResourceUsersFullAccess,
-	ResourceUsersPublicOnly,
 	ResourceWalletTransactionsFullAccess,
 	ResourceStoresFullAccess,
-	ResourceStoresPublicOnly,
 	ResourceOrdersFullAccess,
 }
 
