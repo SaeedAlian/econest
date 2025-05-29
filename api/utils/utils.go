@@ -310,13 +310,23 @@ func ParseURLQuery(mapping map[string]any, values url.Values) error {
 			return types.ErrQueryMappingNilValueReceived(key)
 		}
 		v = v.Elem()
-		vKind := v.Type().Elem().Kind()
+		vType := v.Type().Elem()
+		vKind := vType.Kind()
 
 		vals, ok := values[key]
 		if !ok || len(vals) == 0 {
 			continue
 		}
 		rawValue := vals[0]
+
+		if vType == reflect.TypeOf(time.Time{}) {
+			parsed, err := time.Parse(time.RFC3339, rawValue)
+			if err != nil {
+				return types.ErrInvalidQueryValue(key)
+			}
+			v.Set(reflect.ValueOf(&parsed))
+			continue
+		}
 
 		switch vKind {
 		case reflect.Bool:
