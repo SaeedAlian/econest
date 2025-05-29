@@ -496,6 +496,36 @@ func (m *Manager) GetStoreOwnedProducts(
 	return ownedProds, nil
 }
 
+func (m *Manager) GetProductOwnerStore(
+	productId int,
+) (*types.Store, error) {
+	rows, err := m.db.Query(`
+		SELECT s.* FROM store_owned_products sop 
+		JOIN stores s ON s.id = sop.store_id
+		WHERE product_id = $1;
+	`, productId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	store := new(types.Store)
+	store.Id = -1
+
+	for rows.Next() {
+		store, err = scanStoreRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if store.Id == -1 {
+		return nil, types.ErrStoreNotFound
+	}
+
+	return store, nil
+}
+
 func (m *Manager) UpdateStore(id int, p types.UpdateStorePayload) error {
 	clauses := []string{}
 	args := []any{}
