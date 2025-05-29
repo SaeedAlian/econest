@@ -133,4 +133,20 @@ var (
 			),
 		)
 	}
+	ErrQueryMappingNilValueReceived = func(key string) error {
+		return errors.New(
+			fmt.Sprintf(
+				"value for key %s is not a non-nil pointer",
+				key,
+			),
+		)
+	}
+	ErrInvalidQueryValue = func(key string) error {
+		return errors.New(
+			fmt.Sprintf(
+				"invalid value for %s query",
+				key,
+			),
+		)
+	}
 )
