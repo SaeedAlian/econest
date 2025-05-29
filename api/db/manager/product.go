@@ -2992,13 +2992,29 @@ func buildProductSearchQuery(
 	}
 
 	if query.PriceLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("p.price <= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf(`
+			COALESCE(
+				p.price * (1 - (
+					SELECT discount FROM product_offers po
+					WHERE po.product_id = p.id AND po.expire_at > NOW()
+				)),
+				p.price
+			) <= $%d
+		`, argsPos))
 		args = append(args, *query.PriceLessThan)
 		argsPos++
 	}
 
 	if query.PriceMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("p.price >= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf(`
+			COALESCE(
+				p.price * (1 - (
+					SELECT discount FROM product_offers po
+					WHERE po.product_id = p.id AND po.expire_at > NOW()
+				)),
+				p.price
+			) >= $%d
+		`, argsPos))
 		args = append(args, *query.PriceMoreThan)
 		argsPos++
 	}
