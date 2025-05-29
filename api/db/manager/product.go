@@ -814,6 +814,31 @@ func (m *Manager) GetProductAttributes(
 	return attrs, nil
 }
 
+func (m *Manager) GetProductAttributesCount(
+	query types.ProductAttributeSearchQuery,
+) (int, error) {
+	var base string
+	base = "SELECT COUNT(*) as count FROM product_attributes"
+
+	q, args := buildProductAttributeSearchQuery(query, base)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return -1, err
+	}
+	defer rows.Close()
+
+	count := 0
+	for rows.Next() {
+		err := rows.Scan(&count)
+		if err != nil {
+			return -1, err
+		}
+	}
+
+	return count, nil
+}
+
 func (m *Manager) GetProductAttributesWithOptions(
 	query types.ProductAttributeSearchQuery,
 ) ([]types.ProductAttributeWithOptions, error) {
