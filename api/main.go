@@ -27,12 +27,13 @@ func main() {
 	})
 
 	keyServer := auth.NewKeyServer(ksCache)
+	rotateKeys(keyServer)
 
 	go func() {
 		rotateHours := config.Env.RotateKeyDays * 24
 		c := time.Tick(time.Duration(rotateHours) * time.Hour)
 		for range c {
-			keyServer.RotateKeys(time.Now().String())
+			rotateKeys(keyServer)
 		}
 	}()
 
@@ -50,4 +51,14 @@ func initStorage(db *sql.DB) {
 	}
 
 	log.Print("Connection to DB was successful.")
+}
+
+func rotateKeys(keyServer *auth.KeyServer) {
+	log.Println("rotating keys...")
+	err := keyServer.RotateKeys(time.Now().String())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	log.Println("rotating keys...")
 }
