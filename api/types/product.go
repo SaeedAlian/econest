@@ -249,20 +249,20 @@ type UpdateProductPayload struct {
 }
 
 type ProductSearchQuery struct {
-	Keyword       *string `json:"keyword"`
-	Name          *string `json:"name"`
-	Slug          *string `json:"slug"`
-	MinQuantity   *int    `json:"minQuantity"`
-	HasOffer      *bool   `json:"hasOffer"`
-	CategoryId    *int    `json:"categoryId"`
-	TagName       *string `json:"tagName"`
-	TagId         *int    `json:"tagId"`
-	PriceLessThan *int    `json:"priceLessThan"`
-	PriceMoreThan *int    `json:"priceMoreThan"`
-	StoreId       *int    `json:"storeId"`
-	IsActive      *bool   `json:"isActive"`
-	Limit         *int    `json:"limit"`
-	Offset        *int    `json:"offset"`
+	Keyword       *string  `json:"keyword"`
+	Name          *string  `json:"name"`
+	Slug          *string  `json:"slug"`
+	MinQuantity   *int     `json:"minQuantity"`
+	HasOffer      *bool    `json:"hasOffer"`
+	CategoryId    *int     `json:"categoryId"`
+	TagName       *string  `json:"tagName"`
+	TagId         *int     `json:"tagId"`
+	PriceLessThan *float32 `json:"priceLessThan"`
+	PriceMoreThan *float32 `json:"priceMoreThan"`
+	StoreId       *int     `json:"storeId"`
+	IsActive      *bool    `json:"isActive"`
+	Limit         *int     `json:"limit"`
+	Offset        *int     `json:"offset"`
 }
 
 type CreateProductOfferPayload struct {
