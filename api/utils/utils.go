@@ -6,10 +6,12 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -299,4 +301,109 @@ func GetPageCount(totalEntities int64, pageLimit int64) int32 {
 	}
 
 	return int32(pages)
+}
+
+func ParseURLQuery(mapping map[string]any, values url.Values) error {
+	for key, ptr := range mapping {
+		v := reflect.ValueOf(ptr)
+		if v.Kind() != reflect.Ptr || v.IsNil() {
+			return types.ErrQueryMappingNilValueReceived(key)
+		}
+		v = v.Elem()
+		vKind := v.Type().Elem().Kind()
+
+		vals, ok := values[key]
+		if !ok || len(vals) == 0 {
+			continue
+		}
+		rawValue := vals[0]
+
+		switch vKind {
+		case reflect.Bool:
+			{
+				var boolVal bool
+
+				if rawValue == "1" {
+					boolVal = true
+				} else if rawValue == "0" {
+					boolVal = false
+				} else {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&boolVal))
+			}
+
+		case reflect.Float32:
+			{
+				parsed, err := strconv.ParseFloat(rawValue, 32)
+				res := float32(parsed)
+				if err != nil {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&res))
+			}
+
+		case reflect.Float64:
+			{
+				parsed, err := strconv.ParseFloat(rawValue, 64)
+				if err != nil {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&parsed))
+			}
+
+		case reflect.Int:
+			{
+				parsed, err := strconv.Atoi(rawValue)
+				if err != nil {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&parsed))
+			}
+
+		case reflect.Int16:
+			{
+				parsed, err := strconv.ParseInt(rawValue, 10, 16)
+				res := int16(parsed)
+				if err != nil {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&res))
+			}
+
+		case reflect.Int32:
+			{
+				parsed, err := strconv.ParseInt(rawValue, 10, 32)
+				res := int32(parsed)
+				if err != nil {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&res))
+			}
+
+		case reflect.Int64:
+			{
+				parsed, err := strconv.ParseInt(rawValue, 10, 64)
+				if err != nil {
+					return types.ErrInvalidQueryValue(key)
+				}
+
+				v.Set(reflect.ValueOf(&parsed))
+			}
+
+		case reflect.String:
+			{
+				v.Set(reflect.ValueOf(&rawValue))
+			}
+		}
+
+	}
+
+	return nil
 }

@@ -350,12 +350,26 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.StoreAddressSearchQuery{}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+	}
+
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -363,10 +377,6 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		}
-	}
-
-	query := types.StoreAddressSearchQuery{
-		VisibilityStatus: visibilityStatus,
 	}
 
 	addresses, err := h.db.GetStoreAddresses(store.Id, query)
@@ -422,15 +432,27 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.StorePhoneNumberSearchQuery{}
 
-	verificationStatusQuery := r.URL.Query().Get("verified")
-	var verificationStatus *types.CredentialVerificationStatus = nil
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+		"verified":   &query.VerificationStatus,
+	}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -440,9 +462,8 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 		}
 	}
 
-	if verificationStatusQuery != "" {
-		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
-		if !verificationStatus.IsValid() {
+	if query.VerificationStatus != nil {
+		if !query.VerificationStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -450,11 +471,6 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 			)
 			return
 		}
-	}
-
-	query := types.StorePhoneNumberSearchQuery{
-		VerificationStatus: verificationStatus,
-		VisibilityStatus:   visibilityStatus,
 	}
 
 	phones, err := h.db.GetStorePhoneNumbers(store.Id, query)
@@ -790,12 +806,26 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 		userHasFullAccess = loggedUserHasFullAccess
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.StoreAddressSearchQuery{}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+	}
+
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -806,11 +836,7 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !userHasFullAccess {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
-	}
-
-	query := types.StoreAddressSearchQuery{
-		VisibilityStatus: visibilityStatus,
+		query.VisibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
 	}
 
 	addresses, err := h.db.GetStoreAddresses(storeId, query)
@@ -867,15 +893,27 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 		userHasFullAccess = loggedUserHasFullAccess
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.StorePhoneNumberSearchQuery{}
 
-	verificationStatusQuery := r.URL.Query().Get("verified")
-	var verificationStatus *types.CredentialVerificationStatus = nil
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+		"verified":   &query.VerificationStatus,
+	}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -885,9 +923,8 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if verificationStatusQuery != "" {
-		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
-		if !verificationStatus.IsValid() {
+	if query.VerificationStatus != nil {
+		if !query.VerificationStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -898,13 +935,8 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !userHasFullAccess {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
-		verificationStatus = utils.Ptr(types.CredentialVerificationStatusVerified)
-	}
-
-	query := types.StorePhoneNumberSearchQuery{
-		VerificationStatus: verificationStatus,
-		VisibilityStatus:   visibilityStatus,
+		query.VisibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
+		query.VerificationStatus = utils.Ptr(types.CredentialVerificationStatusVerified)
 	}
 
 	phones, err := h.db.GetStorePhoneNumbers(storeId, query)
@@ -949,56 +981,37 @@ func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
 		userHasFullAccess = loggedUserHasFullAccess
 	}
 
-	nameQuery := r.URL.Query().Get("name")
-	ownerIdQuery := r.URL.Query().Get("owner")
-	pageQuery := r.URL.Query().Get("p")
+	query := types.StoreSearchQuery{}
+	var page *int = nil
 
-	var name *string = nil
-	var ownerId *int = nil
-	var limit *int = nil
-	var offset *int = nil
-
-	if nameQuery != "" {
-		name = utils.Ptr(nameQuery)
+	queryMapping := map[string]any{
+		"name":  &query.Name,
+		"owner": &query.OwnerId,
+		"p":     &page,
 	}
 
-	if ownerIdQuery != "" && userHasFullAccess {
-		intOwnerId, err := strconv.Atoi(ownerIdQuery)
-		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidOwnerIdQuery,
-			)
-			return
-		}
+	queryValues := r.URL.Query()
 
-		ownerId = utils.Ptr(intOwnerId)
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
 	}
 
-	limit = utils.Ptr(int(config.Env.MaxStoresInPage))
+	query.Limit = utils.Ptr(int(config.Env.MaxStoresInPage))
 
-	if pageQuery != "" {
-		intPage, err := strconv.Atoi(pageQuery)
-		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidPageQuery,
-			)
-			return
-		}
-
-		offset = utils.Ptr((*limit) * (intPage - 1))
+	if page != nil {
+		query.Offset = utils.Ptr((*query.Limit) * (*page - 1))
 	} else {
-		offset = utils.Ptr(0)
+		query.Offset = utils.Ptr(0)
 	}
 
-	query := types.StoreSearchQuery{
-		Name:    name,
-		OwnerId: ownerId,
-		Limit:   limit,
-		Offset:  offset,
+	if !userHasFullAccess {
+		query.OwnerId = nil
 	}
 
 	stores, err := h.db.GetStoresWithSettings(query)
@@ -1043,33 +1056,27 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 		userHasFullAccess = loggedUserHasFullAccess
 	}
 
-	nameQuery := r.URL.Query().Get("name")
-	ownerIdQuery := r.URL.Query().Get("owner")
+	query := types.StoreSearchQuery{}
 
-	var name *string = nil
-	var ownerId *int = nil
-
-	if nameQuery != "" {
-		name = utils.Ptr(nameQuery)
+	queryMapping := map[string]any{
+		"name": &query.Name,
+		"role": &query.OwnerId,
 	}
 
-	if ownerIdQuery != "" && userHasFullAccess {
-		intOwnerId, err := strconv.Atoi(ownerIdQuery)
-		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidOwnerIdQuery,
-			)
-			return
-		}
+	queryValues := r.URL.Query()
 
-		ownerId = utils.Ptr(intOwnerId)
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
 	}
 
-	query := types.StoreSearchQuery{
-		Name:    name,
-		OwnerId: ownerId,
+	if !userHasFullAccess {
+		query.OwnerId = nil
 	}
 
 	count, err := h.db.GetStoresCount(query)
@@ -1152,18 +1159,25 @@ func (h *Handler) getMyStores(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	nameQuery := r.URL.Query().Get("name")
+	query := types.StoreSearchQuery{}
 
-	var name *string = nil
-
-	if nameQuery != "" {
-		name = utils.Ptr(nameQuery)
+	queryMapping := map[string]any{
+		"name": &query.Name,
 	}
 
-	query := types.StoreSearchQuery{
-		Name:    name,
-		OwnerId: utils.Ptr(userId.(int)),
+	queryValues := r.URL.Query()
+
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
 	}
+
+	query.OwnerId = utils.Ptr(userId.(int))
 
 	stores, err := h.db.GetStores(query)
 	if err != nil {

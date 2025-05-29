@@ -566,12 +566,26 @@ func (h *Handler) getMyAddresses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.UserAddressSearchQuery{}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+	}
+
+	queryValues := r.URL.Query()
+
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -579,10 +593,6 @@ func (h *Handler) getMyAddresses(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		}
-	}
-
-	query := types.UserAddressSearchQuery{
-		VisibilityStatus: visibilityStatus,
 	}
 
 	addresses, err := h.db.GetUserAddresses(userId.(int), query)
@@ -608,15 +618,27 @@ func (h *Handler) getMyPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.UserPhoneNumberSearchQuery{}
 
-	verificationStatusQuery := r.URL.Query().Get("verified")
-	var verificationStatus *types.CredentialVerificationStatus = nil
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+		"verified":   &query.VerificationStatus,
+	}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryValues := r.URL.Query()
+
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -626,9 +648,8 @@ func (h *Handler) getMyPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if verificationStatusQuery != "" {
-		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
-		if !verificationStatus.IsValid() {
+	if query.VerificationStatus != nil {
+		if !query.VerificationStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -636,11 +657,6 @@ func (h *Handler) getMyPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 			)
 			return
 		}
-	}
-
-	query := types.UserPhoneNumberSearchQuery{
-		VerificationStatus: verificationStatus,
-		VisibilityStatus:   visibilityStatus,
 	}
 
 	phones, err := h.db.GetUserPhoneNumbers(userId.(int), query)
@@ -925,12 +941,26 @@ func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.UserAddressSearchQuery{}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+	}
+
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -952,11 +982,7 @@ func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !loggedUserHasFullAccess {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
-	}
-
-	query := types.UserAddressSearchQuery{
-		VisibilityStatus: visibilityStatus,
+		query.VisibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
 	}
 
 	addresses, err := h.db.GetUserAddresses(userId, query)
@@ -1006,15 +1032,27 @@ func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	visibilityStatusQuery := r.URL.Query().Get("visibility")
-	var visibilityStatus *types.SettingVisibilityStatus = nil
+	query := types.UserPhoneNumberSearchQuery{}
 
-	verificationStatusQuery := r.URL.Query().Get("verified")
-	var verificationStatus *types.CredentialVerificationStatus = nil
+	queryMapping := map[string]any{
+		"visibility": &query.VisibilityStatus,
+		"verified":   &query.VerificationStatus,
+	}
 
-	if visibilityStatusQuery != "" {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatus(visibilityStatusQuery))
-		if !visibilityStatus.IsValid() {
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
+	}
+
+	if query.VisibilityStatus != nil {
+		if !query.VisibilityStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -1024,9 +1062,8 @@ func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if verificationStatusQuery != "" {
-		verificationStatus = utils.Ptr(types.CredentialVerificationStatus(verificationStatusQuery))
-		if !verificationStatus.IsValid() {
+	if query.VerificationStatus != nil {
+		if !query.VerificationStatus.IsValid() {
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusBadRequest,
@@ -1048,13 +1085,8 @@ func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if !loggedUserHasFullAccess {
-		visibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
-		verificationStatus = utils.Ptr(types.CredentialVerificationStatusVerified)
-	}
-
-	query := types.UserPhoneNumberSearchQuery{
-		VerificationStatus: verificationStatus,
-		VisibilityStatus:   visibilityStatus,
+		query.VisibilityStatus = utils.Ptr(types.SettingVisibilityStatusPublic)
+		query.VerificationStatus = utils.Ptr(types.CredentialVerificationStatusVerified)
 	}
 
 	phones, err := h.db.GetUserPhoneNumbers(userId, query)
@@ -1092,49 +1124,33 @@ func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	fullNameQuery := r.URL.Query().Get("name")
-	roleIdQuery := r.URL.Query().Get("role")
-	pageQuery := r.URL.Query().Get("p")
+	query := types.UserSearchQuery{}
+	var page *int = nil
 
-	var fullName *string = nil
-	var roleId *int = nil
-	var limit *int = nil
-	var offset *int = nil
-
-	if fullNameQuery != "" {
-		fullName = utils.Ptr(fullNameQuery)
+	queryMapping := map[string]any{
+		"name": &query.FullName,
+		"role": &query.RoleId,
+		"p":    &page,
 	}
 
-	if roleIdQuery != "" {
-		intRoleId, err := strconv.Atoi(roleIdQuery)
-		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidRoleIdQuery,
-			)
-			return
-		}
+	queryValues := r.URL.Query()
 
-		roleId = utils.Ptr(intRoleId)
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
 	}
 
-	limit = utils.Ptr(int(config.Env.MaxUsersInPage))
+	query.Limit = utils.Ptr(int(config.Env.MaxUsersInPage))
 
-	if pageQuery != "" {
-		intPage, err := strconv.Atoi(pageQuery)
-		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidPageQuery,
-			)
-			return
-		}
-
-		offset = utils.Ptr((*limit) * (intPage - 1))
+	if page != nil {
+		query.Offset = utils.Ptr((*query.Limit) * (*page - 1))
 	} else {
-		offset = utils.Ptr(0)
+		query.Offset = utils.Ptr(0)
 	}
 
 	loggedUserRoleId := cLoggedUserRoleId.(int)
@@ -1146,13 +1162,6 @@ func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
 		return
-	}
-
-	query := types.UserSearchQuery{
-		FullName: fullName,
-		RoleId:   roleId,
-		Limit:    limit,
-		Offset:   offset,
 	}
 
 	users, err := h.db.GetUsersWithSettings(query)
@@ -1178,33 +1187,23 @@ func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) getUsersPages(w http.ResponseWriter, r *http.Request) {
-	fullNameQuery := r.URL.Query().Get("name")
-	roleIdQuery := r.URL.Query().Get("role")
+	query := types.UserSearchQuery{}
 
-	var fullName *string = nil
-	var roleId *int = nil
-
-	if fullNameQuery != "" {
-		fullName = utils.Ptr(fullNameQuery)
+	queryMapping := map[string]any{
+		"name": &query.FullName,
+		"role": &query.RoleId,
 	}
 
-	if roleIdQuery != "" {
-		intRoleId, err := strconv.Atoi(roleIdQuery)
-		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidRoleIdQuery,
-			)
-			return
-		}
+	queryValues := r.URL.Query()
 
-		roleId = utils.Ptr(intRoleId)
-	}
-
-	query := types.UserSearchQuery{
-		FullName: fullName,
-		RoleId:   roleId,
+	err := utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusBadRequest,
+			err,
+		)
+		return
 	}
 
 	count, err := h.db.GetUsersCount(query)
