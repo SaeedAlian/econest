@@ -32,8 +32,6 @@ var (
 	ErrInvalidVisibilityStatusOption   = errors.New("invalid visibility status option")
 	ErrInvalidVerificationStatusOption = errors.New("invalid verification status option")
 	ErrReqBodyNotFound                 = errors.New("request body is not found")
-	ErrInvalidUserPayload              = errors.New("invalid user payload")
-	ErrInvalidLoginPayload             = errors.New("invalid login payload")
 	ErrInconsistentAttributePresence   = errors.New(
 		"inconsistent attribute presence: some but not all pvos have attribute_id",
 	)
@@ -61,48 +59,30 @@ var (
 	ErrInvalidCSRFToken                  = errors.New("csrf token is invalid")
 	ErrRefreshTokenNotFound              = errors.New("refresh token not found")
 	ErrInvalidRefreshToken               = errors.New("refresh token is invalid")
-	ErrCreateAddress                     = errors.New("there was an error on creating address")
-	ErrCreatePhoneNumber                 = errors.New(
-		"there was an error on creating phone number",
-	)
-	ErrCannotAccessAddress     = errors.New("you cannot access this address")
-	ErrCannotAccessPhoneNumber = errors.New("you cannot access this phone number")
-	ErrInvalidAddressId        = errors.New("invalid address id")
-	ErrInvalidPhoneNumberId    = errors.New("invalid phone number id")
-	ErrUpdateAddress           = errors.New("there was an error on updating address")
-	ErrUpdatePhoneNumber       = errors.New(
+	ErrCannotAccessAddress               = errors.New("you cannot access this address")
+	ErrCannotAccessPhoneNumber           = errors.New("you cannot access this phone number")
+	ErrUpdateAddress                     = errors.New("there was an error on updating address")
+	ErrUpdatePhoneNumber                 = errors.New(
 		"there was an error on updating phone number",
 	)
-	ErrInvalidAddressPayload     = errors.New("invalid address payload")
-	ErrInvalidPhoneNumberPayload = errors.New("invalid phone number payload")
-	ErrDeleteAddress             = errors.New("there was an error on deleting address")
-	ErrDeletePhoneNumber         = errors.New(
+	ErrDeleteAddress     = errors.New("there was an error on deleting address")
+	ErrDeletePhoneNumber = errors.New(
 		"there was an error on deleting phone number",
 	)
-	ErrInvalidUserId                       = errors.New("invalid user id")
-	ErrInvalidRoleIdQuery                  = errors.New("invalid role id")
-	ErrInvalidPageQuery                    = errors.New("invalid page")
-	ErrInvalidProfilePayload               = errors.New("invalid profile payload")
-	ErrInvalidUserSettingsPayload          = errors.New("invalid settings payload")
-	ErrCannotBanThisUser                   = errors.New("you cannot ban this user")
-	ErrEmailNotVerified                    = errors.New("email is not verified yet")
-	ErrOnSendingMail                       = errors.New("error on sending mail")
-	ErrInvalidForgotPasswordRequestPayload = errors.New("invalid password payload")
-	ErrTokenIsMissing                      = errors.New("token is missing")
-	ErrInvalidResetPasswordPayload         = errors.New("invalid password payload")
-	ErrEmailAlreadyVerified                = errors.New("email is already verified")
-	ErrInvalidPasswordPayload              = errors.New("invalid password payload")
-	ErrUserIsBanned                        = errors.New("this user is banned")
-	ErrInvalidStorePayload                 = errors.New("invalid store payload")
-	ErrInvalidStoreId                      = errors.New("invalid store id")
-	ErrInvalidOwnerIdQuery                 = errors.New("invalid owner id")
-	ErrCannotAccessStore                   = errors.New("you cannot access this store")
-	ErrDuplicateStoreName                  = errors.New(
+	ErrInvalidPageQuery     = errors.New("invalid page")
+	ErrCannotBanThisUser    = errors.New("you cannot ban this user")
+	ErrEmailNotVerified     = errors.New("email is not verified yet")
+	ErrOnSendingMail        = errors.New("error on sending mail")
+	ErrTokenIsMissing       = errors.New("token is missing")
+	ErrEmailAlreadyVerified = errors.New("email is already verified")
+	ErrUserIsBanned         = errors.New("this user is banned")
+	ErrCannotAccessStore    = errors.New("you cannot access this store")
+	ErrCannotAccessComment  = errors.New("you cannot access this comment")
+	ErrDuplicateStoreName   = errors.New(
 		"another store with this name already exists",
 	)
-	ErrInvalidStoreSettingsPayload = errors.New("invalid store settings payload")
-	ErrInvalidOptionId             = errors.New("invalid option id")
-	ErrUploadSizeTooBig            = func(maxSize int) error {
+	ErrInvalidOptionId  = errors.New("invalid option id")
+	ErrUploadSizeTooBig = func(maxSize int) error {
 		return errors.New(
 			fmt.Sprintf(
 				"uploaded file is too big, choose a file that's less than %d MB in size",

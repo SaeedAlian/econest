@@ -485,7 +485,11 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 		UserId:  userId.(int),
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrCreateAddress)
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
 		return
 	}
 
@@ -519,7 +523,11 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 		UserId:      userId.(int),
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrCreatePhoneNumber)
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
 		return
 	}
 
@@ -1283,7 +1291,7 @@ func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
 	userId := cUserId.(int)
 
 	if payload.Email == nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidProfilePayload)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload)
 		return
 	}
 

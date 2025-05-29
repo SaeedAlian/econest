@@ -210,7 +210,11 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 		StoreId: store.Id,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrCreateAddress)
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
 		return
 	}
 
@@ -266,7 +270,11 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 		StoreId:     store.Id,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrCreatePhoneNumber)
+		utils.WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrInternalServer,
+		)
 		return
 	}
 
