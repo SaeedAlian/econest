@@ -115,6 +115,16 @@ type ProductComment struct {
 	UserId    int                       `json:"userId"    exposure:"public"`
 }
 
+type ProductCommentWithUser struct {
+	Id        int                       `json:"id"        exposure:"public"`
+	Scoring   int                       `json:"scoring"   exposure:"public"`
+	Comment   json_types.JSONNullString `json:"comment"   exposure:"public"`
+	CreatedAt time.Time                 `json:"createdAt" exposure:"public"`
+	UpdatedAt time.Time                 `json:"updatedAt" exposure:"public"`
+	ProductId int                       `json:"productId" exposure:"public"`
+	User      CommentUser               `json:"user"      exposure:"public"`
+}
+
 type Product struct {
 	ProductBase
 	TotalQuantity int           `json:"totalQuantity"       exposure:"public"`

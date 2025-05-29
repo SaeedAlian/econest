@@ -975,7 +975,7 @@ func (m *Manager) GetProductCommentsByProductId(
 	query types.ProductCommentSearchQuery,
 ) ([]types.ProductComment, error) {
 	var base string
-	base = "SELECT * FROM product_comments"
+	base = "SELECT * FROM product_comments pc"
 
 	q, args := buildProductCommentSearchQueryByProductId(query, base, productId)
 
@@ -999,12 +999,47 @@ func (m *Manager) GetProductCommentsByProductId(
 	return comments, nil
 }
 
+func (m *Manager) GetProductCommentsWithUserByProductId(
+	productId int,
+	query types.ProductCommentSearchQuery,
+) ([]types.ProductCommentWithUser, error) {
+	var base string
+	base = `
+		SELECT 
+			pc.id, pc.scoring, pc.comment, pc.created_at, pc.updated_at, pc.product_id,
+			u.id, u.full_name, u.created_at, u.updated_at
+		FROM product_comments pc 
+		JOIN users u ON u.id = pc.user_id
+	`
+
+	q, args := buildProductCommentSearchQueryByProductId(query, base, productId)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	comments := []types.ProductCommentWithUser{}
+
+	for rows.Next() {
+		comment, err := scanProductCommentWithUserRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		comments = append(comments, *comment)
+	}
+
+	return comments, nil
+}
+
 func (m *Manager) GetProductCommentsCountByProductId(
 	productId int,
 	query types.ProductCommentSearchQuery,
 ) (int, error) {
 	var base string
-	base = "SELECT COUNT(*) as count FROM product_comments"
+	base = "SELECT COUNT(*) as count FROM product_comments pc"
 
 	q, args := buildProductCommentSearchQueryByProductId(query, base, productId)
 
@@ -1030,7 +1065,7 @@ func (m *Manager) GetProductCommentsByUserId(
 	query types.ProductCommentSearchQuery,
 ) ([]types.ProductComment, error) {
 	var base string
-	base = "SELECT * FROM product_comments"
+	base = "SELECT * FROM product_comments pc"
 
 	q, args := buildProductCommentSearchQueryByUserId(query, base, userId)
 
@@ -1059,7 +1094,7 @@ func (m *Manager) GetProductCommentsCountByUserId(
 	query types.ProductCommentSearchQuery,
 ) (int, error) {
 	var base string
-	base = "SELECT COUNT(*) as count FROM product_comments"
+	base = "SELECT COUNT(*) as count FROM product_comments pc"
 
 	q, args := buildProductCommentSearchQueryByUserId(query, base, userId)
 
@@ -1910,6 +1945,37 @@ func (m *Manager) GetProductCommentById(id int) (*types.ProductComment, error) {
 
 	for rows.Next() {
 		comment, err = scanProductCommentRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if comment.Id == -1 {
+		return nil, types.ErrProductCommentNotFound
+	}
+
+	return comment, nil
+}
+
+func (m *Manager) GetProductCommentWithUserById(id int) (*types.ProductCommentWithUser, error) {
+	rows, err := m.db.Query(`
+		SELECT 
+			pc.id, pc.scoring, pc.comment, pc.created_at, pc.updated_at, pc.product_id,
+			u.id, u.full_name, u.created_at, u.updated_at
+		FROM product_comments pc 
+		JOIN users u ON u.id = pc.user_id
+		WHERE pc.id = $1;
+	`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	comment := new(types.ProductCommentWithUser)
+	comment.Id = -1
+
+	for rows.Next() {
+		comment, err = scanProductCommentWithUserRow(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -2934,6 +3000,28 @@ func scanProductCommentRow(rows *sql.Rows) (*types.ProductComment, error) {
 	return n, nil
 }
 
+func scanProductCommentWithUserRow(rows *sql.Rows) (*types.ProductCommentWithUser, error) {
+	n := new(types.ProductCommentWithUser)
+
+	err := rows.Scan(
+		&n.Id,
+		&n.Scoring,
+		&n.Comment,
+		&n.CreatedAt,
+		&n.UpdatedAt,
+		&n.ProductId,
+		&n.User.Id,
+		&n.User.FullName,
+		&n.User.CreatedAt,
+		&n.User.UpdatedAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	return n, nil
+}
+
 func buildProductSearchQuery(
 	query types.ProductSearchQuery,
 	base string,
@@ -3287,18 +3375,18 @@ func buildProductCommentSearchQueryByProductId(
 	base string,
 	productId int,
 ) (string, []any) {
-	clauses := []string{"product_id = $1"}
+	clauses := []string{"pc.product_id = $1"}
 	args := []any{productId}
 	argsPos := 2
 
 	if query.ScoringLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("pc.scoring <= $%d", argsPos))
 		args = append(args, *query.ScoringLessThan)
 		argsPos++
 	}
 
 	if query.ScoringMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("pc.scoring >= $%d", argsPos))
 		args = append(args, *query.ScoringMoreThan)
 		argsPos++
 	}
@@ -3329,18 +3417,18 @@ func buildProductCommentSearchQueryByUserId(
 	base string,
 	userId int,
 ) (string, []any) {
-	clauses := []string{"user_id = $1"}
+	clauses := []string{"pc.user_id = $1"}
 	args := []any{userId}
 	argsPos := 2
 
 	if query.ScoringLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring <= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("pc.scoring <= $%d", argsPos))
 		args = append(args, *query.ScoringLessThan)
 		argsPos++
 	}
 
 	if query.ScoringMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("scoring >= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("pc.scoring >= $%d", argsPos))
 		args = append(args, *query.ScoringMoreThan)
 		argsPos++
 	}

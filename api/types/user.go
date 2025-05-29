@@ -64,6 +64,13 @@ type UserAddress struct {
 	UserId    int                       `json:"userId"    exposure:"public"`
 }
 
+type CommentUser struct {
+	Id        int                       `json:"id"        exposure:"public"`
+	FullName  json_types.JSONNullString `json:"fullName"  exposure:"public"`
+	CreatedAt time.Time                 `json:"createdAt" exposure:"public"`
+	UpdatedAt time.Time                 `json:"updatedAt" exposure:"public"`
+}
+
 type CreateUserPayload struct {
 	Username  string    `json:"username"  validate:"required,min=5"`
 	Email     string    `json:"email"     validate:"required,email"`
