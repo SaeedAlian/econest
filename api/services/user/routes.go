@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 
 	"github.com/SaeedAlian/econest/api/config"
@@ -102,18 +101,9 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 	var callback func(w http.ResponseWriter, r *http.Request)
 	callback = func(w http.ResponseWriter, r *http.Request) {
 		var user types.CreateUserPayload
-		if err := utils.ParseJSONFromRequest(r, &user); err != nil {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidUserPayload)
-			return
-		}
-
-		if err := utils.Validator.Struct(user); err != nil {
-			errors := err.(validator.ValidationErrors)
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusBadRequest,
-				types.ErrInvalidPayload(errors[0]),
-			)
+		err := utils.ParseRequestPayload(r, &user)
+		if err != nil {
+			utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 			return
 		}
 
@@ -180,14 +170,9 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	var payload types.LoginUserPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidLoginPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -485,14 +470,9 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload types.CreateUserAddressPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidAddressPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -527,14 +507,9 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload types.CreateUserPhoneNumberPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPhoneNumberPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -690,14 +665,9 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 	userId := cUserId.(int)
 
 	var payload types.UpdateUserAddressPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidAddressPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err = utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -756,14 +726,9 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	userId := cUserId.(int)
 
 	var payload types.UpdateUserPhoneNumberPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPhoneNumberPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err = utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1236,14 +1201,9 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidProfilePayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1282,7 +1242,7 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	err := h.db.UpdateUser(userId, types.UpdateUserPayload{
+	err = h.db.UpdateUser(userId, types.UpdateUserPayload{
 		Username:  payload.Username,
 		FullName:  payload.FullName,
 		BirthDate: payload.BirthDate,
@@ -1301,14 +1261,9 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidProfilePayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1368,14 +1323,9 @@ func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) updatePassword(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserPasswordPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPasswordPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1437,14 +1387,9 @@ func (h *Handler) updatePassword(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserSettingsPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidUserSettingsPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1463,7 +1408,7 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 
 	userId := cUserId.(int)
 
-	err := h.db.UpdateUserSettings(userId, payload)
+	err = h.db.UpdateUserSettings(userId, payload)
 	if err != nil {
 		utils.WriteErrorInResponse(
 			w,
@@ -1604,18 +1549,9 @@ func (h *Handler) getMySettings(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) forgotPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	var payload types.ForgotPasswordRequestPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidForgotPasswordRequestPayload,
-		)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1672,24 +1608,15 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload types.ResetPasswordPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidResetPasswordPayload,
-		)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	claims := types.UserJWTClaims{}
 
-	_, err := h.authHandler.ValidateToken(token, &claims)
+	_, err = h.authHandler.ValidateToken(token, &claims)
 	if err != nil {
 		utils.WriteErrorInResponse(
 			w,

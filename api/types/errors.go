@@ -44,7 +44,8 @@ var (
 	ErrValidateTokenFailure     = errors.New("failed to validate token")
 	ErrInvalidTokenReceived     = errors.New("invalid token received")
 	ErrInvalidCredentials       = errors.New("invalid credentials received")
-	ErrInvalidPayload           = func(err error) error {
+	ErrInvalidPayload           = errors.New("invalid payload received")
+	ErrInvalidPayloadField      = func(err error) error {
 		return errors.New(fmt.Sprintf("invalid payload: %v", err))
 	}
 	ErrInvalidPEMBlockForPrivateKey = errors.New("invalid PEM block for private key")

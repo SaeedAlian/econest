@@ -3,7 +3,6 @@ package store
 import (
 	"net/http"
 
-	"github.com/go-playground/validator/v10"
 	"github.com/gorilla/mux"
 
 	"github.com/SaeedAlian/econest/api/config"
@@ -112,18 +111,9 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 
 func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	var store types.CreateStorePayload
-	if err := utils.ParseJSONFromRequest(r, &store); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidStorePayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(store); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			types.ErrInvalidPayload(errors[0]),
-		)
+	err := utils.ParseRequestPayload(r, &store)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -205,14 +195,9 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload types.CreateStoreAddressPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidAddressPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err = utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -269,14 +254,9 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var payload types.CreateStorePhoneNumberPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPhoneNumberPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err = utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -480,14 +460,9 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 	userId := cUserId.(int)
 
 	var payload types.UpdateStoreAddressPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidAddressPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err = utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -557,14 +532,9 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	userId := cUserId.(int)
 
 	var payload types.UpdateStorePhoneNumberPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPhoneNumberPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err = utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1180,14 +1150,9 @@ func (h *Handler) getMyStore(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateStorePayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidStorePayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1266,14 +1231,9 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateStoreSettingsPayload
-	if err := utils.ParseJSONFromRequest(r, &payload); err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidStoreSettingsPayload)
-		return
-	}
-
-	if err := utils.Validator.Struct(payload); err != nil {
-		errors := err.(validator.ValidationErrors)
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidPayload(errors[0]))
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
