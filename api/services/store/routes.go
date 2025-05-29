@@ -165,7 +165,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, createdStore, nil)
+	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"storeId": createdStore}, nil)
 }
 
 func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {

@@ -172,7 +172,7 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 			return
 		}
 
-		utils.WriteJSONInResponse(w, http.StatusCreated, createdUser, nil)
+		utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"userId": createdUser}, nil)
 	}
 
 	return callback
