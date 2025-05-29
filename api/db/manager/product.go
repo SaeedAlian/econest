@@ -2155,6 +2155,12 @@ func (m *Manager) UpdateProductCategory(id int, p types.UpdateProductCategoryPay
 		argsPos++
 	}
 
+	if p.ImageName != nil {
+		clauses = append(clauses, fmt.Sprintf("image_name = $%d", argsPos))
+		args = append(args, *p.ImageName)
+		argsPos++
+	}
+
 	if len(clauses) == 0 {
 		return types.ErrNoFieldsReceivedToUpdate
 	}

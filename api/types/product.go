@@ -166,7 +166,8 @@ type CreateProductCategoryPayload struct {
 }
 
 type UpdateProductCategoryPayload struct {
-	Name *string `json:"name"`
+	Name      *string `json:"name"`
+	ImageName *string `json:"imageName"`
 }
 
 type ProductCategorySearchQuery struct {
