@@ -58,7 +58,8 @@ func rotateKeys(keyServer *auth.KeyServer) {
 	err := keyServer.RotateKeys(time.Now().String())
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
-	log.Println("rotating keys...")
+	log.Println("keys rotated")
 }
