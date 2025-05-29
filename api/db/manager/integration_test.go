@@ -1054,6 +1054,28 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		},
 	})
 
+	newCommentId, err := s.manager.CreateProductComment(types.CreateProductCommentPayload{
+		Scoring:   3,
+		Comment:   "new comment",
+		ProductId: product1Id,
+		UserId:    user.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(newCommentId, 0)
+
+	newComment, err := s.manager.GetProductCommentWithUserById(newCommentId)
+	s.Require().NoError(err)
+	s.Require().Equal(newCommentId, newComment.Id)
+	s.Require().Equal(user.Id, newComment.User.Id)
+	s.Require().Equal(product1Id, newComment.ProductId)
+
+	commentsWithUser, err := s.manager.GetProductCommentsWithUserByProductId(
+		product1Id,
+		types.ProductCommentSearchQuery{},
+	)
+	s.Require().NoError(err)
+	s.Require().Len(commentsWithUser, 1)
+
 	prod1, err := s.manager.GetProductExtendedById(1)
 	s.Require().NoError(err)
 	s.Require().Len(prod1.Variants, 2)
