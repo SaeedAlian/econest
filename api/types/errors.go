@@ -69,17 +69,22 @@ var (
 	ErrDeletePhoneNumber = errors.New(
 		"there was an error on deleting phone number",
 	)
-	ErrInvalidPageQuery     = errors.New("invalid page")
-	ErrCannotBanThisUser    = errors.New("you cannot ban this user")
-	ErrEmailNotVerified     = errors.New("email is not verified yet")
-	ErrOnSendingMail        = errors.New("error on sending mail")
-	ErrTokenIsMissing       = errors.New("token is missing")
-	ErrEmailAlreadyVerified = errors.New("email is already verified")
-	ErrUserIsBanned         = errors.New("this user is banned")
-	ErrCannotAccessStore    = errors.New("you cannot access this store")
-	ErrCannotAccessComment  = errors.New("you cannot access this comment")
-	ErrImageNotExist        = errors.New("image file does not exist")
-	ErrDuplicateStoreName   = errors.New(
+	ErrInvalidPageQuery             = errors.New("invalid page")
+	ErrCannotBanThisUser            = errors.New("you cannot ban this user")
+	ErrEmailNotVerified             = errors.New("email is not verified yet")
+	ErrOnSendingMail                = errors.New("error on sending mail")
+	ErrTokenIsMissing               = errors.New("token is missing")
+	ErrEmailAlreadyVerified         = errors.New("email is already verified")
+	ErrUserIsBanned                 = errors.New("this user is banned")
+	ErrCannotAccessStore            = errors.New("you cannot access this store")
+	ErrCannotAccessComment          = errors.New("you cannot access this comment")
+	ErrImageNotExist                = errors.New("image file does not exist")
+	ErrCouldNotOpenFile             = errors.New("could not open file")
+	ErrCouldNotGetFileMimeType      = errors.New("could not get the file type")
+	ErrCouldNotResetFileReader      = errors.New("could not read the file")
+	ErrCouldNotGetFileStats         = errors.New("could not get the file information")
+	ErrCouldNotCopyFileIntoResponse = errors.New("could not send the file")
+	ErrDuplicateStoreName           = errors.New(
 		"another store with this name already exists",
 	)
 	ErrInvalidOptionId  = errors.New("invalid option id")

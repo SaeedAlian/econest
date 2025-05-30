@@ -40,6 +40,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/", h.getProducts).Methods("GET")
 	router.HandleFunc("/pages", h.getProductsPages).Methods("GET")
 	router.HandleFunc("/{productId}", h.getProduct).Methods("GET")
+	router.HandleFunc("/image/{filename}", h.getProductImage).Methods("GET")
 	router.HandleFunc("/{productId}/extended", h.getProductExtended).Methods("GET")
 	router.HandleFunc("/{productId}/inventory", h.getProductInventory).Methods("GET")
 
@@ -47,6 +48,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/category/pages", h.getProductCategoriesPages).Methods("GET")
 	router.HandleFunc("/category/full", h.getProductCategoriesWithParents).Methods("GET")
 	router.HandleFunc("/category/{categoryId}", h.getProductCategory).Methods("GET")
+	router.HandleFunc("/category/image/{filename}", h.getProductCategoryImage).Methods("GET")
 
 	router.HandleFunc("/tag", h.getProductTags).Methods("GET")
 	router.HandleFunc("/tag/pages", h.getProductTagsPages).Methods("GET")
@@ -208,6 +210,16 @@ func (h *Handler) uploadProductCategoryImage() http.HandlerFunc {
 	)
 
 	return productCategoryImageUploadHandler
+}
+
+func (h *Handler) getProductImage(w http.ResponseWriter, r *http.Request) {
+	filename := mux.Vars(r)["filename"]
+	utils.CopyFileIntoResponse(h.productImageUploadDir, filename, w)
+}
+
+func (h *Handler) getProductCategoryImage(w http.ResponseWriter, r *http.Request) {
+	filename := mux.Vars(r)["filename"]
+	utils.CopyFileIntoResponse(h.productCategoryImageUploadDir, filename, w)
 }
 
 func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {

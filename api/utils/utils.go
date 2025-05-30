@@ -444,3 +444,44 @@ func ParseURLQuery(mapping map[string]any, values url.Values) error {
 
 	return nil
 }
+
+func CopyFileIntoResponse(dir string, filename string, w http.ResponseWriter) {
+	filePath := fmt.Sprintf("%s/%s", dir, filename)
+	file, err := os.Open(filePath)
+	if err != nil {
+		WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrCouldNotOpenFile)
+		return
+	}
+
+	mime, err := mimetype.DetectReader(file)
+	if err != nil {
+		WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrCouldNotGetFileMimeType)
+		return
+	}
+
+	_, err = file.Seek(0, io.SeekStart)
+	if err != nil {
+		WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrCouldNotResetFileReader)
+		return
+	}
+
+	stats, err := file.Stat()
+	if err != nil {
+		WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrCouldNotGetFileStats)
+		return
+	}
+
+	w.Header().Set("Content-Type", mime.String())
+	w.Header().Set("Content-Disposition", fmt.Sprintf(`attachment; filename="%s"`, filename))
+	w.Header().Set("Content-Length", fmt.Sprintf("%d", stats.Size()))
+
+	_, err = io.Copy(w, file)
+	if err != nil {
+		WriteErrorInResponse(
+			w,
+			http.StatusInternalServerError,
+			types.ErrCouldNotCopyFileIntoResponse,
+		)
+		return
+	}
+}
