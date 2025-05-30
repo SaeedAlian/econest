@@ -93,8 +93,8 @@ type StoreSearchQuery struct {
 }
 
 type UpdateStorePhoneNumberPayload struct {
-	CountryCode *string `json:"countryCode" validate:"min=1,max=4"`
-	Number      *string `json:"number"      validate:"min=5,max=20"`
+	CountryCode *string `json:"countryCode" validate:"omitempty,min=1,max=4"`
+	Number      *string `json:"number"      validate:"omitempty,min=5,max=20"`
 	IsPublic    *bool   `json:"isPublic"`
 	Verified    *bool   `json:"verified"`
 }

@@ -112,10 +112,10 @@ type UserAddressSearchQuery struct {
 }
 
 type UpdateUserPayload struct {
-	Username      *string    `json:"username"      validate:"min=5"`
-	Email         *string    `json:"email"         validate:"email"`
+	Username      *string    `json:"username"      validate:"omitempty,min=5"`
+	Email         *string    `json:"email"         validate:"omitempty,email"`
 	EmailVerified *bool      `json:"emailVerified"`
-	Password      *string    `json:"password"      validate:"min=6,max=130"`
+	Password      *string    `json:"password"      validate:"omitempty,min=6,max=130"`
 	FullName      *string    `json:"fullName"`
 	BirthDate     *time.Time `json:"birthDate"`
 	IsBanned      *bool      `json:"isBanned"`
@@ -134,8 +134,8 @@ type UpdateUserSettingsPayload struct {
 }
 
 type UpdateUserPhoneNumberPayload struct {
-	CountryCode *string `json:"countryCode" validate:"min=1,max=4"`
-	Number      *string `json:"number"      validate:"min=5,max=20"`
+	CountryCode *string `json:"countryCode" validate:"omitempty,min=1,max=4"`
+	Number      *string `json:"number"      validate:"omitempty,min=5,max=20"`
 	IsPublic    *bool   `json:"isPublic"`
 	Verified    *bool   `json:"verified"`
 }
