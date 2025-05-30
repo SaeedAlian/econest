@@ -116,6 +116,112 @@ func (m *Manager) GetRoleByName(name string) (*types.Role, error) {
 	return role, nil
 }
 
+func (m *Manager) GetRoleWithPermissionGroupsById(id int) (*types.RoleWithPermissionGroups, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM roles WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	role := new(types.RoleWithPermissionGroups)
+	role.Id = -1
+
+	for rows.Next() {
+		r, err := scanRoleRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		role.Role = *r
+	}
+
+	if role.Id == -1 {
+		return nil, types.ErrRoleNotFound
+	}
+
+	groupRows, err := m.db.Query(`SELECT
+      pg.id, pg.name, pg.description, pg.created_at FROM permission_groups pg
+      JOIN role_group_assignments rga ON pg.id = rga.permission_group_id 
+      WHERE rga.role_id = $1;
+    `, role.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer groupRows.Close()
+
+	groups := []types.PermissionGroup{}
+
+	for groupRows.Next() {
+		group, err := scanPermissionGroupRow(groupRows)
+		if err != nil {
+			return nil, err
+		}
+
+		groups = append(groups, *group)
+	}
+
+	role.PermissionGroups = groups
+
+	return role, nil
+}
+
+func (m *Manager) GetRoleWithPermissionGroupsByName(
+	name string,
+) (*types.RoleWithPermissionGroups, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM roles WHERE name = $1;",
+		name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	role := new(types.RoleWithPermissionGroups)
+	role.Id = -1
+
+	for rows.Next() {
+		r, err := scanRoleRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		role.Role = *r
+	}
+
+	if role.Id == -1 {
+		return nil, types.ErrRoleNotFound
+	}
+
+	groupRows, err := m.db.Query(`SELECT
+      pg.id, pg.name, pg.description, pg.created_at FROM permission_groups pg
+      JOIN role_group_assignments rga ON pg.id = rga.permission_group_id 
+      WHERE rga.role_id = $1;
+    `, role.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer groupRows.Close()
+
+	groups := []types.PermissionGroup{}
+
+	for groupRows.Next() {
+		group, err := scanPermissionGroupRow(groupRows)
+		if err != nil {
+			return nil, err
+		}
+
+		groups = append(groups, *group)
+	}
+
+	role.PermissionGroups = groups
+
+	return role, nil
+}
+
 func (m *Manager) GetPermissionGroups(
 	query types.PermissionGroupSearchQuery,
 ) ([]types.PermissionGroup, error) {
@@ -198,6 +304,156 @@ func (m *Manager) GetPermissionGroupByName(name string) (*types.PermissionGroup,
 	return group, nil
 }
 
+func (m *Manager) GetPermissionGroupWithPermissionsById(
+	id int,
+) (*types.PermissionGroupWithPermissions, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM permission_groups WHERE id = $1;",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	group := new(types.PermissionGroupWithPermissions)
+	group.Id = -1
+
+	for rows.Next() {
+		g, err := scanPermissionGroupRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		group.PermissionGroup = *g
+	}
+
+	if group.Id == -1 {
+		return nil, types.ErrPermissionGroupNotFound
+	}
+
+	actionRows, err := m.db.Query(`SELECT
+      gap.action FROM group_action_permissions gap
+      JOIN permission_groups pg ON pg.id = gap.group_id
+      WHERE gap.group_id = $1;
+    `, group.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer actionRows.Close()
+
+	resourceRows, err := m.db.Query(`SELECT
+      grp.resource FROM group_resource_permissions grp
+      JOIN permission_groups pg ON pg.id = grp.group_id
+      WHERE grp.group_id = $1;
+    `, group.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer resourceRows.Close()
+
+	actions := []types.GroupActionPermissionInfo{}
+	resources := []types.GroupResourcePermissionInfo{}
+
+	for actionRows.Next() {
+		action, err := scanActionPermissionInfoRow(actionRows)
+		if err != nil {
+			return nil, err
+		}
+
+		actions = append(actions, *action)
+	}
+
+	for resourceRows.Next() {
+		resource, err := scanResourcePermissionInfoRow(resourceRows)
+		if err != nil {
+			return nil, err
+		}
+
+		resources = append(resources, *resource)
+	}
+
+	group.ResourcePermissions = resources
+	group.ActionPermissions = actions
+
+	return group, nil
+}
+
+func (m *Manager) GetPermissionGroupWithPermissionsByName(
+	name string,
+) (*types.PermissionGroupWithPermissions, error) {
+	rows, err := m.db.Query(
+		"SELECT * FROM permission_groups WHERE name = $1;",
+		name,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	group := new(types.PermissionGroupWithPermissions)
+	group.Id = -1
+
+	for rows.Next() {
+		g, err := scanPermissionGroupRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		group.PermissionGroup = *g
+	}
+
+	if group.Id == -1 {
+		return nil, types.ErrPermissionGroupNotFound
+	}
+
+	actionRows, err := m.db.Query(`SELECT
+      gap.action FROM group_action_permissions gap
+      JOIN permission_groups pg ON pg.id = gap.group_id
+      WHERE gap.group_id = $1;
+    `, group.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer actionRows.Close()
+
+	resourceRows, err := m.db.Query(`SELECT
+      grp.resource FROM group_resource_permissions grp
+      JOIN permission_groups pg ON pg.id = grp.group_id
+      WHERE grp.group_id = $1;
+    `, group.Id)
+	if err != nil {
+		return nil, err
+	}
+	defer resourceRows.Close()
+
+	actions := []types.GroupActionPermissionInfo{}
+	resources := []types.GroupResourcePermissionInfo{}
+
+	for actionRows.Next() {
+		action, err := scanActionPermissionInfoRow(actionRows)
+		if err != nil {
+			return nil, err
+		}
+
+		actions = append(actions, *action)
+	}
+
+	for resourceRows.Next() {
+		resource, err := scanResourcePermissionInfoRow(resourceRows)
+		if err != nil {
+			return nil, err
+		}
+
+		resources = append(resources, *resource)
+	}
+
+	group.ResourcePermissions = resources
+	group.ActionPermissions = actions
+
+	return group, nil
+}
+
 func (m *Manager) GetRolesWithPermissionGroups(
 	query types.RolesSearchQuery,
 ) ([]types.RoleWithPermissionGroups, error) {
@@ -242,11 +498,7 @@ func (m *Manager) GetRolesWithPermissionGroups(
 		}
 
 		role_with_groups := types.RoleWithPermissionGroups{
-			Id:               role.Id,
-			Name:             role.Name,
-			Description:      role.Description,
-			CreatedAt:        role.CreatedAt,
-			UpdatedAt:        role.UpdatedAt,
+			Role:             *role,
 			PermissionGroups: groups,
 		}
 
@@ -320,10 +572,7 @@ func (m *Manager) GetPermissionGroupsWithPermissions(
 		}
 
 		group_with_permissions := types.PermissionGroupWithPermissions{
-			Id:                  group.Id,
-			Name:                group.Name,
-			Description:         group.Description,
-			CreatedAt:           group.CreatedAt,
+			PermissionGroup:     *group,
 			ResourcePermissions: resources,
 			ActionPermissions:   actions,
 		}
@@ -440,12 +689,26 @@ func (m *Manager) GetPermissionGroupsBasedOnActionPermission(
 	return groups, nil
 }
 
-func (m *Manager) AddPermissionGroupToRole(roleId int, permissionGroupId int) error {
-	_, err := m.db.Exec(
-		"INSERT INTO role_group_assignments (role_id, permission_group_id) VALUES ($1, $2);",
-		roleId,
-		permissionGroupId,
+func (m *Manager) AddPermissionGroupsToRole(roleId int, permissionGroupIds []int) error {
+	permissionGroupIdsLen := len(permissionGroupIds)
+	if permissionGroupIdsLen == 0 {
+		return nil
+	}
+
+	valueSqls := make([]string, 0, permissionGroupIdsLen)
+	valueArgs := make([]any, 0, permissionGroupIdsLen*2)
+
+	for i, permissionGroupId := range permissionGroupIds {
+		valueSqls = append(valueSqls, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, roleId, permissionGroupId)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO role_group_assignments (role_id, permission_group_id) VALUES %s",
+		strings.Join(valueSqls, ", "),
 	)
+
+	_, err := m.db.Exec(query, valueArgs...)
 	if err != nil {
 		return err
 	}
@@ -453,12 +716,28 @@ func (m *Manager) AddPermissionGroupToRole(roleId int, permissionGroupId int) er
 	return nil
 }
 
-func (m *Manager) RemovePermissionGroupFromRole(roleId int, permissionGroupId int) error {
-	_, err := m.db.Exec(
-		"DELETE FROM role_group_assignments WHERE role_id = $1 AND permission_group_id = $2;",
-		roleId,
-		permissionGroupId,
+func (m *Manager) RemovePermissionGroupsFromRole(roleId int, permissionGroupIds []int) error {
+	permissionGroupIdsLen := len(permissionGroupIds)
+	if permissionGroupIdsLen == 0 {
+		return nil
+	}
+
+	valueArgs := make([]any, 0, permissionGroupIdsLen+1)
+	placeholders := make([]string, permissionGroupIdsLen)
+
+	for i, permissionGroupId := range permissionGroupIds {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		valueArgs = append(valueArgs, permissionGroupId)
+	}
+
+	query := fmt.Sprintf(
+		"DELETE FROM role_group_assignments WHERE role_id = $1 AND permission_group_id IN (%s)",
+		strings.Join(placeholders, ", "),
 	)
+
+	valueArgs = append([]any{roleId}, valueArgs...)
+
+	_, err := m.db.Exec(query, valueArgs...)
 	if err != nil {
 		return err
 	}
@@ -466,47 +745,29 @@ func (m *Manager) RemovePermissionGroupFromRole(roleId int, permissionGroupId in
 	return nil
 }
 
-func (m *Manager) AddResourcePermissionToGroup(
-	p types.CreateGroupResourcePermissionPayload,
-) (int, error) {
-	rowId := -1
-	err := m.db.QueryRow(
-		"INSERT INTO group_resource_permissions (resource, group_id) VALUES ($1, $2) RETURNING group_id;",
-		p.Resource,
-		p.GroupId,
-	).Scan(&rowId)
-	if err != nil {
-		return -1, err
-	}
-
-	return rowId, nil
-}
-
-func (m *Manager) AddActionPermissionToGroup(
-	p types.CreateGroupActionPermissionPayload,
-) (int, error) {
-	rowId := -1
-	err := m.db.QueryRow(
-		"INSERT INTO group_action_permissions (action, group_id) VALUES ($1, $2) RETURNING group_id;",
-		p.Action,
-		p.GroupId,
-	).Scan(&rowId)
-	if err != nil {
-		return -1, err
-	}
-
-	return rowId, nil
-}
-
-func (m *Manager) RemoveResourcePermissionFromGroup(
-	resource types.Resource,
+func (m *Manager) AddResourcePermissionsToGroup(
 	groupId int,
+	resources []types.Resource,
 ) error {
-	_, err := m.db.Exec(
-		"DELETE FROM group_resource_permissions WHERE resource = $1 AND group_id = $2;",
-		resource,
-		groupId,
+	resourcesLen := len(resources)
+	if resourcesLen == 0 {
+		return nil
+	}
+
+	valueSqls := make([]string, 0, resourcesLen)
+	valueArgs := make([]any, 0, resourcesLen*2)
+
+	for i, resource := range resources {
+		valueSqls = append(valueSqls, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, groupId, resource)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO group_resource_permissions (group_id, resource) VALUES %s",
+		strings.Join(valueSqls, ", "),
 	)
+
+	_, err := m.db.Exec(query, valueArgs...)
 	if err != nil {
 		return err
 	}
@@ -514,15 +775,93 @@ func (m *Manager) RemoveResourcePermissionFromGroup(
 	return nil
 }
 
-func (m *Manager) RemoveActionPermissionFromGroup(
-	action types.Action,
+func (m *Manager) AddActionPermissionsToGroup(
 	groupId int,
+	actions []types.Action,
 ) error {
-	_, err := m.db.Exec(
-		"DELETE FROM group_action_permissions WHERE action = $1 AND group_id = $2;",
-		action,
-		groupId,
+	actionsLen := len(actions)
+	if actionsLen == 0 {
+		return nil
+	}
+
+	valueSqls := make([]string, 0, actionsLen)
+	valueArgs := make([]any, 0, actionsLen*2)
+
+	for i, action := range actions {
+		valueSqls = append(valueSqls, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
+		valueArgs = append(valueArgs, groupId, action)
+	}
+
+	query := fmt.Sprintf(
+		"INSERT INTO group_action_permissions (group_id, action) VALUES %s",
+		strings.Join(valueSqls, ", "),
 	)
+
+	_, err := m.db.Exec(query, valueArgs...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Manager) RemoveResourcePermissionsFromGroup(
+	groupId int,
+	resources []types.Resource,
+) error {
+	resourcesLen := len(resources)
+	if resourcesLen == 0 {
+		return nil
+	}
+
+	valueArgs := make([]any, 0, resourcesLen+1)
+	placeholders := make([]string, resourcesLen)
+
+	for i, resource := range resources {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		valueArgs = append(valueArgs, resource)
+	}
+
+	query := fmt.Sprintf(
+		"DELETE FROM group_resource_permissions WHERE group_id = $1 AND resource IN (%s)",
+		strings.Join(placeholders, ", "),
+	)
+
+	valueArgs = append([]any{groupId}, valueArgs...)
+
+	_, err := m.db.Exec(query, valueArgs...)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (m *Manager) RemoveActionPermissionsFromGroup(
+	groupId int,
+	actions []types.Action,
+) error {
+	actionsLen := len(actions)
+	if actionsLen == 0 {
+		return nil
+	}
+
+	valueArgs := make([]any, 0, actionsLen+1)
+	placeholders := make([]string, actionsLen)
+
+	for i, action := range actions {
+		placeholders[i] = fmt.Sprintf("$%d", i+2)
+		valueArgs = append(valueArgs, action)
+	}
+
+	query := fmt.Sprintf(
+		"DELETE FROM group_action_permissions WHERE group_id = $1 AND action IN (%s)",
+		strings.Join(placeholders, ", "),
+	)
+
+	valueArgs = append([]any{groupId}, valueArgs...)
+
+	_, err := m.db.Exec(query, valueArgs...)
 	if err != nil {
 		return err
 	}

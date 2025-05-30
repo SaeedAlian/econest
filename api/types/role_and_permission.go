@@ -15,12 +15,8 @@ type Role struct {
 }
 
 type RoleWithPermissionGroups struct {
-	Id               int                       `json:"id"               exposure:"needPermission"`
-	Name             string                    `json:"name"             exposure:"needPermission"`
-	Description      json_types.JSONNullString `json:"description"      exposure:"needPermission"`
-	CreatedAt        time.Time                 `json:"createdAt"        exposure:"needPermission"`
-	UpdatedAt        time.Time                 `json:"updatedAt"        exposure:"needPermission"`
-	PermissionGroups []PermissionGroup         `json:"permissionGroups" exposure:"needPermission"`
+	Role
+	PermissionGroups []PermissionGroup `json:"permissionGroups" exposure:"needPermission"`
 }
 
 type PermissionGroup struct {
@@ -31,10 +27,7 @@ type PermissionGroup struct {
 }
 
 type PermissionGroupWithPermissions struct {
-	Id                  int                           `json:"id"                  exposure:"needPermission"`
-	Name                string                        `json:"name"                exposure:"needPermission"`
-	Description         json_types.JSONNullString     `json:"description"         exposure:"needPermission"`
-	CreatedAt           time.Time                     `json:"createdAt"           exposure:"needPermission"`
+	PermissionGroup
 	ResourcePermissions []GroupResourcePermissionInfo `json:"resourcePermissions" exposure:"needPermission"`
 	ActionPermissions   []GroupActionPermissionInfo   `json:"actionPermissions"   exposure:"needPermission"`
 }
@@ -92,17 +85,17 @@ type PermissionGroupSearchQuery struct {
 	Name *string `json:"name"`
 }
 
-type CreateGroupAssignmentPayload struct {
-	RoleId  int `json:"roleId"`
-	GroupId int `json:"groupId"`
+type RoleGroupAssignmentPayload struct {
+	RoleId   int   `json:"roleId"`
+	GroupIds []int `json:"groupIds"`
 }
 
-type CreateGroupResourcePermissionPayload struct {
-	GroupId  int    `json:"groupId"`
-	Resource string `json:"resource"`
+type GroupResourcePermissionAssignmentPayload struct {
+	GroupId   int      `json:"groupId"`
+	Resources []string `json:"resources"`
 }
 
-type CreateGroupActionPermissionPayload struct {
-	GroupId int    `json:"groupId"`
-	Action  string `json:"action"`
+type GroupActionPermissionAssignmentPayload struct {
+	GroupId int      `json:"groupId"`
+	Actions []string `json:"actions"`
 }
