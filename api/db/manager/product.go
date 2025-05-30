@@ -2687,8 +2687,8 @@ func (m *Manager) DeleteProductTagAssignments(productId int, tagIds []int) error
 		return err
 	}
 
-	valueArgs := make([]any, 0, len(tagIds)+1)
-	placeholders := make([]string, len(tagIds))
+	valueArgs := make([]any, 0, tagIdsLen+1)
+	placeholders := make([]string, tagIdsLen)
 
 	for i, tagId := range tagIds {
 		placeholders[i] = fmt.Sprintf("$%d", i+2)
@@ -3629,8 +3629,8 @@ func deleteProductTagAssignmentsAsDBTx(
 		return nil
 	}
 
-	valueArgs := make([]any, 0, len(tagIds)+1)
-	placeholders := make([]string, len(tagIds))
+	valueArgs := make([]any, 0, tagIdsLen+1)
+	placeholders := make([]string, tagIdsLen)
 
 	for i, tagId := range tagIds {
 		placeholders[i] = fmt.Sprintf("$%d", i+2)
