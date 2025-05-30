@@ -408,7 +408,7 @@ func TestUserService(t *testing.T) {
 	})
 
 	t.Run("should login and then refresh successfully", func(t *testing.T) {
-		authRes := testutils.LoginUser(t, router, strings.ToLower("testuser1"), "password123")
+		authRes := testutils.LoginUser(t, router, "", strings.ToLower("testuser1"), "password123")
 
 		refreshReq, err := http.NewRequest("POST", "/refresh", nil)
 		if err != nil {
@@ -424,13 +424,13 @@ func TestUserService(t *testing.T) {
 	})
 
 	t.Run("should login and then logout successfully", func(t *testing.T) {
-		authRes := testutils.LoginUser(t, router, strings.ToLower("testuser1"), "password123")
+		authRes := testutils.LoginUser(t, router, "", strings.ToLower("testuser1"), "password123")
 		logoutReq := testutils.CreateAuthenticatedRequest(t, "POST", "/logout", nil, authRes)
 		testutils.ExecuteRequest(t, router, logoutReq, http.StatusOK)
 	})
 
 	t.Run("should get users", func(t *testing.T) {
-		authRes := testutils.LoginUser(t, router, strings.ToLower("testuser1"), "password123")
+		authRes := testutils.LoginUser(t, router, "", strings.ToLower("testuser1"), "password123")
 		req := testutils.CreateAuthenticatedRequest(t, "GET", "/user", nil, authRes)
 		testutils.ExecuteRequest(t, router, req, http.StatusOK)
 	})
@@ -440,7 +440,7 @@ func TestUserService(t *testing.T) {
 			FullName: utils.Ptr("updated name"),
 		}
 
-		authRes := testutils.LoginUser(t, router, strings.ToLower("testuser1"), "password123")
+		authRes := testutils.LoginUser(t, router, "", strings.ToLower("testuser1"), "password123")
 		req := testutils.CreateAuthenticatedRequest(t, "PATCH", "/user", updatePayload, authRes)
 		testutils.ExecuteRequest(t, router, req, http.StatusOK)
 	})

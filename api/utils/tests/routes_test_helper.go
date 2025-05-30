@@ -3,6 +3,7 @@ package testutils
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +16,13 @@ type AuthResponse struct {
 	Cookies     []*http.Cookie
 }
 
-func LoginUser(t *testing.T, handler http.Handler, username string, password string) AuthResponse {
+func LoginUser(
+	t *testing.T,
+	handler http.Handler,
+	pathPrefix string,
+	username string,
+	password string,
+) AuthResponse {
 	t.Helper()
 
 	loginPayload := types.LoginUserPayload{
@@ -28,7 +35,13 @@ func LoginUser(t *testing.T, handler http.Handler, username string, password str
 		t.Fatalf("Failed to marshal login payload: %v", err)
 	}
 
-	req := httptest.NewRequest("POST", "/login", bytes.NewBuffer(loginBody))
+	path := "/login"
+
+	if pathPrefix != "" {
+		path = fmt.Sprintf("%s/login", pathPrefix)
+	}
+
+	req := httptest.NewRequest("POST", path, bytes.NewBuffer(loginBody))
 	rr := httptest.NewRecorder()
 
 	handler.ServeHTTP(rr, req)
