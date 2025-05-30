@@ -27,6 +27,9 @@ CREATE TYPE "actions" AS ENUM (
 	'can_assign_permission_group_to_role',
 	'can_remove_permission_group_from_role',
 
+	'can_assign_permission_to_group',
+	'can_remove_permission_from_group',
+
 	'can_add_product_category',
 	'can_update_product_category',
 	'can_delete_product_category',

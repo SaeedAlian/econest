@@ -121,6 +121,9 @@ const (
 	ActionCanAssignPermissionGroupToRole   Action = "can_assign_permission_group_to_role"
 	ActionCanRemovePermissionGroupFromRole Action = "can_remove_permission_group_from_role"
 
+	ActionCanAssignPermissionToGroup   Action = "can_assign_permission_to_group"
+	ActionCanRemovePermissionFromGroup Action = "can_remove_permission_from_group"
+
 	ActionCanAddProductCategory    Action = "can_add_product_category"
 	ActionCanUpdateProductCategory Action = "can_update_product_category"
 	ActionCanDeleteProductCategory Action = "can_delete_product_category"
