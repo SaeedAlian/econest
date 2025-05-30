@@ -37,6 +37,7 @@ func (s *Server) Run() error {
 	userSubrouter := router.PathPrefix("/user").Subrouter()
 	storeSubrouter := router.PathPrefix("/store").Subrouter()
 	productSubrouter := router.PathPrefix("/product").Subrouter()
+	roleAndPermissionSubrouter := router.PathPrefix("/rp").Subrouter()
 
 	authCache := redis.NewClient(&redis.Options{
 		Addr: config.Env.KeyServerRedisAddr,
@@ -59,6 +60,9 @@ func (s *Server) Run() error {
 
 	productService := product.NewHandler(dbManager, authHandler, smtpServer)
 	productService.RegisterRoutes(productSubrouter)
+
+	roleAndPermissionService := product.NewHandler(dbManager, authHandler, smtpServer)
+	roleAndPermissionService.RegisterRoutes(roleAndPermissionSubrouter)
 
 	log.Println("API Listening on ", s.addr)
 

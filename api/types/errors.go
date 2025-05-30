@@ -87,8 +87,10 @@ var (
 	ErrDuplicateStoreName           = errors.New(
 		"another store with this name already exists",
 	)
-	ErrInvalidOptionId  = errors.New("invalid option id")
-	ErrUploadSizeTooBig = func(maxSize int) error {
+	ErrInvalidOptionId     = errors.New("invalid option id")
+	ErrInvalidActionName   = errors.New("invalid action permission name")
+	ErrInvalidResourceName = errors.New("invalid resource permission name")
+	ErrUploadSizeTooBig    = func(maxSize int) error {
 		return errors.New(
 			fmt.Sprintf(
 				"uploaded file is too big, choose a file that's less than %d MB in size",
