@@ -1,8 +1,6 @@
 package user
 
 import (
-	"bytes"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
@@ -177,15 +175,7 @@ func TestUserService(t *testing.T) {
 			Password:  "password123",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/customer", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/customer", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusCreated)
 
@@ -208,15 +198,7 @@ func TestUserService(t *testing.T) {
 			Password:  "password123",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/vendor", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/vendor", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusCreated)
 
@@ -239,19 +221,11 @@ func TestUserService(t *testing.T) {
 			Password:  "password123",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/customer", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/customer", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusBadRequest)
 
-		created, err := handler.db.GetUserByEmail(
+		created, _ := handler.db.GetUserByEmail(
 			strings.ToLower("SecondEmailShouldFail@gmail.com"),
 		)
 		if created != nil {
@@ -268,19 +242,11 @@ func TestUserService(t *testing.T) {
 			Password:  "password123",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/customer", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/customer", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusBadRequest)
 
-		created, err := handler.db.GetUserByUsername(
+		created, _ := handler.db.GetUserByUsername(
 			strings.ToLower("testuserfailed"),
 		)
 		if created != nil {
@@ -297,19 +263,11 @@ func TestUserService(t *testing.T) {
 			Password:  "password123",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/customer", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/customer", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusBadRequest)
 
-		created, err := handler.db.GetUserByUsername(strings.ToLower("newErrorUser"))
+		created, _ := handler.db.GetUserByUsername(strings.ToLower("newErrorUser"))
 		if created != nil {
 			t.Error("Expected for the created user to not be found, but it has been found")
 		}
@@ -324,19 +282,11 @@ func TestUserService(t *testing.T) {
 			Password:  "1",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/customer", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/customer", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusBadRequest)
 
-		created, err := handler.db.GetUserByUsername(strings.ToLower("newErrorUser"))
+		created, _ := handler.db.GetUserByUsername(strings.ToLower("newErrorUser"))
 		if created != nil {
 			t.Error("Expected for the created user to not be found, but it has been found")
 		}
@@ -351,19 +301,11 @@ func TestUserService(t *testing.T) {
 			Password:  strings.Repeat("1", 5000000),
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/register/customer", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/register/customer", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusBadRequest)
 
-		created, err := handler.db.GetUserByUsername(strings.ToLower("newErrorUser"))
+		created, _ := handler.db.GetUserByUsername(strings.ToLower("newErrorUser"))
 		if created != nil {
 			t.Error("Expected for the created user to not be found, but it has been found")
 		}
@@ -375,15 +317,7 @@ func TestUserService(t *testing.T) {
 			Password: "password123",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/login", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusOK)
 	})
@@ -394,15 +328,7 @@ func TestUserService(t *testing.T) {
 			Password: "wrongpass",
 		}
 
-		marshalled, err := json.Marshal(payload)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		req, err := http.NewRequest("POST", "/login", bytes.NewBuffer(marshalled))
-		if err != nil {
-			t.Fatal(err)
-		}
+		req := testutils.CreateUnauthenticatedRequest(t, "POST", "/login", payload)
 
 		testutils.ExecuteRequest(t, router, req, http.StatusBadRequest)
 	})

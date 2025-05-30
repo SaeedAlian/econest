@@ -95,6 +95,28 @@ func CreateAuthenticatedRequest(
 	return req
 }
 
+func CreateUnauthenticatedRequest(
+	t *testing.T,
+	method string,
+	path string,
+	body any,
+) *http.Request {
+	t.Helper()
+
+	var bodyBytes []byte
+	if body != nil {
+		var err error
+		bodyBytes, err = json.Marshal(body)
+		if err != nil {
+			t.Fatalf("Failed to marshal request body: %v", err)
+		}
+	}
+
+	req := httptest.NewRequest(method, path, bytes.NewBuffer(bodyBytes))
+
+	return req
+}
+
 func ExecuteRequest(
 	t *testing.T,
 	handler http.Handler,
