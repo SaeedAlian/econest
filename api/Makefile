@@ -2,10 +2,13 @@ build:
 	@go build -o bin/econestapi main.go
 
 test:
-	@go test -v ./...
+	@ENV="test" go test -v ./...
 	
 run: build
-	@./bin/econestapi
+	@ENV="devel" ./bin/econestapi
+
+run-prod: build
+	@ENV="prod" ./bin/econestapi
 
 migration:
 	@migrate create -ext sql -dir db/migrate/migrations -seq $(filter-out $@,$(MAKECMDGOALS))

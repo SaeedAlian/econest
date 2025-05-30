@@ -1,8 +1,19 @@
 package auth
 
-import "testing"
+import (
+	"log"
+	"os"
+	"testing"
+
+	"github.com/SaeedAlian/econest/api/config"
+)
 
 func TestHashPassword(t *testing.T) {
+	if config.Env.Env != "test" {
+		log.Panic("environment is not on test!!")
+		os.Exit(1)
+	}
+
 	hash, err := HashPassword("password")
 	if err != nil {
 		t.Errorf("There was an error on hashing the password: %v", err)
@@ -20,6 +31,11 @@ func TestHashPassword(t *testing.T) {
 }
 
 func TestComparePassword(t *testing.T) {
+	if config.Env.Env != "test" {
+		log.Panic("environment is not on test!!")
+		os.Exit(1)
+	}
+
 	hash, err := HashPassword("password")
 	if err != nil {
 		t.Errorf("There was an error on hashing the password: %v", err)

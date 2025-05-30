@@ -4,11 +4,13 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/suite"
 
+	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
 	"github.com/SaeedAlian/econest/api/types"
 	"github.com/SaeedAlian/econest/api/utils"
@@ -31,6 +33,11 @@ func TestDBIntegrationSuite(t *testing.T) {
 }
 
 func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
+	if config.Env.Env != "test" {
+		log.Panic("environment is not on test!!")
+		os.Exit(1)
+	}
+
 	fmt.Print("\n...\n\n")
 	log.Println("Start DB Tests...")
 

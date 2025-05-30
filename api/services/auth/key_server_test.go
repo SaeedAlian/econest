@@ -1,18 +1,23 @@
 package auth
 
 import (
+	"log"
+	"os"
 	"testing"
 
 	"github.com/redis/go-redis/v9"
-)
 
-const (
-	testRedisAddr = "localhost:3545"
+	"github.com/SaeedAlian/econest/api/config"
 )
 
 func TestKeyServer(t *testing.T) {
+	if config.Env.Env != "test" {
+		log.Panic("environment is not on test!!")
+		os.Exit(1)
+	}
+
 	ksCache := redis.NewClient(&redis.Options{
-		Addr: testRedisAddr,
+		Addr: config.Env.KeyServerRedisAddr,
 	})
 
 	ks := NewKeyServer(ksCache)

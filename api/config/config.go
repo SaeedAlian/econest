@@ -1,13 +1,19 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
+	"path/filepath"
 	"strconv"
 
 	"github.com/joho/godotenv"
+
+	"github.com/SaeedAlian/econest/api/utils"
 )
 
 type Config struct {
+	Env                                   string
 	Host                                  string
 	Port                                  string
 	DBHost                                string
@@ -45,9 +51,39 @@ type Config struct {
 var Env = InitConfig()
 
 func InitConfig() Config {
-	godotenv.Load()
+	env := os.Getenv("ENV")
+	projectRoot := getProjectRoot()
+
+	defaultFilename := ".env"
+	defaultEnvPath := filepath.Join(projectRoot, defaultFilename)
+
+	filename := defaultFilename
+	envPath := defaultEnvPath
+
+	if env != "" {
+		customFilename := fmt.Sprintf(".env.%s", env)
+		customEnvPath := filepath.Join(projectRoot, customFilename)
+
+		customEnvExists, err := utils.PathExists(customEnvPath)
+		if err != nil || !customEnvExists {
+			log.Printf(
+				"warning: couldn't load env file %s, switching to default...\n",
+				customFilename,
+			)
+
+			env = "default"
+		} else {
+			filename = customFilename
+			envPath = customEnvPath
+		}
+	}
+
+	if err := godotenv.Load(envPath); err != nil {
+		log.Printf("warning: couldn't load env file %s: %v\n", filename, err)
+	}
 
 	return Config{
+		Env:                                   env,
 		Host:                                  getEnv("HOST", "http://localhost"),
 		Port:                                  getEnv("PORT", "8080"),
 		DBUser:                                getEnv("DB_USER", "postgres"),
@@ -108,4 +144,24 @@ func getEnvAsInt(key string, fallback int64) int64 {
 	}
 
 	return fallback
+}
+
+func getProjectRoot() string {
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return dir
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			break
+		}
+		dir = parent
+	}
+
+	panic("could not find project root (go.mod)")
 }

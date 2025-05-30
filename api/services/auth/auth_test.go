@@ -2,22 +2,30 @@ package auth
 
 import (
 	"database/sql"
+	"log"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/SaeedAlian/econest/api/config"
 	"github.com/SaeedAlian/econest/api/types"
 	json_types "github.com/SaeedAlian/econest/api/types/json"
 )
 
 func TestAuthHandler(t *testing.T) {
+	if config.Env.Env != "test" {
+		log.Panic("environment is not on test!!")
+		os.Exit(1)
+	}
+
 	ksCache := redis.NewClient(&redis.Options{
-		Addr: testRedisAddr,
+		Addr: config.Env.KeyServerRedisAddr,
 	})
 
 	authHandlerCache := redis.NewClient(&redis.Options{
-		Addr: testRedisAddr,
+		Addr: config.Env.AuthRedisAddr,
 	})
 
 	ks := NewKeyServer(ksCache)

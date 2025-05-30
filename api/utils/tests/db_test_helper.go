@@ -3,6 +3,8 @@ package testutils
 import (
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"testing"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -13,11 +15,12 @@ import (
 	"github.com/SaeedAlian/econest/api/config"
 )
 
-const (
-	testDBName = "econest_test"
-)
-
 func SetupTestDB(t *testing.T) *sql.DB {
+	if config.Env.Env != "test" {
+		log.Panic("environment is not on test!!")
+		os.Exit(1)
+	}
+
 	t.Helper()
 
 	conninfo := fmt.Sprintf(
@@ -26,7 +29,7 @@ func SetupTestDB(t *testing.T) *sql.DB {
 		config.Env.DBPassword,
 		config.Env.DBHost,
 		config.Env.DBPort,
-		testDBName,
+		config.Env.DBName,
 	)
 
 	db, err := sql.Open("postgres", conninfo)
