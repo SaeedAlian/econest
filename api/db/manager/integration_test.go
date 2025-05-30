@@ -169,19 +169,24 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Error(err)
 
 	// add permission group to role
-	err = s.manager.AddPermissionGroupToRole(role.Id, groupId)
+	err = s.manager.AddPermissionGroupsToRole(role.Id, []int{groupId})
 	s.Require().NoError(err)
 
-	err = s.manager.AddPermissionGroupToRole(role2Id, groupId2)
+	err = s.manager.AddPermissionGroupsToRole(role2Id, []int{groupId2})
 	s.Require().NoError(err)
 
 	// add permission group to role (not found)
-	err = s.manager.AddPermissionGroupToRole(99999, groupId)
+	err = s.manager.AddPermissionGroupsToRole(99999, []int{groupId})
 	s.Require().Error(err)
 
 	// add permission group to role (not found)
-	err = s.manager.AddPermissionGroupToRole(role.Id, 99999)
+	err = s.manager.AddPermissionGroupsToRole(role.Id, []int{99999})
 	s.Require().Error(err)
+
+	roleWithPermissionGroups, err := s.manager.GetRoleWithPermissionGroupsById(roles[0].Id)
+	s.Require().NoError(err)
+	s.Require().Equal("role1", roleWithPermissionGroups.Name)
+	s.Require().Len(roleWithPermissionGroups.PermissionGroups, 1)
 
 	// get permission groups
 	pgroups, err := s.manager.GetPermissionGroups(types.PermissionGroupSearchQuery{})
@@ -239,34 +244,27 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Equal(true, found)
 
 	// add resource permission to group
-	rpg, err := s.manager.AddResourcePermissionToGroup(types.CreateGroupResourcePermissionPayload{
-		GroupId:  pgroup.Id,
-		Resource: "roles_and_permissions",
-	})
+	err = s.manager.AddResourcePermissionsToGroup(
+		pgroup.Id,
+		[]types.Resource{"roles_and_permissions", "wallet_transactions_full_access"},
+	)
 	s.Require().NoError(err)
-	s.Require().Greater(rpg, 0)
 
-	rpg, err = s.manager.AddResourcePermissionToGroup(types.CreateGroupResourcePermissionPayload{
-		GroupId:  pgroup.Id,
-		Resource: "wallet_transactions_full_access",
-	})
+	err = s.manager.AddResourcePermissionsToGroup(
+		groupId2,
+		[]types.Resource{"wallet_transactions_full_access"},
+	)
 	s.Require().NoError(err)
-	s.Require().Greater(rpg, 1)
-
-	rpg2, err := s.manager.AddResourcePermissionToGroup(types.CreateGroupResourcePermissionPayload{
-		GroupId:  groupId2,
-		Resource: "wallet_transactions_full_access",
-	})
-	s.Require().NoError(err)
-	s.Require().Greater(rpg2, 2)
 
 	// add action permission to group
-	apg, err := s.manager.AddActionPermissionToGroup(types.CreateGroupActionPermissionPayload{
-		GroupId: pgroup.Id,
-		Action:  "can_ban_user",
-	})
+	err = s.manager.AddActionPermissionsToGroup(pgroup.Id, []types.Action{"can_ban_user"})
 	s.Require().NoError(err)
-	s.Require().Greater(apg, 0)
+
+	pgroupWithPermissions, err := s.manager.GetPermissionGroupWithPermissionsById(pgroups[0].Id)
+	s.Require().NoError(err)
+	s.Require().Equal("test_group", pgroupWithPermissions.Name)
+	s.Require().Len(pgroupWithPermissions.ResourcePermissions, 2)
+	s.Require().Len(pgroupWithPermissions.ActionPermissions, 1)
 
 	// get permission groups with permissions
 	pgroupsWithPermissions, err := s.manager.GetPermissionGroupsWithPermissions(
@@ -366,11 +364,15 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().True(isRoleHasSomeResources)
 
 	// remove resource permission from group
-	err = s.manager.RemoveResourcePermissionFromGroup("roles_and_permissions", pgroup.Id)
+	err = s.manager.RemoveResourcePermissionsFromGroup(pgroup.Id, []types.Resource{
+		"roles_and_permissions",
+	})
 	s.Require().NoError(err)
 
 	// remove action permission from group
-	err = s.manager.RemoveActionPermissionFromGroup("can_ban_user", pgroup.Id)
+	err = s.manager.RemoveActionPermissionsFromGroup(pgroup.Id, []types.Action{
+		"can_ban_user",
+	})
 	s.Require().NoError(err)
 
 	// create user
@@ -1272,7 +1274,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	err = s.manager.DeleteUser(userId3)
 	s.Require().NoError(err)
 
-	err = s.manager.RemovePermissionGroupFromRole(role.Id, groupId)
+	err = s.manager.RemovePermissionGroupsFromRole(role.Id, []int{groupId})
 	s.Require().NoError(err)
 
 	err = s.manager.DeletePermissionGroup(groupId)
