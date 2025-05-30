@@ -317,6 +317,19 @@ func ParseIntURLParam(name string, vars map[string]string) (int, error) {
 	return parsed, nil
 }
 
+func ParseStringURLParam(name string, vars map[string]string) (string, error) {
+	param, ok := vars[name]
+	if !ok {
+		return "", types.ErrInvalidParamValue(name)
+	}
+
+	if param == "" {
+		return "", types.ErrInvalidParamValue(name)
+	}
+
+	return param, nil
+}
+
 func ParseRequestPayload[T any](r *http.Request, payload *T) error {
 	if err := ParseJSONFromRequest(r, payload); err != nil {
 		return types.ErrInvalidPayload
