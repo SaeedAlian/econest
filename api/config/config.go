@@ -111,14 +111,14 @@ func InitConfig() Config {
 		SMTPPort:                              getEnv("SMTP_PORT", ""),
 		SMTPEmail:                             getEnv("SMTP_MAIL", ""),
 		SMTPPassword:                          getEnv("SMTP_PASS", ""),
-		WebsiteUrl:                            getEnv("SMTP_PASS", "http://localhost:5173"),
-		WebsiteName:                           getEnv("SMTP_PASS", "EcoNest"),
+		WebsiteUrl:                            getEnv("WEBSITE_URL", "http://localhost:5173"),
+		WebsiteName:                           getEnv("WEBSITE_NAME", "EcoNest"),
 		ResetPasswordWebsitePageUrl: getEnv(
-			"SMTP_PASS",
+			"RESET_PASS_WEBSITE_PAGE_URL",
 			"http://localhost:5173/reset-password",
 		),
 		EmailVerificationWebsitePageUrl: getEnv(
-			"SMTP_PASS",
+			"EMAIL_VERIFICATION_WEBSITE_PAGE_URL",
 			"http://localhost:5173/email-verify",
 		),
 		UploadsRootDir: getEnv("UPLOADS_ROOT_DIR", "uploads"),
