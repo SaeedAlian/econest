@@ -76,6 +76,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	).Methods("PATCH")
 	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	withAuthRouter.Use(h.authHandler.WithCSRFToken())
+	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 
 	settingsRouter := withAuthRouter.PathPrefix("/settings").Subrouter()
 	settingsRouter.HandleFunc("/me", h.getMySettings).Methods("GET")

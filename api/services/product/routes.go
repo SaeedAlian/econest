@@ -103,6 +103,8 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	withAuthRouter.Use(h.authHandler.WithCSRFToken())
+	withAuthRouter.Use(h.authHandler.WithVerifiedEmail(h.db))
+	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 
 	productOfferRouter := withAuthRouter.PathPrefix("/offer").Subrouter()
 	productOfferRouter.HandleFunc("/{productId}", h.authHandler.WithActionPermissionAuth(

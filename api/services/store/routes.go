@@ -47,6 +47,8 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	).Methods("POST")
 	registerRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	registerRouter.Use(h.authHandler.WithCSRFToken())
+	registerRouter.Use(h.authHandler.WithVerifiedEmail(h.db))
+	registerRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 
 	withAuthRouter := router.Methods("GET", "POST", "PATCH", "DELETE").Subrouter()
 	withAuthRouter.HandleFunc("/me", h.getMyStores).Methods("GET")
@@ -63,6 +65,8 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	withAuthRouter.Use(h.authHandler.WithCSRFToken())
+	withAuthRouter.Use(h.authHandler.WithVerifiedEmail(h.db))
+	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 
 	settingsRouter := withAuthRouter.PathPrefix("/settings").Subrouter()
 	settingsRouter.HandleFunc("/me/{storeId}", h.getMyStoreSettings).Methods("GET")
