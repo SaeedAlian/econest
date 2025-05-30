@@ -1210,7 +1210,7 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 		if err == nil && existingStore.Id != -1 {
 			utils.WriteErrorInResponse(
 				w,
-				http.StatusUnauthorized,
+				http.StatusBadRequest,
 				types.ErrDuplicateStoreName,
 			)
 			return

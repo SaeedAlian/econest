@@ -1236,7 +1236,7 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 		if err == nil && existingUser.Id != -1 {
 			utils.WriteErrorInResponse(
 				w,
-				http.StatusUnauthorized,
+				http.StatusBadRequest,
 				types.ErrDuplicateUsername,
 			)
 			return
@@ -1300,7 +1300,7 @@ func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
 	if err == nil && existingUser.Id != -1 {
 		utils.WriteErrorInResponse(
 			w,
-			http.StatusUnauthorized,
+			http.StatusBadRequest,
 			types.ErrDuplicateEmail,
 		)
 		return
