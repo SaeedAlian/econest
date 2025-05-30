@@ -8,7 +8,6 @@ import (
 	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
 	"github.com/SaeedAlian/econest/api/services/auth"
-	"github.com/SaeedAlian/econest/api/services/smtp"
 	"github.com/SaeedAlian/econest/api/types"
 	"github.com/SaeedAlian/econest/api/utils"
 )
@@ -16,15 +15,13 @@ import (
 type Handler struct {
 	db          *db_manager.Manager
 	authHandler *auth.AuthHandler
-	smtpServer  *smtp.SMTPServer
 }
 
 func NewHandler(
 	db *db_manager.Manager,
 	authHandler *auth.AuthHandler,
-	smtpServer *smtp.SMTPServer,
 ) *Handler {
-	return &Handler{db: db, authHandler: authHandler, smtpServer: smtpServer}
+	return &Handler{db: db, authHandler: authHandler}
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {

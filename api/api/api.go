@@ -55,13 +55,13 @@ func (s *Server) Run() error {
 	userService := user.NewHandler(dbManager, authHandler, smtpServer)
 	userService.RegisterRoutes(userSubrouter)
 
-	storeService := store.NewHandler(dbManager, authHandler, smtpServer)
+	storeService := store.NewHandler(dbManager, authHandler)
 	storeService.RegisterRoutes(storeSubrouter)
 
-	productService := product.NewHandler(dbManager, authHandler, smtpServer)
+	productService := product.NewHandler(dbManager, authHandler)
 	productService.RegisterRoutes(productSubrouter)
 
-	roleAndPermissionService := product.NewHandler(dbManager, authHandler, smtpServer)
+	roleAndPermissionService := product.NewHandler(dbManager, authHandler)
 	roleAndPermissionService.RegisterRoutes(roleAndPermissionSubrouter)
 
 	log.Println("API Listening on ", s.addr)
