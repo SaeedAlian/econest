@@ -61,8 +61,14 @@ var (
 	ErrInvalidRefreshToken               = errors.New("refresh token is invalid")
 	ErrCannotAccessAddress               = errors.New("you cannot access this address")
 	ErrCannotAccessPhoneNumber           = errors.New("you cannot access this phone number")
-	ErrUpdateAddress                     = errors.New("there was an error on updating address")
-	ErrUpdatePhoneNumber                 = errors.New(
+	ErrCannotAccessWalletTransaction     = errors.New("you cannot access this wallet transaction")
+	ErrInvalidTxType                     = errors.New("invalid transaction type")
+	ErrBalanceInsufficient               = errors.New("insufficient balance")
+	ErrTransactionIsNotForWallet         = errors.New(
+		"this transaction is not for the provided user wallet",
+	)
+	ErrUpdateAddress     = errors.New("there was an error on updating address")
+	ErrUpdatePhoneNumber = errors.New(
 		"there was an error on updating phone number",
 	)
 	ErrDeleteAddress     = errors.New("there was an error on deleting address")

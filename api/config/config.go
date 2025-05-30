@@ -37,6 +37,7 @@ type Config struct {
 	MaxProductCommentsInPage              int32
 	MaxProductCategoriesInPage            int32
 	MaxStoresInPage                       int32
+	MaxWalletTransactionsInPage           int32
 	SMTPHost                              string
 	SMTPPort                              string
 	SMTPEmail                             string
@@ -102,6 +103,7 @@ func InitConfig() Config {
 		EmailVerificationTokenExpirationInMin: float64(10),
 		MaxUsersInPage:                        int32(10),
 		MaxStoresInPage:                       int32(5),
+		MaxWalletTransactionsInPage:           int32(20),
 		MaxProductsInPage:                     int32(15),
 		MaxProductTagsInPage:                  int32(20),
 		MaxProductOffersInPage:                int32(15),

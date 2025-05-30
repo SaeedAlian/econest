@@ -15,6 +15,7 @@ import (
 	"github.com/SaeedAlian/econest/api/services/smtp"
 	"github.com/SaeedAlian/econest/api/services/store"
 	"github.com/SaeedAlian/econest/api/services/user"
+	"github.com/SaeedAlian/econest/api/services/wallet"
 )
 
 type Server struct {
@@ -38,6 +39,7 @@ func (s *Server) Run() error {
 	storeSubrouter := router.PathPrefix("/store").Subrouter()
 	productSubrouter := router.PathPrefix("/product").Subrouter()
 	roleAndPermissionSubrouter := router.PathPrefix("/rp").Subrouter()
+	walletSubrouter := router.PathPrefix("/wallet").Subrouter()
 
 	authCache := redis.NewClient(&redis.Options{
 		Addr: config.Env.KeyServerRedisAddr,
@@ -63,6 +65,9 @@ func (s *Server) Run() error {
 
 	roleAndPermissionService := product.NewHandler(dbManager, authHandler)
 	roleAndPermissionService.RegisterRoutes(roleAndPermissionSubrouter)
+
+	walletService := wallet.NewHandler(dbManager, authHandler)
+	walletService.RegisterRoutes(walletSubrouter)
 
 	log.Println("API Listening on ", s.addr)
 
