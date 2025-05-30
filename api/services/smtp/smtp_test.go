@@ -23,7 +23,7 @@ func TestAuthHandler(t *testing.T) {
 
 	t.Run("should send email successfully", func(t *testing.T) {
 		err := smtpServer.SendMail(
-			config.Env.SMTPRecipientAddress,
+			config.Env.SMTPTestRecipientAddress,
 			"test mail",
 			"This is a test email",
 		)

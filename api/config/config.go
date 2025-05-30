@@ -41,7 +41,7 @@ type Config struct {
 	SMTPPort                              string
 	SMTPEmail                             string
 	SMTPPassword                          string
-	SMTPRecipientAddress                  string
+	SMTPTestRecipientAddress              string
 	WebsiteUrl                            string
 	WebsiteName                           string
 	ResetPasswordWebsitePageUrl           string
@@ -112,7 +112,7 @@ func InitConfig() Config {
 		SMTPPort:                              getEnv("SMTP_PORT", ""),
 		SMTPEmail:                             getEnv("SMTP_MAIL", ""),
 		SMTPPassword:                          getEnv("SMTP_PASS", ""),
-		SMTPRecipientAddress:                  getEnv("SMTP_RECIPIENT_ADDRESS", ""),
+		SMTPTestRecipientAddress:              getEnv("SMTP_TEST_RECIPIENT_ADDRESS", ""),
 		WebsiteUrl:                            getEnv("WEBSITE_URL", "http://localhost:5173"),
 		WebsiteName:                           getEnv("WEBSITE_NAME", "EcoNest"),
 		ResetPasswordWebsitePageUrl: getEnv(
