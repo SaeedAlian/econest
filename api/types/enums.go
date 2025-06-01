@@ -165,6 +165,9 @@ const (
 	ActionCanDeleteProductAttribute Action = "can_delete_product_attribute"
 
 	ActionCanDeleteProductComment Action = "can_delete_product_comment"
+
+	ActionCanApproveWithdrawTransaction Action = "can_approve_withdraw_transaction"
+	ActionCanCancelWithdrawTransaction  Action = "can_cancel_withdraw_transaction"
 )
 
 var ValidActions = []Action{
@@ -217,6 +220,9 @@ var ValidActions = []Action{
 	ActionCanDeleteProductAttribute,
 
 	ActionCanDeleteProductComment,
+
+	ActionCanApproveWithdrawTransaction,
+	ActionCanCancelWithdrawTransaction,
 }
 
 func (a Action) IsValid() bool {

@@ -50,7 +50,10 @@ CREATE TYPE "actions" AS ENUM (
 	'can_update_product_attribute',
 	'can_delete_product_attribute',
 
-	'can_delete_product_comment'
+	'can_delete_product_comment',
+
+  'can_approve_withdraw_transaction',
+  'can_cancel_withdraw_transaction'
 );
 CREATE TYPE "resources" AS ENUM (
   'full_access',
