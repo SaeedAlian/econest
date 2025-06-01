@@ -282,7 +282,7 @@ type ProductSearchQuery struct {
 type CreateProductOfferPayload struct {
 	Discount  float64   `json:"discount"  validate:"required"`
 	ExpireAt  time.Time `json:"expireAt"  validate:"required"`
-	ProductId int       `json:"productId" validate:"required"`
+	ProductId int       `json:"productId"`
 }
 
 type UpdateProductOfferPayload struct {
@@ -329,8 +329,8 @@ type ProductAttributeSearchQuery struct {
 type CreateProductCommentPayload struct {
 	Scoring   int    `json:"scoring"   validate:"required"`
 	Comment   string `json:"comment"   validate:"required"`
-	ProductId int    `json:"productId" validate:"required"`
-	UserId    int    `json:"userId"    validate:"required"`
+	ProductId int    `json:"productId"`
+	UserId    int    `json:"userId"`
 }
 
 type UpdateProductCommentPayload struct {

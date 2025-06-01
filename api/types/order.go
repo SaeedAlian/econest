@@ -80,7 +80,7 @@ type OrderProductVariantAssignmentPayload struct {
 }
 
 type CreateOrderPayload struct {
-	UserId            int                                    `json:"userId"            validate:"required"`
+	UserId            int                                    `json:"userId"`
 	ArrivalDate       time.Time                              `json:"arrivalDate"       validate:"required"`
 	ProductVariants   []OrderProductVariantAssignmentPayload `json:"productVariants"   validate:"required"`
 	ReceiverAddressId int                                    `json:"receiverAddressId" validate:"required"`

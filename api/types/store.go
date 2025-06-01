@@ -67,13 +67,13 @@ type StoreOwnedProduct struct {
 type CreateStorePayload struct {
 	Name        string `json:"name"        validate:"required"`
 	Description string `json:"description"`
-	OwnerId     int    `json:"ownerId"     validate:"required"`
+	OwnerId     int    `json:"ownerId"`
 }
 
 type CreateStorePhoneNumberPayload struct {
 	CountryCode string `json:"countryCode" validate:"required,min=1,max=4"`
 	Number      string `json:"number"      validate:"required,min=5,max=20"`
-	StoreId     int    `json:"storeId"     validate:"required"`
+	StoreId     int    `json:"storeId"`
 }
 
 type CreateStoreAddressPayload struct {
@@ -82,7 +82,7 @@ type CreateStoreAddressPayload struct {
 	Street  string `json:"street"  validate:"required"`
 	Zipcode string `json:"zipcode" validate:"required"`
 	Details string `json:"details"`
-	StoreId int    `json:"storeId" validate:"required"`
+	StoreId int    `json:"storeId"`
 }
 
 type StoreSearchQuery struct {
