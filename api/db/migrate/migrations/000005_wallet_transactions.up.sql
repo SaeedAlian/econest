@@ -54,6 +54,20 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION prevent_deletion_if_tx_finalized()
+RETURNS TRIGGER AS $$
+DECLARE
+  status VARCHAR(20);
+BEGIN
+  IF OLD.status IN ('successful', 'failed') THEN
+    RAISE EXCEPTION 'cannot delete transaction with id % because it has status: %',
+      OLD.id, OLD.status;
+  END IF;
+
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TRIGGER trg_prevent_tx_status_change_after_final_state
 BEFORE UPDATE ON wallet_transactions
 FOR EACH ROW
@@ -65,3 +79,8 @@ AFTER UPDATE ON wallet_transactions
 FOR EACH ROW
 WHEN (OLD.status = 'pending' AND NEW.status = 'successful')
 EXECUTE FUNCTION update_wallet_balance_on_tx_success();
+
+CREATE TRIGGER trg_prevent_tx_deletion
+BEFORE DELETE ON wallet_transactions
+FOR EACH ROW
+EXECUTE FUNCTION prevent_deletion_if_tx_finalized();
