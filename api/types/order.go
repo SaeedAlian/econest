@@ -1,32 +1,55 @@
 package types
 
-import (
-	"time"
+import "time"
 
-	json_types "github.com/SaeedAlian/econest/api/types/json"
-)
+type OrderBase struct {
+	Id        int       `json:"id"        exposure:"private,needPermission"`
+	CreatedAt time.Time `json:"createdAt" exposure:"private,needPermission"`
+	UpdatedAt time.Time `json:"updatedAt" exposure:"private,needPermission"`
+	UserId    int       `json:"userId"    exposure:"private,needPermission"`
+}
 
-type Order struct {
-	Id            int                      `json:"id"            exposure:"private,needPermission"`
-	Verified      bool                     `json:"verified"      exposure:"private,needPermission"`
-	Status        OrderStatus              `json:"status"        exposure:"private,needPermission"`
-	CreatedAt     time.Time                `json:"createdAt"     exposure:"private,needPermission"`
-	UpdatedAt     time.Time                `json:"updatedAt"     exposure:"private,needPermission"`
-	UserId        int                      `json:"userId"        exposure:"private,needPermission"`
-	TransactionId json_types.JSONNullInt32 `json:"transactionId" exposure:"private,needPermission"`
+type OrderPayment struct {
+	Id                 int                `json:"id"                 exposure:"private,needPermission"`
+	TotalVariantsPrice float64            `json:"totalVariantsPrice" exposure:"private,needPermission"`
+	TotalShipmentPrice float64            `json:"totalShipmentPrice" exposure:"private,needPermission"`
+	Fee                float64            `json:"fee"                exposure:"private,needPermission"`
+	Status             OrderPaymentStatus `json:"status"             exposure:"private,needPermission"`
+	CreatedAt          time.Time          `json:"createdAt"          exposure:"private,needPermission"`
+	UpdatedAt          time.Time          `json:"updatedAt"          exposure:"private,needPermission"`
+	OrderId            int                `json:"orderId"            exposure:"private,needPermission"`
 }
 
 type OrderShipment struct {
-	Id                int          `json:"id"                exposure:"private,needPermission"`
-	ArrivalDate       time.Time    `json:"arrivalDate"       exposure:"private,needPermission"`
-	ShipmentDate      time.Time    `json:"shipmentDate"      exposure:"private,needPermission"`
-	Status            OrderStatus  `json:"status"            exposure:"private,needPermission"`
-	ShipmentType      ShipmentType `json:"shipmentType"      exposure:"private,needPermission"`
-	CreatedAt         time.Time    `json:"createdAt"         exposure:"private,needPermission"`
-	UpdatedAt         time.Time    `json:"updatedAt"         exposure:"private,needPermission"`
-	OrderId           int          `json:"orderId"           exposure:"private,needPermission"`
-	ReceiverAddressId int          `json:"receiverAddressId" exposure:"private,needPermission"`
-	SenderAddressId   int          `json:"senderAddressId"   exposure:"private,needPermission"`
+	Id                int                 `json:"id"                exposure:"private,needPermission"`
+	ArrivalDate       time.Time           `json:"arrivalDate"       exposure:"private,needPermission"`
+	Status            OrderShipmentStatus `json:"status"            exposure:"private,needPermission"`
+	CreatedAt         time.Time           `json:"createdAt"         exposure:"private,needPermission"`
+	UpdatedAt         time.Time           `json:"updatedAt"         exposure:"private,needPermission"`
+	OrderId           int                 `json:"orderId"           exposure:"private,needPermission"`
+	ReceiverAddressId int                 `json:"receiverAddressId" exposure:"private,needPermission"`
+}
+
+type Order struct {
+	OrderBase
+	PaymentStatus      OrderPaymentStatus  `json:"paymentStatus"      exposure:"private,needPermission"`
+	ShipmentStatus     OrderShipmentStatus `json:"shipmentStatus"     exposure:"private,needPermission"`
+	TotalVariantsPrice float64             `json:"totalVariantsPrice" exposure:"private,needPermission"`
+	TotalShipmentPrice float64             `json:"totalShipmentPrice" exposure:"private,needPermission"`
+	Fee                float64             `json:"fee"                exposure:"private,needPermission"`
+	TotalProducts      int                 `json:"totalProducts"      exposure:"private,needPermission"`
+}
+
+type OrderShipmentWithAddress struct {
+	OrderShipment
+	ReceiverAddress UserAddress `json:"receiverAddress" exposure:"private,needPermission"`
+}
+
+type OrderWithFullInfo struct {
+	OrderBase
+	Payment       OrderPayment             `json:"payment"       exposure:"private,needPermission"`
+	Shipment      OrderShipmentWithAddress `json:"shipment"      exposure:"private,needPermission"`
+	TotalProducts int                      `json:"totalProducts" exposure:"private,needPermission"`
 }
 
 type OrderProductSelectedAttribute struct {
@@ -37,15 +60,16 @@ type OrderProductSelectedAttribute struct {
 }
 
 type OrderProductVariant struct {
-	Id        int `json:"id"        exposure:"private,needPermission"`
-	Quantity  int `json:"quantity"  exposure:"private,needPermission"`
-	OrderId   int `json:"orderId"   exposure:"private,needPermission"`
-	VariantId int `json:"variantId" exposure:"private,needPermission"`
+	Id            int     `json:"id"            exposure:"private,needPermission"`
+	Quantity      int     `json:"quantity"      exposure:"private,needPermission"`
+	VariantPrice  float64 `json:"variantPrice"  exposure:"private,needPermission"`
+	ShippingPrice float64 `json:"shippingPrice" exposure:"private,needPermission"`
+	OrderId       int     `json:"orderId"       exposure:"private,needPermission"`
+	VariantId     int     `json:"variantId"     exposure:"private,needPermission"`
 }
 
 type OrderProductVariantInfo struct {
-	Id              int                            `json:"id"              exposure:"private,needPermission"`
-	Quantity        int                            `json:"quantity"        exposure:"private,needPermission"`
+	OrderProductVariant
 	SelectedVariant ProductVariantWithAttributeSet `json:"selectedVariant" exposure:"private,needPermission"`
 	Product         Product                        `json:"product"         exposure:"private,needPermission"`
 }
@@ -56,38 +80,27 @@ type OrderProductVariantAssignmentPayload struct {
 }
 
 type CreateOrderPayload struct {
-	UserId          int                                    `json:"userId"          validate:"required"`
-	TransactionId   int                                    `json:"transactionId"   validate:"required"`
-	ProductVariants []OrderProductVariantAssignmentPayload `json:"productVariants"`
-}
-
-type UpdateOrderPayload struct {
-	Verified *bool        `json:"verified"`
-	Status   *OrderStatus `json:"status"`
+	UserId            int                                    `json:"userId"            validate:"required"`
+	ArrivalDate       time.Time                              `json:"arrivalDate"       validate:"required"`
+	ProductVariants   []OrderProductVariantAssignmentPayload `json:"productVariants"   validate:"required"`
+	ReceiverAddressId int                                    `json:"receiverAddressId" validate:"required"`
 }
 
 type OrderSearchQuery struct {
-	UserId            *int         `json:"userId"`
-	Verified          *bool        `json:"verified"`
-	Status            *OrderStatus `json:"status"`
-	CreatedAtLessThan *time.Time   `json:"createdAtLessThan"`
-	CreatedAtMoreThan *time.Time   `json:"createdAtMoreThan"`
-	Limit             *int         `json:"limit"`
-	Offset            *int         `json:"offset"`
-}
-
-type CreateOrderShipmentPayload struct {
-	ArrivalDate       time.Time    `json:"arrivalDate"       validate:"required"`
-	ShipmentDate      time.Time    `json:"shipmentDate"      validate:"required"`
-	ShipmentType      ShipmentType `json:"shipmentType"      validate:"required"`
-	OrderId           int          `json:"orderId"           validate:"required"`
-	ReceiverAddressId int          `json:"receiverAddressId" validate:"required"`
-	SenderAddressId   int          `json:"senderAddressId"   validate:"required"`
+	UserId            *int                `json:"userId"`
+	PaymentStatus     *OrderPaymentStatus `json:"paymentStatus"`
+	ShipmentStatus    *OrderPaymentStatus `json:"shipmentStatus"`
+	CreatedAtLessThan *time.Time          `json:"createdAtLessThan"`
+	CreatedAtMoreThan *time.Time          `json:"createdAtMoreThan"`
+	Limit             *int                `json:"limit"`
+	Offset            *int                `json:"offset"`
 }
 
 type UpdateOrderShipmentPayload struct {
-	Status            *OrderStatus `json:"status"`
-	ArrivalDate       *time.Time   `json:"arrivalDate"`
-	ReceiverAddressId *int         `json:"receiverAddressId"`
-	SenderAddressId   *int         `json:"senderAddressId"`
+	Status      *OrderShipmentStatus `json:"status"`
+	ArrivalDate *time.Time           `json:"arrivalDate"`
+}
+
+type UpdateOrderPaymentPayload struct {
+	Status *OrderPaymentStatus `json:"status"`
 }

@@ -51,13 +51,11 @@ type TransactionType string
 const (
 	TransactionTypeDeposit  TransactionType = "deposit"
 	TransactionTypeWithdraw TransactionType = "withdraw"
-	TransactionTypePurchase TransactionType = "purchase"
 )
 
 var ValidTransactionTypes = []TransactionType{
 	TransactionTypeDeposit,
 	TransactionTypeWithdraw,
-	TransactionTypePurchase,
 }
 
 func (t TransactionType) IsValid() bool {
@@ -87,6 +85,28 @@ func (s TransactionStatus) IsValid() bool {
 }
 
 func (s TransactionStatus) String() string {
+	return string(s)
+}
+
+type OrderPaymentStatus string
+
+const (
+	OrderPaymentStatusPending    OrderPaymentStatus = "pending"
+	OrderPaymentStatusSuccessful OrderPaymentStatus = "successful"
+	OrderPaymentStatusFailed     OrderPaymentStatus = "failed"
+)
+
+var ValidOrderPaymentStatuses = []OrderPaymentStatus{
+	OrderPaymentStatusPending,
+	OrderPaymentStatusSuccessful,
+	OrderPaymentStatusFailed,
+}
+
+func (s OrderPaymentStatus) IsValid() bool {
+	return slices.Contains(ValidOrderPaymentStatuses, s)
+}
+
+func (s OrderPaymentStatus) String() string {
 	return string(s)
 }
 
@@ -240,69 +260,27 @@ func (r Resource) String() string {
 	return string(r)
 }
 
-type OrderStatus string
+type OrderShipmentStatus string
 
 const (
-	OrderStatusPendingPayment OrderStatus = "pending_payment"
-	OrderStatusPaymentPaid    OrderStatus = "payment_paid"
-	OrderStatusCancelled      OrderStatus = "cancelled"
+	OrderShipmentStatusToBeDetermined OrderShipmentStatus = "to_be_determined"
+	OrderShipmentStatusOnTheWay       OrderShipmentStatus = "on_the_way"
+	OrderShipmentStatusDelivered      OrderShipmentStatus = "delivered"
+	OrderShipmentStatusCancelled      OrderShipmentStatus = "cancelled"
 )
 
-var ValidOrderStatuses = []OrderStatus{
-	OrderStatusPendingPayment,
-	OrderStatusPaymentPaid,
-	OrderStatusCancelled,
+var ValidOrderShipmentStatuses = []OrderShipmentStatus{
+	OrderShipmentStatusToBeDetermined,
+	OrderShipmentStatusOnTheWay,
+	OrderShipmentStatusDelivered,
+	OrderShipmentStatusCancelled,
 }
 
-func (s OrderStatus) IsValid() bool {
-	return slices.Contains(ValidOrderStatuses, s)
+func (s OrderShipmentStatus) IsValid() bool {
+	return slices.Contains(ValidOrderShipmentStatuses, s)
 }
 
-func (s OrderStatus) String() string {
-	return string(s)
-}
-
-type ShipmentType string
-
-const (
-	ShipmentTypeShipping  ShipmentType = "shipping"
-	ShipmentTypeReturning ShipmentType = "returning"
-)
-
-var ValidShipmentTypes = []ShipmentType{
-	ShipmentTypeReturning,
-	ShipmentTypeShipping,
-}
-
-func (t ShipmentType) IsValid() bool {
-	return slices.Contains(ValidShipmentTypes, t)
-}
-
-func (t ShipmentType) String() string {
-	return string(t)
-}
-
-type ShipmentStatus string
-
-const (
-	ShipmentStatusToBeDetermined ShipmentStatus = "to_be_determined"
-	ShipmentStatusOnTheWay       ShipmentStatus = "on_the_way"
-	ShipmentStatusDelivered      ShipmentStatus = "delivered"
-	ShipmentStatusCancelled      ShipmentStatus = "cancelled"
-)
-
-var ValidShipmentStatuses = []ShipmentStatus{
-	ShipmentStatusToBeDetermined,
-	ShipmentStatusOnTheWay,
-	ShipmentStatusDelivered,
-	ShipmentStatusCancelled,
-}
-
-func (s ShipmentStatus) IsValid() bool {
-	return slices.Contains(ValidShipmentStatuses, s)
-}
-
-func (s ShipmentStatus) String() string {
+func (s OrderShipmentStatus) String() string {
 	return string(s)
 }
 

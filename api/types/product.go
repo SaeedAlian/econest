@@ -7,15 +7,16 @@ import (
 )
 
 type ProductBase struct {
-	Id            int       `json:"id"            exposure:"public"`
-	Name          string    `json:"name"          exposure:"public"`
-	Slug          string    `json:"slug"          exposure:"public"`
-	Price         float64   `json:"price"         exposure:"public"`
-	Description   string    `json:"description"   exposure:"public"`
-	IsActive      bool      `json:"isActive"      exposure:"public"`
-	CreatedAt     time.Time `json:"createdAt"     exposure:"public"`
-	UpdatedAt     time.Time `json:"updatedAt"     exposure:"public"`
-	SubcategoryId int       `json:"subcategoryId" exposure:"public"`
+	Id             int       `json:"id"             exposure:"public"`
+	Name           string    `json:"name"           exposure:"public"`
+	Slug           string    `json:"slug"           exposure:"public"`
+	Price          float64   `json:"price"          exposure:"public"`
+	ShipmentFactor float64   `json:"shipmentFactor" exposure:"public"`
+	Description    string    `json:"description"    exposure:"public"`
+	IsActive       bool      `json:"isActive"       exposure:"public"`
+	CreatedAt      time.Time `json:"createdAt"      exposure:"public"`
+	UpdatedAt      time.Time `json:"updatedAt"      exposure:"public"`
+	SubcategoryId  int       `json:"subcategoryId"  exposure:"public"`
 }
 
 type ProductCategory struct {
@@ -178,12 +179,13 @@ type ProductCategorySearchQuery struct {
 }
 
 type CreateProductBasePayload struct {
-	Name          string  `json:"name"          validate:"required"`
-	Slug          string  `json:"slug"`
-	Price         float64 `json:"price"         validate:"required"`
-	Description   string  `json:"description"`
-	SubcategoryId int     `json:"subcategoryId" validate:"required"`
-	StoreId       int     `json:"storeId"       validate:"required"`
+	Name           string  `json:"name"           validate:"required"`
+	Slug           string  `json:"slug"`
+	Price          float64 `json:"price"          validate:"required"`
+	ShipmentFactor float64 `json:"shipmentFactor" validate:"required"`
+	Description    string  `json:"description"`
+	SubcategoryId  int     `json:"subcategoryId"  validate:"required"`
+	StoreId        int     `json:"storeId"        validate:"required"`
 }
 
 type CreateProductImagePayload struct {
@@ -215,12 +217,13 @@ type CreateProductPayload struct {
 }
 
 type UpdateProductBasePayload struct {
-	Name          *string  `json:"name"`
-	Slug          *string  `json:"slug"`
-	Price         *float64 `json:"price"`
-	Description   *string  `json:"description"`
-	SubcategoryId *int     `json:"subcategoryId"`
-	IsActive      *bool    `json:"isActive"`
+	Name           *string  `json:"name"`
+	Slug           *string  `json:"slug"`
+	Price          *float64 `json:"price"`
+	ShipmentFactor *float64 `json:"shipmentFactor"`
+	Description    *string  `json:"description"`
+	SubcategoryId  *int     `json:"subcategoryId"`
+	IsActive       *bool    `json:"isActive"`
 }
 
 type UpdateProductSpecPayload struct {
