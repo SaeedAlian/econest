@@ -142,7 +142,11 @@ func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.
 					types.ErrInternalServer,
 				)
 			}
+			return
+		}
 
+		if role.Name == types.DefaultRoleSuperAdmin.String() {
+			utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotRegisterThisUser)
 			return
 		}
 
@@ -190,6 +194,17 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 
 	if user.IsBanned {
 		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrUserIsBanned)
+		return
+	}
+
+	userRole, err := h.db.GetRoleById(user.RoleId)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	if userRole.Name == types.DefaultRoleSuperAdmin.String() {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotLoginWithThisUser)
 		return
 	}
 
