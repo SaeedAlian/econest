@@ -12,7 +12,8 @@ CREATE TABLE products (
   id SERIAL PRIMARY KEY,
   name VARCHAR(150) NOT NULL,
   slug VARCHAR(255) NOT NULL UNIQUE,
-  price FLOAT8 NOT NULL,
+  price FLOAT8 NOT NULL CHECK (price >= 0),
+  shipment_factor FLOAT8 NOT NULL CHECK (shipment_factor >= 0 AND shipment_factor <= 1),
   description VARCHAR(4095) NOT NULL DEFAULT '',
   is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -94,5 +95,5 @@ CREATE TABLE product_comments (
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
   product_id INTEGER NOT NULL REFERENCES products(id) ON DELETE CASCADE,
-  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE
+  user_id INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT
 );
