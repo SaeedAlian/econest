@@ -32,7 +32,7 @@ func TestDBIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(DBIntegrationTestSuite))
 }
 
-func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
+func (s *DBIntegrationTestSuite) TestOperations() {
 	if config.Env.Env != "test" {
 		log.Panic("environment is not on test!!")
 		os.Exit(1)
@@ -456,6 +456,12 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Equal(user.Id, userWallet.UserId)
 	s.Require().Equal(float64(0), userWallet.Balance)
 
+	user2Wallet, err := s.manager.GetUserWallet(userId2)
+	s.Require().NoError(err)
+	s.Require().NotNil(user2Wallet)
+	s.Require().Equal(userId2, user2Wallet.UserId)
+	s.Require().Equal(float64(0), user2Wallet.Balance)
+
 	phoneId, err := s.manager.CreateUserPhoneNumber(types.CreateUserPhoneNumberPayload{
 		CountryCode: "+98",
 		Number:      "9121231212",
@@ -503,7 +509,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		Street:  "SS",
 		Zipcode: "Z",
 		Details: "",
-		UserId:  userId3,
+		UserId:  userId2,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(addr2Id, 1)
@@ -560,6 +566,14 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(tx2Id, 1)
 
+	tx3Id, err := s.manager.CreateWalletTransaction(types.CreateWalletTransactionPayload{
+		Amount:   10000,
+		TxType:   types.TransactionTypeDeposit,
+		WalletId: user2Wallet.Id,
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(tx3Id, 2)
+
 	_, err = s.manager.CreateWalletTransaction(types.CreateWalletTransactionPayload{
 		Amount:   200,
 		TxType:   types.TransactionTypeWithdraw,
@@ -584,7 +598,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		Status: utils.Ptr(types.TransactionStatusPending),
 	})
 	s.Require().NoError(err)
-	s.Require().Len(txs, 2)
+	s.Require().Len(txs, 3)
 
 	txs, err = s.manager.GetWalletTransactions(types.WalletTransactionSearchQuery{
 		BeforeDate: utils.Ptr(time.Date(2024, 1, 1, 1, 1, 1, 1, time.UTC)),
@@ -596,7 +610,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 		BeforeDate: utils.Ptr(time.Date(2026, 1, 1, 1, 1, 1, 1, time.UTC)),
 	})
 	s.Require().NoError(err)
-	s.Require().Len(txs, 2)
+	s.Require().Len(txs, 3)
 
 	txs, err = s.manager.GetWalletTransactions(types.WalletTransactionSearchQuery{
 		UserId: utils.Ptr(userId3),
@@ -610,38 +624,42 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Len(txs, 2)
 
-	tx1, err := s.manager.GetWalletTransactionById(txs[0].Id)
+	tx1, err := s.manager.GetWalletTransactionById(tx1Id)
 	s.Require().NoError(err)
 	s.Require().Equal(tx1.WalletId, userWallet.Id)
 
-	tx2, err := s.manager.GetWalletTransactionById(txs[1].Id)
+	tx2, err := s.manager.GetWalletTransactionById(tx2Id)
 	s.Require().NoError(err)
 	s.Require().Equal(tx2.WalletId, userWallet.Id)
 
-	err = s.manager.UpdateWalletAndTransaction(tx1.Id, types.UpdateWalletPayload{
-		Balance: utils.Ptr(userWallet.Balance + tx1.Amount),
-	}, types.UpdateWalletTransactionPayload{
-		Status: utils.Ptr(types.TransactionStatusSuccessful),
-	})
+	err = s.manager.UpdateWalletTransaction(
+		userWallet.Id,
+		tx1.Id,
+		types.UpdateWalletTransactionPayload{
+			Status: utils.Ptr(types.TransactionStatusSuccessful),
+		},
+	)
 	s.Require().NoError(err)
 
 	userWallet, err = s.manager.GetUserWallet(userId)
 	s.Require().NoError(err)
 	s.Require().NotNil(userWallet)
 
-	tx1, err = s.manager.GetWalletTransactionById(txs[0].Id)
+	tx1, err = s.manager.GetWalletTransactionById(tx1Id)
 	s.Require().NoError(err)
 	s.Require().Equal(tx1.WalletId, userWallet.Id)
 	s.Require().Equal(tx1.Status, types.TransactionStatusSuccessful)
 
-	err = s.manager.UpdateWalletAndTransaction(tx2.Id, types.UpdateWalletPayload{
-		Balance: utils.Ptr(userWallet.Balance - tx2.Amount),
-	}, types.UpdateWalletTransactionPayload{
-		Status: utils.Ptr(types.TransactionStatusSuccessful),
-	})
+	err = s.manager.UpdateWalletTransaction(
+		userWallet.Id,
+		tx2.Id,
+		types.UpdateWalletTransactionPayload{
+			Status: utils.Ptr(types.TransactionStatusSuccessful),
+		},
+	)
 	s.Require().Error(err)
 
-	tx2, err = s.manager.GetWalletTransactionById(txs[1].Id)
+	tx2, err = s.manager.GetWalletTransactionById(tx2Id)
 	s.Require().NoError(err)
 	s.Require().Equal(tx2.WalletId, userWallet.Id)
 	s.Require().NotEqual(tx2.Status, types.TransactionStatusSuccessful)
@@ -649,6 +667,20 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	userWallet, err = s.manager.GetUserWallet(userId)
 	s.Require().NoError(err)
 	s.Require().NotNil(userWallet)
+
+	err = s.manager.UpdateWalletTransaction(
+		user2Wallet.Id,
+		tx3Id,
+		types.UpdateWalletTransactionPayload{
+			Status: utils.Ptr(types.TransactionStatusSuccessful),
+		},
+	)
+	s.Require().NoError(err)
+
+	user2Wallet, err = s.manager.GetUserWallet(userId2)
+	s.Require().NoError(err)
+	s.Require().NotNil(user2Wallet)
+	s.Require().Equal(user2Wallet.Balance, float64(10000))
 
 	storeId, err := s.manager.CreateStore(types.CreateStorePayload{
 		Name:        "STORE",
@@ -742,34 +774,37 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Greater(prodTag3Id, 2)
 
 	product1Id, err := s.manager.CreateProductBase(types.CreateProductBasePayload{
-		Name:          "furniture",
-		Slug:          "furniture",
-		Price:         1000,
-		Description:   "PRODUCT1",
-		SubcategoryId: prodCat3Id,
-		StoreId:       storeId,
+		Name:           "furniture",
+		Slug:           "furniture",
+		Price:          1000,
+		Description:    "PRODUCT1",
+		ShipmentFactor: 0.3,
+		SubcategoryId:  prodCat3Id,
+		StoreId:        storeId,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(product1Id, 0)
 
 	product2Id, err := s.manager.CreateProductBase(types.CreateProductBasePayload{
-		Name:          "xbox controller",
-		Slug:          "xbox-controller",
-		Price:         1000,
-		Description:   "PRODUCT2",
-		SubcategoryId: prodCat1Id,
-		StoreId:       storeId,
+		Name:           "xbox controller",
+		Slug:           "xbox-controller",
+		Price:          1000,
+		Description:    "PRODUCT2",
+		ShipmentFactor: 0.25,
+		SubcategoryId:  prodCat1Id,
+		StoreId:        storeId,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(product2Id, 1)
 
 	product3Id, err := s.manager.CreateProductBase(types.CreateProductBasePayload{
-		Name:          "xbox series x",
-		Slug:          "xbox-series-x",
-		Price:         5000,
-		Description:   "PRODUCT3",
-		SubcategoryId: prodCat2Id,
-		StoreId:       storeId,
+		Name:           "xbox series x",
+		Slug:           "xbox-series-x",
+		Price:          5000,
+		Description:    "PRODUCT3",
+		ShipmentFactor: 0.1,
+		SubcategoryId:  prodCat2Id,
+		StoreId:        storeId,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(product3Id, 2)
@@ -961,7 +996,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Equal(attr1.Options[1].Value, "updated opt 2")
 
 	var11Id, err := s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
-		Quantity: 5,
+		Quantity: 500,
 		AttributeSets: []types.ProductVariantAttributeSetPayload{
 			{
 				AttributeId: attr1.Id,
@@ -981,7 +1016,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Greater(var11Id, 0)
 
 	var12Id, err := s.manager.CreateProductVariant(product2Id, types.CreateProductVariantPayload{
-		Quantity: 15,
+		Quantity: 150,
 		AttributeSets: []types.ProductVariantAttributeSetPayload{
 			{
 				AttributeId: attr2.Id,
@@ -997,7 +1032,7 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().Greater(var12Id, 1)
 
 	var21Id, err := s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
-		Quantity: 50,
+		Quantity: 500,
 		AttributeSets: []types.ProductVariantAttributeSetPayload{
 			{
 				AttributeId: attr1.Id,
@@ -1011,6 +1046,22 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(var21Id, 2)
+
+	var31Id, err := s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
+		Quantity: 500,
+		AttributeSets: []types.ProductVariantAttributeSetPayload{
+			{
+				AttributeId: attr2.Id,
+				OptionId:    attr2.Options[2].Id,
+			},
+			{
+				AttributeId: attr1.Id,
+				OptionId:    attr1.Options[1].Id,
+			},
+		},
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(var31Id, 3)
 
 	_, err = s.manager.CreateProductVariant(product1Id, types.CreateProductVariantPayload{
 		Quantity: 50,
@@ -1087,14 +1138,14 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 
 	prod1, err := s.manager.GetProductExtendedById(1)
 	s.Require().NoError(err)
-	s.Require().Len(prod1.Variants, 2)
+	s.Require().Len(prod1.Variants, 3)
 
 	err = s.manager.DeleteProductVariant(product1Id, var21Id)
 	s.Require().NoError(err)
 
 	prod1, err = s.manager.GetProductExtendedById(1)
 	s.Require().NoError(err)
-	s.Require().Len(prod1.Variants, 1)
+	s.Require().Len(prod1.Variants, 2)
 
 	prod2, err := s.manager.GetProductExtendedById(2)
 	s.Require().NoError(err)
@@ -1135,50 +1186,119 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 
 	prod1Inv, prod1InStock, err := s.manager.GetProductInventory(prod1.Id)
 	s.Require().NoError(err)
-	s.Require().Equal(prod1Inv, 120)
+	s.Require().Equal(prod1Inv, 620)
 	s.Require().Equal(prod1InStock, true)
 
-	orderTxId, err := s.manager.CreateWalletTransaction(types.CreateWalletTransactionPayload{
-		Amount:   11200,
-		TxType:   types.TransactionTypePurchase,
-		WalletId: userWallet.Id,
-	})
-
 	orderId, err := s.manager.CreateOrder(types.CreateOrderPayload{
-		UserId:        userId,
-		TransactionId: orderTxId,
+		UserId:      userId2,
+		ArrivalDate: time.Date(2025, 11, 2, 5, 4, 4, 3, time.UTC),
 		ProductVariants: []types.OrderProductVariantAssignmentPayload{
 			{
 				Quantity:  1,
-				VariantId: prod1.Variants[0].Id,
+				VariantId: var11Id,
 			},
 			{
 				Quantity:  1,
-				VariantId: prod2.Variants[0].Id,
+				VariantId: var31Id,
 			},
 		},
+		ReceiverAddressId: addr2Id,
 	})
 	s.Require().NoError(err)
 	s.Require().Greater(orderId, 0)
 
-	orderShipId, err := s.manager.CreateOrderShipment(types.CreateOrderShipmentPayload{
-		ArrivalDate:       time.Date(2025, 11, 2, 5, 4, 4, 3, time.UTC),
-		ShipmentDate:      time.Date(2025, 10, 29, 5, 4, 4, 3, time.UTC),
-		ShipmentType:      types.ShipmentTypeShipping,
-		OrderId:           orderId,
-		ReceiverAddressId: addrId,
-		SenderAddressId:   addr2Id,
+	order2Id, err := s.manager.CreateOrder(types.CreateOrderPayload{
+		UserId:      userId2,
+		ArrivalDate: time.Date(2025, 11, 2, 5, 4, 4, 3, time.UTC),
+		ProductVariants: []types.OrderProductVariantAssignmentPayload{
+			{
+				Quantity:  100,
+				VariantId: var11Id,
+			},
+			{
+				Quantity:  50,
+				VariantId: var31Id,
+			},
+		},
+		ReceiverAddressId: addr2Id,
 	})
 	s.Require().NoError(err)
-	s.Require().Greater(orderShipId, 0)
+	s.Require().Greater(order2Id, 1)
 
-	orders, err := s.manager.GetOrders(types.OrderSearchQuery{})
+	_, err = s.manager.CreateOrder(types.CreateOrderPayload{
+		UserId:      userId2,
+		ArrivalDate: time.Date(2025, 11, 2, 5, 4, 4, 3, time.UTC),
+		ProductVariants: []types.OrderProductVariantAssignmentPayload{
+			{
+				Quantity:  1,
+				VariantId: var11Id,
+			},
+			{
+				Quantity:  1,
+				VariantId: var31Id,
+			},
+		},
+		ReceiverAddressId: 9999,
+	})
+	s.Require().Error(err)
+
+	_, err = s.manager.CreateOrder(types.CreateOrderPayload{
+		UserId:      userId2,
+		ArrivalDate: time.Date(2025, 11, 2, 5, 4, 4, 3, time.UTC),
+		ProductVariants: []types.OrderProductVariantAssignmentPayload{
+			{
+				Quantity:  1,
+				VariantId: var11Id,
+			},
+			{
+				Quantity:  1,
+				VariantId: var31Id,
+			},
+		},
+		ReceiverAddressId: addrId,
+	})
+	s.Require().Error(err)
+
+	_, err = s.manager.CreateOrder(types.CreateOrderPayload{
+		UserId:      userId2,
+		ArrivalDate: time.Date(2025, 11, 2, 5, 4, 4, 3, time.UTC),
+		ProductVariants: []types.OrderProductVariantAssignmentPayload{
+			{
+				Quantity:  1,
+				VariantId: var11Id,
+			},
+			{
+				Quantity:  2000000000,
+				VariantId: var31Id,
+			},
+		},
+		ReceiverAddressId: addr2Id,
+	})
+	s.Require().Error(err)
+
+	orders, err := s.manager.GetOrders(types.OrderSearchQuery{
+		Limit: utils.Ptr(1),
+	})
 	s.Require().NoError(err)
 	s.Require().Len(orders, 1)
 
-	shipments, err := s.manager.GetOrderShipments(orderId)
+	ordersWithFullInfo, err := s.manager.GetOrdersWithFullInfo(types.OrderSearchQuery{
+		Limit: utils.Ptr(1),
+	})
 	s.Require().NoError(err)
-	s.Require().Len(shipments, 1)
+	s.Require().Len(ordersWithFullInfo, 1)
+
+	order, err := s.manager.GetOrderById(orderId)
+	s.Require().NoError(err)
+	s.Require().Equal(order.Id, orderId)
+
+	orderWithFullInfo, err := s.manager.GetOrderWithFullInfoById(orderId)
+	s.Require().NoError(err)
+	s.Require().Equal(orderWithFullInfo.Id, orderId)
+
+	orderCount, err := s.manager.GetOrdersCount(types.OrderSearchQuery{})
+	s.Require().NoError(err)
+	s.Require().Equal(orderCount, 2)
 
 	orderProdVariants, err := s.manager.GetOrderProductVariants(orderId)
 	s.Require().NoError(err)
@@ -1188,14 +1308,25 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	s.Require().NoError(err)
 	s.Require().Len(orderProdVariantsInfo, 2)
 
-	err = s.manager.UpdateOrderAndTransactionAndWallet(orderId, types.UpdateOrderPayload{
-		Status: utils.Ptr(types.OrderStatusPaymentPaid),
-	}, types.UpdateWalletPayload{
-		Balance: utils.Ptr(100.00),
-	}, types.UpdateWalletTransactionPayload{
-		Status: utils.Ptr(types.TransactionStatusSuccessful),
+	err = s.manager.UpdateOrderPayment(orderId, types.UpdateOrderPaymentPayload{
+		Status: utils.Ptr(types.OrderPaymentStatusSuccessful),
 	})
 	s.Require().NoError(err)
+
+	order, err = s.manager.GetOrderById(orderId)
+	s.Require().NoError(err)
+	s.Require().Equal(order.Id, orderId)
+
+	userWallet, err = s.manager.GetUserWallet(userId)
+	s.Require().NoError(err)
+	s.Require().NotNil(userWallet)
+	s.Require().Equal(userId, userWallet.UserId)
+
+	user2Wallet, err = s.manager.GetUserWallet(userId2)
+	s.Require().NoError(err)
+	s.Require().NotNil(user2Wallet)
+	s.Require().Equal(userId2, user2Wallet.UserId)
+	s.Require().Less(user2Wallet.Balance, float64(10000))
 
 	newProductId, err := s.manager.CreateProduct(types.CreateProductPayload{
 		Base: types.CreateProductBasePayload{
@@ -1253,40 +1384,4 @@ func (s *DBIntegrationTestSuite) TestUserAndRoleOperations() {
 	newProduct, err := s.manager.GetProductExtendedById(newProductId)
 	s.Require().NoError(err)
 	s.Require().Equal(newProduct.Id, newProductId)
-
-	err = s.manager.DeleteOrderShipment(orderShipId)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteOrder(orderId)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteProduct(product1Id)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteProduct(product2Id)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteProduct(product3Id)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteProduct(newProductId)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteUser(userId)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteUser(userId2)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteUser(userId3)
-	s.Require().NoError(err)
-
-	err = s.manager.RemovePermissionGroupsFromRole(role.Id, []int{groupId})
-	s.Require().NoError(err)
-
-	err = s.manager.DeletePermissionGroup(groupId)
-	s.Require().NoError(err)
-
-	err = s.manager.DeleteRole(role.Id)
-	s.Require().NoError(err)
 }
