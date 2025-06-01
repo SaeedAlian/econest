@@ -6,18 +6,24 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/SaeedAlian/econest/api/config"
 	"github.com/SaeedAlian/econest/api/types"
 )
 
 func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
+	if len(p.ProductVariants) == 0 {
+		return -1, types.ErrProductVariantsAreEmpty
+	}
+
 	rowId := -1
 	ctx := context.Background()
 	tx, err := m.db.BeginTx(ctx, nil)
 	if err != nil {
 		return -1, err
 	}
-	err = tx.QueryRow("INSERT INTO orders (user_id, transaction_id, status) VALUES ($1, $2, $3) RETURNING id;",
-		p.UserId, p.TransactionId, types.OrderStatusPendingPayment,
+
+	err = tx.QueryRow("INSERT INTO orders (user_id) VALUES ($1) RETURNING id;",
+		p.UserId,
 	).
 		Scan(&rowId)
 	if err != nil {
@@ -25,17 +31,72 @@ func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
 		return -1, err
 	}
 
+	var totalShipmentPrice float64 = 0
+	var totalVariantsPrice float64 = 0
+	var orderFee float64 = 0
+
 	for _, pv := range p.ProductVariants {
-		_, err = tx.Exec(
-			"INSERT INTO order_product_variants (quantity, variant_id, order_id) VALUES ($1, $2, $3);",
-			pv.Quantity,
-			pv.VariantId,
-			rowId,
-		)
+		var currentQuantity int = -1
+		var shipmentFactor float64 = 0
+		var variantPrice float64 = 0
+		err := tx.QueryRow(`
+			SELECT 
+				pv.quantity, p.shipment_factor,
+				COALESCE(
+					p.price * (1 - (
+						SELECT discount FROM product_offers po
+						WHERE po.product_id = p.id AND po.expire_at > NOW()
+					)),
+					p.price
+				) AS final_price
+			FROM product_variants pv
+			JOIN products p ON p.id = pv.product_id
+			WHERE pv.id = $1
+		`, pv.VariantId).Scan(&currentQuantity, &shipmentFactor, &variantPrice)
 		if err != nil {
 			tx.Rollback()
 			return -1, err
 		}
+		if currentQuantity < pv.Quantity {
+			tx.Rollback()
+			return -1, types.ErrProductQuantityIsNotEnough
+		}
+
+		shippingPrice := config.Env.ShipmentPrice * shipmentFactor
+
+		totalShipmentPrice += shippingPrice
+		totalVariantsPrice += variantPrice * float64(pv.Quantity)
+
+		_, err = tx.Exec(`
+			INSERT INTO order_product_variants 
+				(quantity, variant_price, shipping_price, variant_id, order_id) VALUES ($1, $2, $3, $4, $5);
+		`, pv.Quantity, variantPrice, shippingPrice, pv.VariantId, rowId)
+		if err != nil {
+			tx.Rollback()
+			return -1, err
+		}
+	}
+
+	orderFee = totalVariantsPrice * config.Env.OrderFeeFactor
+
+	_, err = tx.Exec(
+		"INSERT INTO order_shipments (arrival_date, order_id, receiver_address_id) VALUES ($1, $2, $3);",
+		p.ArrivalDate,
+		rowId,
+		p.ReceiverAddressId,
+	)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+
+	_, err = tx.Exec(`
+		INSERT INTO order_payments 
+			(total_variants_price, total_shipment_price, fee, order_id) VALUES ($1, $2, $3, $4);
+	`, totalVariantsPrice, totalShipmentPrice, orderFee, rowId)
+	if err != nil {
+		tx.Rollback()
+		return -1, err
 	}
 
 	if err = tx.Commit(); err != nil {
@@ -46,39 +107,23 @@ func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
 	return rowId, nil
 }
 
-func (m *Manager) CreateOrderShipment(p types.CreateOrderShipmentPayload) (int, error) {
-	rowId := -1
-	err := m.db.QueryRow(
-		`INSERT INTO order_shipments (
-      arrival_date,
-      shipment_date,
-      shipment_type,
-      order_id,
-      receiver_address_id,
-      sender_address_id,
-      status
-    ) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id;`,
-		p.ArrivalDate,
-		p.ShipmentDate,
-		p.ShipmentType,
-		p.OrderId,
-		p.ReceiverAddressId,
-		p.SenderAddressId,
-		types.ShipmentStatusToBeDetermined,
-	).
-		Scan(&rowId)
-	if err != nil {
-		return -1, err
-	}
-
-	return rowId, nil
-}
-
 func (m *Manager) GetOrders(
 	query types.OrderSearchQuery,
 ) ([]types.Order, error) {
 	var base string
-	base = "SELECT * FROM orders"
+	base = `
+		SELECT
+			o.*, op.status, os.status,
+			op.total_variants_price, op.total_shipment_price, op.fee,
+			(
+				SELECT COUNT(*) 
+				FROM order_product_variants opv 
+				WHERE opv.order_id = o.id
+		  ) AS total_products
+		FROM orders o 
+		JOIN order_payments op ON op.order_id = o.id
+		JOIN order_shipments os ON os.order_id = o.id
+	`
 
 	q, args := buildOrderSearchQuery(query, base)
 
@@ -102,11 +147,55 @@ func (m *Manager) GetOrders(
 	return orders, nil
 }
 
+func (m *Manager) GetOrdersWithFullInfo(
+	query types.OrderSearchQuery,
+) ([]types.OrderWithFullInfo, error) {
+	var base string
+	base = `
+		SELECT
+			o.*, op.*, os.*, a.*,
+			(
+				SELECT COUNT(*) 
+				FROM order_product_variants opv 
+				WHERE opv.order_id = o.id
+		  ) AS total_products
+		FROM orders o 
+		JOIN order_payments op ON op.order_id = o.id
+		JOIN order_shipments os ON os.order_id = o.id
+		JOIN addresses a ON a.id = os.receiver_address_id AND a.user_id IS NOT NULL
+	`
+
+	q, args := buildOrderSearchQuery(query, base)
+
+	rows, err := m.db.Query(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	orders := []types.OrderWithFullInfo{}
+
+	for rows.Next() {
+		order, err := scanOrderWithFullInfoRow(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		orders = append(orders, *order)
+	}
+
+	return orders, nil
+}
+
 func (m *Manager) GetOrdersCount(
 	query types.OrderSearchQuery,
 ) (int, error) {
 	var base string
-	base = "SELECT COUNT(*) as count FROM orders"
+	base = `
+		SELECT COUNT(DISTINCT o.id) as count FROM orders o
+		JOIN order_payments op ON op.order_id = o.id
+		JOIN order_shipments os ON os.order_id = o.id
+	`
 
 	q, args := buildOrderSearchQuery(query, base)
 
@@ -125,27 +214,6 @@ func (m *Manager) GetOrdersCount(
 	}
 
 	return count, nil
-}
-
-func (m *Manager) GetOrderShipments(orderId int) ([]types.OrderShipment, error) {
-	rows, err := m.db.Query("SELECT * FROM order_shipments WHERE order_id = $1;", orderId)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	shipments := []types.OrderShipment{}
-
-	for rows.Next() {
-		ship, err := scanOrderShipmentRow(rows)
-		if err != nil {
-			return nil, err
-		}
-
-		shipments = append(shipments, *ship)
-	}
-
-	return shipments, nil
 }
 
 func (m *Manager) GetOrderProductVariants(orderId int) ([]types.OrderProductVariant, error) {
@@ -199,35 +267,91 @@ func (m *Manager) GetOrderProductVariantsInfo(
 		}
 
 		variantsInfo = append(variantsInfo, types.OrderProductVariantInfo{
-			Id:              orderProductVariant.Id,
-			Quantity:        orderProductVariant.Quantity,
-			SelectedVariant: *selectedVariant,
-			Product:         *product,
+			OrderProductVariant: *orderProductVariant,
+			SelectedVariant:     *selectedVariant,
+			Product:             *product,
 		})
 	}
 
 	return variantsInfo, nil
 }
 
-func (m *Manager) UpdateOrder(
-	id int,
-	p types.UpdateOrderPayload,
-) error {
-	q, args, err := buildOrderUpdateQuery(id, p)
+func (m *Manager) GetOrderById(id int) (*types.Order, error) {
+	rows, err := m.db.Query(`
+		SELECT
+			o.*, op.status, os.status,
+			op.total_variants_price, op.total_shipment_price, op.fee,
+			(
+				SELECT COUNT(*) 
+				FROM order_product_variants opv 
+				WHERE opv.order_id = o.id
+		  ) AS total_products
+		FROM orders o 
+		JOIN order_payments op ON op.order_id = o.id
+		JOIN order_shipments os ON os.order_id = o.id
+		WHERE o.id = $1
+	`, id)
 	if err != nil {
-		return err
+		return nil, err
+	}
+	defer rows.Close()
+
+	order := new(types.Order)
+	order.Id = -1
+
+	for rows.Next() {
+		order, err = scanOrderRow(rows)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	_, err = m.db.Exec(q, args...)
-	if err != nil {
-		return err
+	if order.Id == -1 {
+		return nil, types.ErrOrderNotFound
 	}
 
-	return nil
+	return order, nil
+}
+
+func (m *Manager) GetOrderWithFullInfoById(id int) (*types.OrderWithFullInfo, error) {
+	rows, err := m.db.Query(`
+		SELECT
+			o.*, op.*, os.*, a.*,
+			(
+				SELECT COUNT(*) 
+				FROM order_product_variants opv 
+				WHERE opv.order_id = o.id
+		  ) AS total_products
+		FROM orders o 
+		JOIN order_payments op ON op.order_id = o.id
+		JOIN order_shipments os ON os.order_id = o.id
+		JOIN addresses a ON a.id = os.receiver_address_id AND a.user_id IS NOT NULL
+		WHERE o.id = $1
+	`, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	order := new(types.OrderWithFullInfo)
+	order.Id = -1
+
+	for rows.Next() {
+		order, err = scanOrderWithFullInfoRow(rows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	if order.Id == -1 {
+		return nil, types.ErrOrderNotFound
+	}
+
+	return order, nil
 }
 
 func (m *Manager) UpdateOrderShipment(
-	id int,
+	orderId int,
 	p types.UpdateOrderShipmentPayload,
 ) error {
 	clauses := []string{}
@@ -237,18 +361,6 @@ func (m *Manager) UpdateOrderShipment(
 	if p.ArrivalDate != nil {
 		clauses = append(clauses, fmt.Sprintf("arrival_date = $%d", argsPos))
 		args = append(args, *p.ArrivalDate)
-		argsPos++
-	}
-
-	if p.ReceiverAddressId != nil {
-		clauses = append(clauses, fmt.Sprintf("receiver_address_id = $%d", argsPos))
-		args = append(args, *p.ReceiverAddressId)
-		argsPos++
-	}
-
-	if p.SenderAddressId != nil {
-		clauses = append(clauses, fmt.Sprintf("sender_address_id = $%d", argsPos))
-		args = append(args, *p.SenderAddressId)
 		argsPos++
 	}
 
@@ -262,9 +374,9 @@ func (m *Manager) UpdateOrderShipment(
 		return fmt.Errorf("No fields received to update")
 	}
 
-	args = append(args, id)
+	args = append(args, orderId)
 	q := fmt.Sprintf(
-		"UPDATE order_shipments SET %s WHERE id = $%d",
+		"UPDATE order_shipments SET %s WHERE order_id = $%d",
 		strings.Join(clauses, ", "),
 		argsPos,
 	)
@@ -277,68 +389,36 @@ func (m *Manager) UpdateOrderShipment(
 	return nil
 }
 
-func (m *Manager) UpdateOrderAndTransactionAndWallet(
+func (m *Manager) UpdateOrderPayment(
 	orderId int,
-	orderPayload types.UpdateOrderPayload,
-	walletPayload types.UpdateWalletPayload,
-	transactionPayload types.UpdateWalletTransactionPayload,
+	p types.UpdateOrderPaymentPayload,
 ) error {
-	ctx := context.Background()
-	tx, err := m.db.BeginTx(ctx, nil)
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if p.Status != nil {
+		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
+		args = append(args, *p.Status)
+		argsPos++
+	}
+
+	if len(clauses) == 0 {
+		return fmt.Errorf("No fields received to update")
+	}
+
+	args = append(args, orderId)
+	q := fmt.Sprintf(
+		"UPDATE order_payments SET %s WHERE order_id = $%d",
+		strings.Join(clauses, ", "),
+		argsPos,
+	)
+
+	_, err := m.db.Exec(q, args...)
 	if err != nil {
 		return err
 	}
 
-	transactionId := -1
-	err = tx.QueryRow(
-		"SELECT transaction_id FROM orders WHERE id = $1;",
-		orderId,
-	).Scan(&transactionId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if transactionId == -1 {
-		return types.ErrWalletTransactionNotFound
-	}
-
-	walletId := -1
-	err = tx.QueryRow(
-		"SELECT wallet_id FROM wallet_transactions WHERE id = $1;",
-		transactionId,
-	).Scan(&walletId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if walletId == -1 {
-		return types.ErrWalletNotFound
-	}
-
-	err = updateOrderAsDBTx(tx, orderId, orderPayload)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = updateWalletAsDBTx(tx, walletId, walletPayload)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = updateWalletTransactionAsDBTx(tx, transactionId, transactionPayload)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		tx.Rollback()
-		return err
-	}
 	return nil
 }
 
@@ -354,29 +434,20 @@ func (m *Manager) DeleteOrder(id int) error {
 	return nil
 }
 
-func (m *Manager) DeleteOrderShipment(id int) error {
-	_, err := m.db.Exec(
-		"DELETE FROM order_shipments WHERE id = $1;",
-		id,
-	)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
 func scanOrderRow(rows *sql.Rows) (*types.Order, error) {
 	n := new(types.Order)
 
 	err := rows.Scan(
 		&n.Id,
-		&n.Verified,
-		&n.Status,
 		&n.CreatedAt,
 		&n.UpdatedAt,
 		&n.UserId,
-		&n.TransactionId,
+		&n.PaymentStatus,
+		&n.ShipmentStatus,
+		&n.TotalVariantsPrice,
+		&n.TotalShipmentPrice,
+		&n.Fee,
+		&n.TotalProducts,
 	)
 	if err != nil {
 		return nil, err
@@ -385,20 +456,41 @@ func scanOrderRow(rows *sql.Rows) (*types.Order, error) {
 	return n, nil
 }
 
-func scanOrderShipmentRow(rows *sql.Rows) (*types.OrderShipment, error) {
-	n := new(types.OrderShipment)
+func scanOrderWithFullInfoRow(rows *sql.Rows) (*types.OrderWithFullInfo, error) {
+	n := new(types.OrderWithFullInfo)
 
 	err := rows.Scan(
 		&n.Id,
-		&n.ArrivalDate,
-		&n.ShipmentDate,
-		&n.Status,
-		&n.ShipmentType,
 		&n.CreatedAt,
 		&n.UpdatedAt,
-		&n.OrderId,
-		&n.ReceiverAddressId,
-		&n.SenderAddressId,
+		&n.UserId,
+		&n.Payment.Id,
+		&n.Payment.TotalVariantsPrice,
+		&n.Payment.TotalShipmentPrice,
+		&n.Payment.Fee,
+		&n.Payment.Status,
+		&n.Payment.CreatedAt,
+		&n.Payment.UpdatedAt,
+		&n.Payment.OrderId,
+		&n.Shipment.Id,
+		&n.Shipment.ArrivalDate,
+		&n.Shipment.Status,
+		&n.Shipment.CreatedAt,
+		&n.Shipment.UpdatedAt,
+		&n.Shipment.OrderId,
+		&n.Shipment.ReceiverAddressId,
+		&n.Shipment.ReceiverAddress.Id,
+		&n.Shipment.ReceiverAddress.State,
+		&n.Shipment.ReceiverAddress.City,
+		&n.Shipment.ReceiverAddress.Street,
+		&n.Shipment.ReceiverAddress.Zipcode,
+		&n.Shipment.ReceiverAddress.Details,
+		&n.Shipment.ReceiverAddress.IsPublic,
+		&n.Shipment.ReceiverAddress.CreatedAt,
+		&n.Shipment.ReceiverAddress.UpdatedAt,
+		&n.Shipment.ReceiverAddress.UserId,
+		new(sql.NullInt32),
+		&n.TotalProducts,
 	)
 	if err != nil {
 		return nil, err
@@ -413,6 +505,8 @@ func scanOrderProductVariantRow(rows *sql.Rows) (*types.OrderProductVariant, err
 	err := rows.Scan(
 		&n.Id,
 		&n.Quantity,
+		&n.VariantPrice,
+		&n.ShippingPrice,
 		&n.OrderId,
 		&n.VariantId,
 	)
@@ -432,31 +526,31 @@ func buildOrderSearchQuery(
 	argsPos := 1
 
 	if query.UserId != nil {
-		clauses = append(clauses, fmt.Sprintf("user_id = $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("o.user_id = $%d", argsPos))
 		args = append(args, *query.UserId)
 		argsPos++
 	}
 
-	if query.Verified != nil {
-		clauses = append(clauses, fmt.Sprintf("verified = $%d", argsPos))
-		args = append(args, *query.Verified)
+	if query.PaymentStatus != nil {
+		clauses = append(clauses, fmt.Sprintf("op.status = $%d", argsPos))
+		args = append(args, *query.PaymentStatus)
 		argsPos++
 	}
 
-	if query.Status != nil {
-		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
-		args = append(args, *query.Status)
+	if query.ShipmentStatus != nil {
+		clauses = append(clauses, fmt.Sprintf("os.status = $%d", argsPos))
+		args = append(args, *query.ShipmentStatus)
 		argsPos++
 	}
 
 	if query.CreatedAtLessThan != nil {
-		clauses = append(clauses, fmt.Sprintf("created_at <= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("o.created_at <= $%d", argsPos))
 		args = append(args, *query.CreatedAtLessThan)
 		argsPos++
 	}
 
 	if query.CreatedAtMoreThan != nil {
-		clauses = append(clauses, fmt.Sprintf("created_at >= $%d", argsPos))
+		clauses = append(clauses, fmt.Sprintf("o.created_at >= $%d", argsPos))
 		args = append(args, *query.CreatedAtMoreThan)
 		argsPos++
 	}
@@ -480,56 +574,4 @@ func buildOrderSearchQuery(
 
 	q += ";"
 	return q, args
-}
-
-func updateOrderAsDBTx(
-	tx *sql.Tx,
-	id int,
-	p types.UpdateOrderPayload,
-) error {
-	q, args, err := buildOrderUpdateQuery(id, p)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(q, args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func buildOrderUpdateQuery(
-	orderId int,
-	p types.UpdateOrderPayload,
-) (string, []any, error) {
-	clauses := []string{}
-	args := []any{}
-	argsPos := 1
-
-	if p.Verified != nil {
-		clauses = append(clauses, fmt.Sprintf("verified = $%d", argsPos))
-		args = append(args, *p.Verified)
-		argsPos++
-	}
-
-	if p.Status != nil {
-		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
-		args = append(args, *p.Status)
-		argsPos++
-	}
-
-	if len(clauses) == 0 {
-		return "", nil, types.ErrNoFieldsReceivedToUpdate
-	}
-
-	args = append(args, orderId)
-	q := fmt.Sprintf(
-		"UPDATE orders SET %s WHERE id = $%d",
-		strings.Join(clauses, ", "),
-		argsPos,
-	)
-
-	return q, args, nil
 }

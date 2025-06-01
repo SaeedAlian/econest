@@ -90,8 +90,8 @@ func (m *Manager) CreateProductBase(p types.CreateProductBasePayload) (int, erro
 		return -1, err
 	}
 
-	err = tx.QueryRow("INSERT INTO products (name, slug, price, description, subcategory_id) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
-		p.Name, p.Slug, p.Price, p.Description, p.SubcategoryId,
+	err = tx.QueryRow("INSERT INTO products (name, slug, price, shipment_factor, description, subcategory_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;",
+		p.Name, p.Slug, p.Price, p.ShipmentFactor, p.Description, p.SubcategoryId,
 	).
 		Scan(&rowId)
 	if err != nil {
@@ -2232,6 +2232,12 @@ func (m *Manager) UpdateProductBase(id int, p types.UpdateProductBasePayload) er
 		argsPos++
 	}
 
+	if p.ShipmentFactor != nil {
+		clauses = append(clauses, fmt.Sprintf("shipment_factor = $%d", argsPos))
+		args = append(args, *p.ShipmentFactor)
+		argsPos++
+	}
+
 	if p.Description != nil {
 		clauses = append(clauses, fmt.Sprintf("description = $%d", argsPos))
 		args = append(args, *p.Description)
@@ -2872,6 +2878,7 @@ func scanProductBaseRow(rows *sql.Rows) (*types.ProductBase, error) {
 		&n.Name,
 		&n.Slug,
 		&n.Price,
+		&n.ShipmentFactor,
 		&n.Description,
 		&n.IsActive,
 		&n.CreatedAt,
@@ -3504,8 +3511,8 @@ func createProductBaseAsDBTx(
 ) (int, error) {
 	rowId := -1
 
-	err := tx.QueryRow("INSERT INTO products (name, slug, price, description, subcategory_id) VALUES ($1, $2, $3, $4, $5) RETURNING id;",
-		p.Name, p.Slug, p.Price, p.Description, p.SubcategoryId,
+	err := tx.QueryRow("INSERT INTO products (name, slug, price, shipment_factor, description, subcategory_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id;",
+		p.Name, p.Slug, p.Price, p.ShipmentFactor, p.Description, p.SubcategoryId,
 	).
 		Scan(&rowId)
 	if err != nil {
@@ -3548,6 +3555,12 @@ func updateProductBaseAsDBTx(
 	if p.Price != nil {
 		clauses = append(clauses, fmt.Sprintf("price = $%d", argsPos))
 		args = append(args, *p.Price)
+		argsPos++
+	}
+
+	if p.ShipmentFactor != nil {
+		clauses = append(clauses, fmt.Sprintf("shipment_factor = $%d", argsPos))
+		args = append(args, *p.ShipmentFactor)
 		argsPos++
 	}
 

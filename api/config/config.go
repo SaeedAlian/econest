@@ -48,6 +48,8 @@ type Config struct {
 	ResetPasswordWebsitePageUrl           string
 	EmailVerificationWebsitePageUrl       string
 	UploadsRootDir                        string
+	ShipmentPrice                         float64
+	OrderFeeFactor                        float64
 }
 
 var Env = InitConfig()
@@ -126,6 +128,8 @@ func InitConfig() Config {
 			"http://localhost:5173/email-verify",
 		),
 		UploadsRootDir: getEnv("UPLOADS_ROOT_DIR", "uploads"),
+		ShipmentPrice:  getEnvAsFloat64("SHIPMENT_PRICE", 10.0),
+		OrderFeeFactor: getEnvAsFloat64("ORDER_FEE_FACTOR", 0.05),
 	}
 }
 
@@ -140,6 +144,19 @@ func getEnv(key string, fallback string) string {
 func getEnvAsInt(key string, fallback int64) int64 {
 	if val, ok := os.LookupEnv(key); ok {
 		v, err := strconv.ParseInt(val, 10, 64)
+		if err != nil {
+			return fallback
+		}
+
+		return v
+	}
+
+	return fallback
+}
+
+func getEnvAsFloat64(key string, fallback float64) float64 {
+	if val, ok := os.LookupEnv(key); ok {
+		v, err := strconv.ParseFloat(val, 64)
 		if err != nil {
 			return fallback
 		}

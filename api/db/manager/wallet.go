@@ -1,7 +1,6 @@
 package db_manager
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"strings"
@@ -13,10 +12,9 @@ import (
 func (m *Manager) CreateWalletTransaction(p types.CreateWalletTransactionPayload) (int, error) {
 	rowId := -1
 	err := m.db.QueryRow(
-		"INSERT INTO wallet_transactions (amount, tx_type, status, wallet_id) VALUES ($1, $2, $3, $4) RETURNING id;",
+		"INSERT INTO wallet_transactions (amount, tx_type, wallet_id) VALUES ($1, $2, $3) RETURNING id;",
 		p.Amount,
 		p.TxType,
-		types.TransactionStatusPending,
 		p.WalletId,
 	).
 		Scan(&rowId)
@@ -135,12 +133,32 @@ func (m *Manager) GetUserWallet(userId int) (*types.Wallet, error) {
 }
 
 func (m *Manager) UpdateWallet(id int, p types.UpdateWalletPayload) error {
-	q, args, err := buildWalletUpdateQuery(id, p)
-	if err != nil {
-		return err
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if p.Balance != nil {
+		clauses = append(clauses, fmt.Sprintf("balance = $%d", argsPos))
+		args = append(args, *p.Balance)
+		argsPos++
 	}
 
-	_, err = m.db.Exec(q, args...)
+	if len(clauses) == 0 {
+		return types.ErrNoFieldsReceivedToUpdate
+	}
+
+	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
+	args = append(args, time.Now())
+	argsPos++
+
+	args = append(args, id)
+	q := fmt.Sprintf(
+		"UPDATE wallets SET %s WHERE id = $%d",
+		strings.Join(clauses, ", "),
+		argsPos,
+	)
+
+	_, err := m.db.Exec(q, args...)
 	if err != nil {
 		return err
 	}
@@ -148,60 +166,43 @@ func (m *Manager) UpdateWallet(id int, p types.UpdateWalletPayload) error {
 	return nil
 }
 
-func (m *Manager) UpdateWalletTransaction(id int, p types.UpdateWalletTransactionPayload) error {
-	q, args, err := buildWalletTransactionUpdateQuery(id, p)
-	if err != nil {
-		return err
-	}
-
-	_, err = m.db.Exec(q, args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Manager) UpdateWalletAndTransaction(
+func (m *Manager) UpdateWalletTransaction(
+	walletId int,
 	transactionId int,
-	walletPayload types.UpdateWalletPayload,
-	transactionPayload types.UpdateWalletTransactionPayload,
+	p types.UpdateWalletTransactionPayload,
 ) error {
-	ctx := context.Background()
-	tx, err := m.db.BeginTx(ctx, nil)
+	clauses := []string{}
+	args := []any{}
+	argsPos := 1
+
+	if p.Status != nil {
+		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
+		args = append(args, *p.Status)
+		argsPos++
+	}
+
+	if len(clauses) == 0 {
+		return types.ErrNoFieldsReceivedToUpdate
+	}
+
+	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
+	args = append(args, time.Now())
+	argsPos++
+
+	args = append(args, walletId)
+	args = append(args, transactionId)
+	q := fmt.Sprintf(
+		"UPDATE wallet_transactions SET %s WHERE wallet_id = $%d AND id = $%d",
+		strings.Join(clauses, ", "),
+		argsPos,
+		argsPos+1,
+	)
+
+	_, err := m.db.Exec(q, args...)
 	if err != nil {
 		return err
 	}
 
-	walletId := -1
-	err = tx.QueryRow(
-		"SELECT wallet_id FROM wallet_transactions WHERE id = $1;",
-		transactionId,
-	).Scan(&walletId)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if walletId == -1 {
-		return types.ErrWalletNotFound
-	}
-
-	err = updateWalletAsDBTx(tx, walletId, walletPayload)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	err = updateWalletTransactionAsDBTx(tx, transactionId, transactionPayload)
-	if err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit(); err != nil {
-		return err
-	}
 	return nil
 }
 
@@ -301,100 +302,4 @@ func buildWalletTransactionSearchQuery(
 
 	q += ";"
 	return q, args
-}
-
-func updateWalletAsDBTx(tx *sql.Tx, id int, p types.UpdateWalletPayload) error {
-	q, args, err := buildWalletUpdateQuery(id, p)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(q, args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func updateWalletTransactionAsDBTx(
-	tx *sql.Tx,
-	id int,
-	p types.UpdateWalletTransactionPayload,
-) error {
-	q, args, err := buildWalletTransactionUpdateQuery(id, p)
-	if err != nil {
-		return err
-	}
-
-	_, err = tx.Exec(q, args...)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func buildWalletUpdateQuery(
-	walletId int,
-	p types.UpdateWalletPayload,
-) (string, []any, error) {
-	clauses := []string{}
-	args := []any{}
-	argsPos := 1
-
-	if p.Balance != nil {
-		clauses = append(clauses, fmt.Sprintf("balance = $%d", argsPos))
-		args = append(args, *p.Balance)
-		argsPos++
-	}
-
-	if len(clauses) == 0 {
-		return "", nil, types.ErrNoFieldsReceivedToUpdate
-	}
-
-	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
-	args = append(args, time.Now())
-	argsPos++
-
-	args = append(args, walletId)
-	q := fmt.Sprintf(
-		"UPDATE wallets SET %s WHERE id = $%d",
-		strings.Join(clauses, ", "),
-		argsPos,
-	)
-
-	return q, args, nil
-}
-
-func buildWalletTransactionUpdateQuery(
-	transactionId int,
-	p types.UpdateWalletTransactionPayload,
-) (string, []any, error) {
-	clauses := []string{}
-	args := []any{}
-	argsPos := 1
-
-	if p.Status != nil {
-		clauses = append(clauses, fmt.Sprintf("status = $%d", argsPos))
-		args = append(args, *p.Status)
-		argsPos++
-	}
-
-	if len(clauses) == 0 {
-		return "", nil, types.ErrNoFieldsReceivedToUpdate
-	}
-
-	clauses = append(clauses, fmt.Sprintf("updated_at = $%d", argsPos))
-	args = append(args, time.Now())
-	argsPos++
-
-	args = append(args, transactionId)
-	q := fmt.Sprintf(
-		"UPDATE wallet_transactions SET %s WHERE id = $%d",
-		strings.Join(clauses, ", "),
-		argsPos,
-	)
-
-	return q, args, nil
 }
