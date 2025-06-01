@@ -28,6 +28,7 @@ var (
 	ErrPermissionGroupNotFound         = errors.New("permission group not found")
 	ErrUserSettingsNotFound            = errors.New("user settings not found")
 	ErrStoreSettingsNotFound           = errors.New("store settings not found")
+	ErrOrderNotFound                   = errors.New("order not found")
 	ErrNoFieldsReceivedToUpdate        = errors.New("no fields received to update")
 	ErrInvalidVisibilityStatusOption   = errors.New("invalid visibility status option")
 	ErrInvalidVerificationStatusOption = errors.New("invalid verification status option")
@@ -93,10 +94,12 @@ var (
 	ErrDuplicateStoreName           = errors.New(
 		"another store with this name already exists",
 	)
-	ErrInvalidOptionId     = errors.New("invalid option id")
-	ErrInvalidActionName   = errors.New("invalid action permission name")
-	ErrInvalidResourceName = errors.New("invalid resource permission name")
-	ErrUploadSizeTooBig    = func(maxSize int) error {
+	ErrInvalidOptionId            = errors.New("invalid option id")
+	ErrInvalidActionName          = errors.New("invalid action permission name")
+	ErrInvalidResourceName        = errors.New("invalid resource permission name")
+	ErrProductQuantityIsNotEnough = errors.New("product quantity is not enough")
+	ErrProductVariantsAreEmpty    = errors.New("product variants are empty")
+	ErrUploadSizeTooBig           = func(maxSize int) error {
 		return errors.New(
 			fmt.Sprintf(
 				"uploaded file is too big, choose a file that's less than %d MB in size",
