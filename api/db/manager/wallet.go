@@ -206,6 +206,18 @@ func (m *Manager) UpdateWalletTransaction(
 	return nil
 }
 
+func (m *Manager) DeleteWalletTransaction(walletId int, transactionId int) error {
+	_, err := m.db.Exec(
+		"DELETE FROM wallet_transactions WHERE id = $1 AND wallet_id = $2;",
+		transactionId, walletId,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func scanWalletRow(rows *sql.Rows) (*types.Wallet, error) {
 	n := new(types.Wallet)
 
