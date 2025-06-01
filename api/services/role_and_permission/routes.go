@@ -150,17 +150,13 @@ func (h *Handler) getRoles(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	roles, err := h.db.GetRoles(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -178,17 +174,13 @@ func (h *Handler) getRolesWithPermissionGroups(w http.ResponseWriter, r *http.Re
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	roles, err := h.db.GetRolesWithPermissionGroups(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -207,7 +199,7 @@ func (h *Handler) getRole(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrRoleNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -228,7 +220,7 @@ func (h *Handler) getRoleByName(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrRoleNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -250,11 +242,7 @@ func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
 		Description: payload.Description,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -276,11 +264,7 @@ func (h *Handler) addPermissionGroupsToRole(w http.ResponseWriter, r *http.Reque
 
 	err = h.db.AddPermissionGroupsToRole(payload.RoleId, payload.GroupIds)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -297,11 +281,7 @@ func (h *Handler) removePermissionGroupsFromRole(w http.ResponseWriter, r *http.
 
 	err = h.db.RemovePermissionGroupsFromRole(payload.RoleId, payload.GroupIds)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -327,11 +307,7 @@ func (h *Handler) updateRole(w http.ResponseWriter, r *http.Request) {
 		Description: payload.Description,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -347,11 +323,7 @@ func (h *Handler) deleteRole(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteRole(roleId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -369,17 +341,13 @@ func (h *Handler) getPermissionGroups(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	pgs, err := h.db.GetPermissionGroups(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -397,17 +365,13 @@ func (h *Handler) getPermissionGroupsWithPermissions(w http.ResponseWriter, r *h
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	pgs, err := h.db.GetPermissionGroupsWithPermissions(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -426,7 +390,7 @@ func (h *Handler) getPermissionGroup(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrPermissionGroupNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -447,7 +411,7 @@ func (h *Handler) getPermissionGroupByName(w http.ResponseWriter, r *http.Reques
 		if err == types.ErrPermissionGroupNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -469,11 +433,7 @@ func (h *Handler) createPermissionGroup(w http.ResponseWriter, r *http.Request) 
 		Description: payload.Description,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -507,11 +467,7 @@ func (h *Handler) addResourcePermissionsToGroup(w http.ResponseWriter, r *http.R
 
 	err = h.db.AddResourcePermissionsToGroup(payload.GroupId, resources)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -540,11 +496,7 @@ func (h *Handler) addActionPermissionsToGroup(w http.ResponseWriter, r *http.Req
 
 	err = h.db.AddActionPermissionsToGroup(payload.GroupId, actions)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -573,11 +525,7 @@ func (h *Handler) removeResourcePermissionsFromGroup(w http.ResponseWriter, r *h
 
 	err = h.db.RemoveResourcePermissionsFromGroup(payload.GroupId, resources)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -606,11 +554,7 @@ func (h *Handler) removeActionPermissionsFromGroup(w http.ResponseWriter, r *htt
 
 	err = h.db.RemoveActionPermissionsFromGroup(payload.GroupId, actions)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -636,11 +580,7 @@ func (h *Handler) updatePermissionGroup(w http.ResponseWriter, r *http.Request) 
 		Description: payload.Description,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -656,11 +596,7 @@ func (h *Handler) deletePermissionGroup(w http.ResponseWriter, r *http.Request) 
 
 	err = h.db.DeletePermissionGroup(pgroupId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 

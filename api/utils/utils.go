@@ -2,6 +2,7 @@ package utils
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -17,6 +18,7 @@ import (
 
 	"github.com/gabriel-vasile/mimetype"
 	"github.com/go-playground/validator/v10"
+	"github.com/lib/pq"
 
 	"github.com/SaeedAlian/econest/api/types"
 )
@@ -55,8 +57,36 @@ func WriteJSONInResponse(
 	return json.NewEncoder(w).Encode(payload)
 }
 
-func WriteErrorInResponse(w http.ResponseWriter, status int, message error) error {
-	return WriteJSONInResponse(w, status, map[string]string{"message": message.Error()}, nil)
+func WriteErrorInResponse(w http.ResponseWriter, status int, err error) error {
+	var formattedErr error = err
+
+	var pgErr *pq.Error
+	if errors.As(err, &pgErr) {
+		switch pgErr.Code {
+		case "23505":
+			{
+				formattedErr = formatUniqueViolation(pgErr)
+			}
+		case "23503":
+			{
+				formattedErr = formatForeignKeyViolation(pgErr)
+			}
+		case "P0001":
+			{
+				formattedErr = errors.New(pgErr.Message)
+			}
+		case "22P02":
+			{
+				formattedErr = formatEnumViolation(pgErr)
+			}
+		default:
+			{
+				formattedErr = errors.New("database error: " + pgErr.Message)
+			}
+		}
+	}
+
+	return WriteJSONInResponse(w, status, map[string]string{"message": formattedErr.Error()}, nil)
 }
 
 func DeleteCookie(w http.ResponseWriter, cookie *http.Cookie) {
@@ -496,5 +526,256 @@ func CopyFileIntoResponse(dir string, filename string, w http.ResponseWriter) {
 			types.ErrCouldNotCopyFileIntoResponse,
 		)
 		return
+	}
+}
+
+func formatUniqueViolation(e *pq.Error) error {
+	if e.Column != "" {
+		return types.ErrUniqueConstraintViolationForColumn(e.Column)
+	}
+
+	switch e.Constraint {
+	case "roles_name_key":
+		return types.ErrDuplicateRoleName
+
+	case "permission_groups_name_key":
+		return types.ErrDuplicatePermissionGroupName
+
+	case "stores_name_key":
+		return types.ErrDuplicateStoreName
+
+	case "phonenumbers_number_key":
+		return types.ErrDuplicatePhoneNumber
+
+	case "product_categories_image_name_key":
+		return types.ErrDuplicateProductCategoryImageName
+
+	case "product_images_image_name_key":
+		return types.ErrDuplicateProductImageName
+
+	case "users_email_key":
+		return types.ErrDuplicateUserEmail
+
+	case "users_username_key":
+		return types.ErrDuplicateUsername
+
+	case "products_slug_key":
+		return types.ErrDuplicateProductSlug
+
+	default:
+		return types.ErrUniqueConstraintViolation
+	}
+}
+
+func formatForeignKeyViolation(e *pq.Error) error {
+	if e.Constraint != "" {
+		switch e.Constraint {
+
+		case "users_role_id_fkey":
+			{
+				return types.ErrRoleNotFound
+			}
+
+		case "users_settings_user_id_fkey":
+			{
+				return types.ErrUserNotFound
+			}
+
+		case "phonenumbers_user_id_fkey":
+			{
+				return types.ErrUserNotFound
+			}
+
+		case "phonenumbers_store_id_fkey":
+			{
+				return types.ErrStoreNotFound
+			}
+
+		case "addresses_user_id_fkey":
+			{
+				return types.ErrUserNotFound
+			}
+
+		case "addresses_store_id_fkey":
+			{
+				return types.ErrStoreNotFound
+			}
+
+		case "wallets_user_id_fkey":
+			{
+				return types.ErrUserNotFound
+			}
+
+		case "products_subcategory_id_fkey":
+			{
+				return types.ErrProductCategoryNotFound
+			}
+
+		case "product_offers_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "product_images_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "product_specs_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "product_tag_assignments_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "product_tag_assignments_tag_id_fkey":
+			{
+				return types.ErrProductTagNotFound
+			}
+
+		case "product_attribute_options_attribute_id_fkey":
+			{
+				return types.ErrProductAttributeNotFound
+			}
+
+		case "product_variants_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "product_variant_attribute_options_variant_id_fkey":
+			{
+				return types.ErrProductVariantNotFound
+			}
+
+		case "product_variant_attribute_options_attribute_id_fkey":
+			{
+				return types.ErrProductAttributeNotFound
+			}
+
+		case "product_variant_attribute_options_option_id_fkey":
+			{
+				return types.ErrProductAttributeOptionNotFound
+			}
+
+		case "product_comments_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "product_comments_user_id_fkey":
+			{
+				return types.ErrUserNotFound
+			}
+
+		case "role_group_assignments_role_id_fkey":
+			{
+				return types.ErrRoleNotFound
+			}
+
+		case "role_group_assignments_permission_group_id_fkey":
+			{
+				return types.ErrPermissionGroupNotFound
+			}
+
+		case "group_resource_permissions_group_id_fkey":
+			{
+				return types.ErrPermissionGroupNotFound
+			}
+
+		case "group_action_permissions_group_id_fkey":
+			{
+				return types.ErrPermissionGroupNotFound
+			}
+
+		case "wallet_transactions_wallet_id_fkey":
+			{
+				return types.ErrWalletNotFound
+			}
+
+		case "stores_owner_id_fkey":
+			{
+				return types.ErrStoreOwnerNotFound
+			}
+
+		case "stores_settings_store_id_fkey":
+			{
+				return types.ErrStoreNotFound
+			}
+
+		case "store_owned_products_store_id_fkey":
+			{
+				return types.ErrStoreNotFound
+			}
+
+		case "store_owned_products_product_id_fkey":
+			{
+				return types.ErrProductNotFound
+			}
+
+		case "orders_user_id_fkey":
+			{
+				return types.ErrUserNotFound
+			}
+
+		case "order_payments_order_id_fkey":
+			{
+				return types.ErrOrderNotFound
+			}
+
+		case "order_shipments_order_id_fkey":
+			{
+				return types.ErrOrderNotFound
+			}
+
+		case "order_shipments_receiver_address_id_fkey":
+			{
+				return types.ErrShipmentAddressNotFound
+			}
+
+		case "order_product_variants_order_id_fkey":
+			{
+				return types.ErrOrderNotFound
+			}
+
+		case "order_product_variants_variant_id_fkey":
+			{
+				return types.ErrProductVariantNotFound
+			}
+
+		default:
+			return types.ErrForeignKeyViolationForColumn
+		}
+	}
+
+	return types.ErrForeignKeyViolationForColumn
+}
+
+func formatEnumViolation(e *pq.Error) error {
+	msg := e.Message
+	switch {
+	case strings.Contains(msg, `"actions"`):
+		return types.ErrInvalidActionEnum
+
+	case strings.Contains(msg, `"resources"`):
+		return types.ErrInvalidResourceEnum
+
+	case strings.Contains(msg, `"transaction_types"`):
+		return types.ErrInvalidTransactionTypeEnum
+
+	case strings.Contains(msg, `"transaction_statuses"`):
+		return types.ErrInvalidTransactionStatusEnum
+
+	case strings.Contains(msg, `"order_payment_statuses"`):
+		return types.ErrInvalidOrderPaymentStatusEnum
+
+	case strings.Contains(msg, `"order_shipment_statuses"`):
+		return types.ErrInvalidOrderShipmentStatusEnum
+
+	default:
+		return types.ErrInvalidInputFormat
 	}
 }

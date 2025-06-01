@@ -136,7 +136,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrUserNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -148,11 +148,7 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		OwnerId:     user.Id,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -184,7 +180,7 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -211,11 +207,7 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 		StoreId: store.Id,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -247,7 +239,7 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -271,11 +263,7 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 		StoreId:     store.Id,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -309,7 +297,7 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -330,11 +318,7 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -351,7 +335,7 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 
 	addresses, err := h.db.GetStoreAddresses(store.Id, query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -385,7 +369,7 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -407,11 +391,7 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -439,7 +419,7 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 
 	phones, err := h.db.GetStorePhoneNumbers(store.Id, query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -480,7 +460,7 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreAddressNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -491,7 +471,7 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -511,7 +491,7 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 		IsPublic: payload.IsPublic,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrUpdateAddress)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -552,7 +532,7 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStorePhoneNumberNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -563,7 +543,7 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -580,7 +560,7 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		IsPublic:    payload.IsPublic,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrUpdatePhoneNumber)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -614,7 +594,7 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreAddressNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -625,7 +605,7 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -638,7 +618,7 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteStoreAddress(addrId, store.Id)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrDeleteAddress)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -672,7 +652,7 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStorePhoneNumberNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -683,7 +663,7 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -696,7 +676,7 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteStorePhoneNumber(phoneId, store.Id)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrDeletePhoneNumber)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -723,7 +703,7 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 			loggedUserRoleId,
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -740,11 +720,7 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -765,7 +741,7 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 
 	addresses, err := h.db.GetStoreAddresses(storeId, query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -804,7 +780,7 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 			loggedUserRoleId,
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -822,11 +798,7 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -859,7 +831,7 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 
 	phones, err := h.db.GetStorePhoneNumbers(storeId, query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -892,7 +864,7 @@ func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
 			loggedUserRoleId,
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -912,11 +884,7 @@ func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -934,7 +902,7 @@ func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
 
 	stores, err := h.db.GetStoresWithSettings(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -967,7 +935,7 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 			loggedUserRoleId,
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -985,11 +953,7 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -999,7 +963,7 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 
 	count, err := h.db.GetStoresCount(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1030,7 +994,7 @@ func (h *Handler) getStore(w http.ResponseWriter, r *http.Request) {
 			loggedUserRoleId,
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -1042,7 +1006,7 @@ func (h *Handler) getStore(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1081,11 +1045,7 @@ func (h *Handler) getMyStores(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1093,7 +1053,7 @@ func (h *Handler) getMyStores(w http.ResponseWriter, r *http.Request) {
 
 	stores, err := h.db.GetStores(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -1137,7 +1097,7 @@ func (h *Handler) getMyStore(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1191,7 +1151,7 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1213,11 +1173,7 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err != types.ErrStoreNotFound {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusInternalServerError,
-				types.ErrInternalServer,
-			)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 	}
@@ -1227,11 +1183,7 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 		Description: payload.Description,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1272,7 +1224,7 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1285,11 +1237,7 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.UpdateStoreSettings(store.Id, payload)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1308,7 +1256,7 @@ func (h *Handler) getStoreSettings(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreSettingsNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1346,7 +1294,7 @@ func (h *Handler) getMyStoreSettings(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1362,7 +1310,7 @@ func (h *Handler) getMyStoreSettings(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreSettingsNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1404,7 +1352,7 @@ func (h *Handler) deleteStore(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1417,11 +1365,7 @@ func (h *Handler) deleteStore(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteStore(storeId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 

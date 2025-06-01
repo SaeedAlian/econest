@@ -240,11 +240,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -258,7 +254,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 
 	products, err := h.db.GetProducts(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -283,17 +279,13 @@ func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	count, err := h.db.GetProductsCount(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -316,7 +308,7 @@ func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -337,7 +329,7 @@ func (h *Handler) getProductExtended(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -355,7 +347,7 @@ func (h *Handler) getProductInventory(w http.ResponseWriter, r *http.Request) {
 
 	total, inStock, err := h.db.GetProductInventory(productId)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -379,11 +371,7 @@ func (h *Handler) getProductCategories(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -397,7 +385,7 @@ func (h *Handler) getProductCategories(w http.ResponseWriter, r *http.Request) {
 
 	cats, err := h.db.GetProductCategories(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -418,11 +406,7 @@ func (h *Handler) getProductCategoriesWithParents(w http.ResponseWriter, r *http
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -436,7 +420,7 @@ func (h *Handler) getProductCategoriesWithParents(w http.ResponseWriter, r *http
 
 	cats, err := h.db.GetProductCategoriesWithParents(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -455,17 +439,13 @@ func (h *Handler) getProductCategoriesPages(w http.ResponseWriter, r *http.Reque
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	count, err := h.db.GetProductCategoriesCount(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -488,7 +468,7 @@ func (h *Handler) getProductCategory(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductCategoryNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -511,11 +491,7 @@ func (h *Handler) getProductTags(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -529,7 +505,7 @@ func (h *Handler) getProductTags(w http.ResponseWriter, r *http.Request) {
 
 	tags, err := h.db.GetProductTags(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -548,17 +524,13 @@ func (h *Handler) getProductTagsPages(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	count, err := h.db.GetProductTagsCount(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -581,7 +553,7 @@ func (h *Handler) getProductTag(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductTagNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -606,11 +578,7 @@ func (h *Handler) getProductOffers(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -624,7 +592,7 @@ func (h *Handler) getProductOffers(w http.ResponseWriter, r *http.Request) {
 
 	offs, err := h.db.GetProductOffers(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -645,17 +613,13 @@ func (h *Handler) getProductOffersPages(w http.ResponseWriter, r *http.Request) 
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	count, err := h.db.GetProductOffersCount(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -678,7 +642,7 @@ func (h *Handler) getProductOffer(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductOfferNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -699,7 +663,7 @@ func (h *Handler) getProductOfferByProductId(w http.ResponseWriter, r *http.Requ
 		if err == types.ErrProductOfferNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -721,11 +685,7 @@ func (h *Handler) getProductAttributes(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -739,7 +699,7 @@ func (h *Handler) getProductAttributes(w http.ResponseWriter, r *http.Request) {
 
 	attrs, err := h.db.GetProductAttributesWithOptions(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -757,17 +717,13 @@ func (h *Handler) getProductAttributesPages(w http.ResponseWriter, r *http.Reque
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	count, err := h.db.GetProductAttributesCount(query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -790,7 +746,7 @@ func (h *Handler) getProductAttribute(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductAttributeNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -819,11 +775,7 @@ func (h *Handler) getProductComments(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -837,7 +789,7 @@ func (h *Handler) getProductComments(w http.ResponseWriter, r *http.Request) {
 
 	comments, err := h.db.GetProductCommentsByProductId(productId, query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -862,17 +814,13 @@ func (h *Handler) getProductCommentsPages(w http.ResponseWriter, r *http.Request
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	count, err := h.db.GetProductCommentsCountByProductId(productId, query)
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -895,7 +843,7 @@ func (h *Handler) getProductComment(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductCommentNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -930,7 +878,7 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -946,7 +894,7 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 			fmt.Sprintf("%s/%s", h.productImageUploadDir, img.ImageName),
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -971,11 +919,7 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		Variants: payload.Variants,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1021,7 +965,7 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1049,7 +993,7 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 				utils.WriteErrorInResponse(
 					w,
 					http.StatusInternalServerError,
-					types.ErrInternalServer,
+					err,
 				)
 				return
 			}
@@ -1084,11 +1028,7 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		DelVariantIds:   payload.DelVariantIds,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1122,7 +1062,7 @@ func (h *Handler) activeProduct(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1139,11 +1079,7 @@ func (h *Handler) activeProduct(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1177,7 +1113,7 @@ func (h *Handler) deactiveProduct(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1194,11 +1130,7 @@ func (h *Handler) deactiveProduct(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1232,7 +1164,7 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1245,11 +1177,7 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteProduct(productId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1288,7 +1216,7 @@ func (h *Handler) createProductOffer(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1305,11 +1233,7 @@ func (h *Handler) createProductOffer(w http.ResponseWriter, r *http.Request) {
 		ProductId: productId,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1355,7 +1279,7 @@ func (h *Handler) updateProductOffer(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductOfferNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1366,7 +1290,7 @@ func (h *Handler) updateProductOffer(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1382,11 +1306,7 @@ func (h *Handler) updateProductOffer(w http.ResponseWriter, r *http.Request) {
 		ExpireAt: payload.ExpireAt,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1420,7 +1340,7 @@ func (h *Handler) deleteProductOffer(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductOfferNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1431,7 +1351,7 @@ func (h *Handler) deleteProductOffer(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrStoreNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1444,11 +1364,7 @@ func (h *Handler) deleteProductOffer(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteProductOffer(offer.ProductId, offerId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1468,11 +1384,7 @@ func (h *Handler) createProductAttribute(w http.ResponseWriter, r *http.Request)
 		Options: payload.Options,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1505,11 +1417,7 @@ func (h *Handler) updateProductAttribute(w http.ResponseWriter, r *http.Request)
 		DelOptionIds:   payload.DelOptionIds,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1525,11 +1433,7 @@ func (h *Handler) deleteProductAttribute(w http.ResponseWriter, r *http.Request)
 
 	err = h.db.DeleteProductAttribute(attributeId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1572,11 +1476,7 @@ func (h *Handler) createProductComment(w http.ResponseWriter, r *http.Request) {
 		UserId:    userId,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1622,7 +1522,7 @@ func (h *Handler) editMyComment(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductCommentNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1638,11 +1538,7 @@ func (h *Handler) editMyComment(w http.ResponseWriter, r *http.Request) {
 		Comment: payload.Comment,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1676,7 +1572,7 @@ func (h *Handler) deleteMyComment(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrProductCommentNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -1689,11 +1585,7 @@ func (h *Handler) deleteMyComment(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteProductComment(commentId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1709,11 +1601,7 @@ func (h *Handler) deleteProductComment(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteProductComment(commentId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1735,7 +1623,7 @@ func (h *Handler) createProductCategory(w http.ResponseWriter, r *http.Request) 
 		utils.WriteErrorInResponse(
 			w,
 			http.StatusInternalServerError,
-			types.ErrInternalServer,
+			err,
 		)
 		return
 	}
@@ -1751,11 +1639,7 @@ func (h *Handler) createProductCategory(w http.ResponseWriter, r *http.Request) 
 		ParentCategoryId: payload.ParentCategoryId,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1789,7 +1673,7 @@ func (h *Handler) updateProductCategory(w http.ResponseWriter, r *http.Request) 
 			utils.WriteErrorInResponse(
 				w,
 				http.StatusInternalServerError,
-				types.ErrInternalServer,
+				err,
 			)
 			return
 		}
@@ -1805,11 +1689,7 @@ func (h *Handler) updateProductCategory(w http.ResponseWriter, r *http.Request) 
 		ImageName: payload.ImageName,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1827,11 +1707,7 @@ func (h *Handler) deleteProductCategory(w http.ResponseWriter, r *http.Request) 
 
 	err = h.db.DeleteProductCategory(categoryId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1850,11 +1726,7 @@ func (h *Handler) createProductTag(w http.ResponseWriter, r *http.Request) {
 		Name: payload.Name,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1884,11 +1756,7 @@ func (h *Handler) updateProductTag(w http.ResponseWriter, r *http.Request) {
 		Name: payload.Name,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -1904,11 +1772,7 @@ func (h *Handler) deleteProductTag(w http.ResponseWriter, r *http.Request) {
 
 	err = h.db.DeleteProductTag(tagId)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 

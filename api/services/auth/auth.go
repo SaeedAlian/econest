@@ -160,11 +160,7 @@ func (h *AuthHandler) WithCSRFToken() func(next http.Handler) http.Handler {
 
 			savedToken, isValid, err := h.GetCSRFToken(userId.(int))
 			if err != nil {
-				utils.WriteErrorInResponse(
-					w,
-					http.StatusInternalServerError,
-					types.ErrInternalServer,
-				)
+				utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 				return
 			}
 			if !isValid || savedToken != csrfHeader {
@@ -200,11 +196,7 @@ func (h *AuthHandler) WithVerifiedEmail(
 
 			user, err := manager.GetUserById(userId.(int))
 			if err != nil {
-				utils.WriteErrorInResponse(
-					w,
-					http.StatusInternalServerError,
-					types.ErrInternalServer,
-				)
+				utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 				return
 			}
 			if !user.EmailVerified {
@@ -240,11 +232,7 @@ func (h *AuthHandler) WithUnbannedProfile(
 
 			user, err := manager.GetUserById(userId.(int))
 			if err != nil {
-				utils.WriteErrorInResponse(
-					w,
-					http.StatusInternalServerError,
-					types.ErrInternalServer,
-				)
+				utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 				return
 			}
 			if user.IsBanned {
@@ -294,11 +282,7 @@ func (h *AuthHandler) WithActionPermissionAuth(
 			userRoleId.(int),
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusInternalServerError,
-				types.ErrInternalServer,
-			)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
@@ -341,11 +325,7 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 			userRoleId.(int),
 		)
 		if err != nil {
-			utils.WriteErrorInResponse(
-				w,
-				http.StatusInternalServerError,
-				types.ErrInternalServer,
-			)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 			return
 		}
 
