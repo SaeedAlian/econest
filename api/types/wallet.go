@@ -22,8 +22,8 @@ type WalletTransaction struct {
 
 type CreateWalletTransactionPayload struct {
 	Amount   float64         `json:"amount"   validate:"required"`
-	TxType   TransactionType `json:"txType"   validate:"required"`
-	WalletId int             `json:"walletId" validate:"required"`
+	TxType   TransactionType `json:"txType"`
+	WalletId int             `json:"walletId"`
 }
 
 type UpdateWalletTransactionPayload struct {

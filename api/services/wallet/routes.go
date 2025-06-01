@@ -53,16 +53,33 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 		[]types.Resource{types.ResourceWalletTransactionsFullAccess},
 	)).
 		Methods("GET")
-	withAuthRouter.HandleFunc("/", h.createTransaction).Methods("POST")
-	withAuthRouter.HandleFunc("/complete/{txId}", h.completeTransaction).Methods("PATCH")
-	withAuthRouter.HandleFunc("/cancel/{txId}", h.cancelTransaction).Methods("PATCH")
 	withAuthRouter.Use(h.authHandler.WithJWTAuth(h.db))
 	withAuthRouter.Use(h.authHandler.WithCSRFToken())
 	withAuthRouter.Use(h.authHandler.WithVerifiedEmail(h.db))
 	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
+
+	withdrawRouter := withAuthRouter.PathPrefix("/withdraw").Subrouter()
+	withdrawRouter.HandleFunc("/", h.createWithdrawTransaction).Methods("POST")
+	withdrawRouter.HandleFunc("/complete/{txId}", h.authHandler.WithActionPermissionAuth(
+		h.completeWithdrawTransaction,
+		h.db,
+		[]types.Action{types.ActionCanApproveWithdrawTransaction},
+	)).
+		Methods("PATCH")
+	withdrawRouter.HandleFunc("/cancel/{txId}", h.authHandler.WithActionPermissionAuth(
+		h.cancelWithdrawTransaction,
+		h.db,
+		[]types.Action{types.ActionCanCancelWithdrawTransaction},
+	)).
+		Methods("PATCH")
+
+	depositRouter := withAuthRouter.PathPrefix("/deposit").Subrouter()
+	depositRouter.HandleFunc("/", h.createDepositTransaction).Methods("POST")
+	depositRouter.HandleFunc("/complete/{txId}", h.completeDepositTransaction).Methods("PATCH")
+	depositRouter.HandleFunc("/cancel/{txId}", h.cancelDepositTransaction).Methods("PATCH")
 }
 
-func (h *Handler) createTransaction(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) createDepositTransaction(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateWalletTransactionPayload
 	err := utils.ParseRequestPayload(r, &payload)
 	if err != nil {
@@ -88,7 +105,7 @@ func (h *Handler) createTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -96,15 +113,56 @@ func (h *Handler) createTransaction(w http.ResponseWriter, r *http.Request) {
 
 	createdTx, err := h.db.CreateWalletTransaction(types.CreateWalletTransactionPayload{
 		Amount:   payload.Amount,
-		TxType:   payload.TxType,
+		TxType:   types.TransactionTypeDeposit,
 		WalletId: wallet.Id,
 	})
 	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"txId": createdTx}, nil)
+}
+
+func (h *Handler) createWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
+	var payload types.CreateWalletTransactionPayload
+	err := utils.ParseRequestPayload(r, &payload)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	ctx := r.Context()
+
+	userId := ctx.Value("userId")
+
+	if userId == nil {
 		utils.WriteErrorInResponse(
 			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
+			http.StatusUnauthorized,
+			types.ErrAuthenticationCredentialsNotFound,
 		)
+		return
+	}
+
+	wallet, err := h.db.GetUserWallet(userId.(int))
+	if err != nil {
+		if err == types.ErrWalletNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
+		}
+
+		return
+	}
+
+	createdTx, err := h.db.CreateWalletTransaction(types.CreateWalletTransactionPayload{
+		Amount:   payload.Amount,
+		TxType:   types.TransactionTypeWithdraw,
+		WalletId: wallet.Id,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -132,7 +190,7 @@ func (h *Handler) getMyWallet(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -172,11 +230,7 @@ func (h *Handler) getMyTransactions(w http.ResponseWriter, r *http.Request) {
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -198,7 +252,7 @@ func (h *Handler) getMyTransactions(w http.ResponseWriter, r *http.Request) {
 		Offset:     query.Offset,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -234,11 +288,7 @@ func (h *Handler) getMyTransactionsPages(w http.ResponseWriter, r *http.Request)
 
 	err := utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -250,7 +300,7 @@ func (h *Handler) getMyTransactionsPages(w http.ResponseWriter, r *http.Request)
 		UserId:     &userId,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -288,7 +338,7 @@ func (h *Handler) getMyTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -299,7 +349,7 @@ func (h *Handler) getMyTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletTransactionNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -325,7 +375,7 @@ func (h *Handler) getUserWallet(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -356,11 +406,7 @@ func (h *Handler) getUserTransactions(w http.ResponseWriter, r *http.Request) {
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -382,7 +428,7 @@ func (h *Handler) getUserTransactions(w http.ResponseWriter, r *http.Request) {
 		Offset:     query.Offset,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -409,11 +455,7 @@ func (h *Handler) getUserTransactionsPages(w http.ResponseWriter, r *http.Reques
 
 	err = utils.ParseURLQuery(queryMapping, queryValues)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusBadRequest,
-			err,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
@@ -425,7 +467,7 @@ func (h *Handler) getUserTransactionsPages(w http.ResponseWriter, r *http.Reques
 		UserId:     &userId,
 	})
 	if err != nil {
-		utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		return
 	}
 
@@ -454,7 +496,7 @@ func (h *Handler) getUserTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -465,7 +507,7 @@ func (h *Handler) getUserTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletTransactionNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -479,7 +521,7 @@ func (h *Handler) getUserTransaction(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, tx, nil)
 }
 
-func (h *Handler) completeTransaction(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) completeDepositTransaction(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle payment validation
 
 	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
@@ -508,7 +550,7 @@ func (h *Handler) completeTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -519,66 +561,74 @@ func (h *Handler) completeTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletTransactionNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
 	}
 
-	if tx.WalletId != wallet.Id {
+	if tx.WalletId != wallet.Id || wallet.UserId != userId {
 		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessWalletTransaction)
 		return
 	}
 
-	newBalance := wallet.Balance
-
-	switch tx.TxType {
-	case types.TransactionTypeDeposit:
-		{
-			newBalance += tx.Amount
-			break
-		}
-
-	case types.TransactionTypeWithdraw:
-		{
-			newBalance -= tx.Amount
-			break
-		}
-
-	default:
-		{
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidTxType)
-			return
-		}
-	}
-
-	if newBalance < 0 {
-		utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrBalanceInsufficient)
+	if tx.TxType != types.TransactionTypeDeposit {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidTransactionTypeEnum)
 		return
 	}
 
-	err = h.db.UpdateWalletAndTransaction(
-		txId,
-		types.UpdateWalletPayload{
-			Balance: &newBalance,
-		},
+	err = h.db.UpdateWalletTransaction(tx.WalletId, txId,
 		types.UpdateWalletTransactionPayload{
 			Status: utils.Ptr(types.TransactionStatusSuccessful),
 		},
 	)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
-func (h *Handler) cancelTransaction(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) completeWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
+	// TODO: handle payment validation
+
+	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	tx, err := h.db.GetWalletTransactionById(txId)
+	if err != nil {
+		if err == types.ErrWalletTransactionNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
+		}
+
+		return
+	}
+
+	if tx.TxType != types.TransactionTypeWithdraw {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidTransactionTypeEnum)
+		return
+	}
+
+	err = h.db.UpdateWalletTransaction(tx.WalletId, txId,
+		types.UpdateWalletTransactionPayload{
+			Status: utils.Ptr(types.TransactionStatusSuccessful),
+		},
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) cancelDepositTransaction(w http.ResponseWriter, r *http.Request) {
 	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
 	if err != nil {
 		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
@@ -605,7 +655,7 @@ func (h *Handler) cancelTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
@@ -616,29 +666,65 @@ func (h *Handler) cancelTransaction(w http.ResponseWriter, r *http.Request) {
 		if err == types.ErrWalletTransactionNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
 		} else {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, types.ErrInternalServer)
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
 		}
 
 		return
 	}
 
-	if tx.WalletId != wallet.Id {
+	if tx.WalletId != wallet.Id || wallet.UserId != userId {
 		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotAccessWalletTransaction)
 		return
 	}
 
-	err = h.db.UpdateWalletTransaction(
-		txId,
+	if tx.TxType != types.TransactionTypeDeposit {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidTransactionTypeEnum)
+		return
+	}
+
+	err = h.db.UpdateWalletTransaction(tx.WalletId, txId,
 		types.UpdateWalletTransactionPayload{
 			Status: utils.Ptr(types.TransactionStatusFailed),
 		},
 	)
 	if err != nil {
-		utils.WriteErrorInResponse(
-			w,
-			http.StatusInternalServerError,
-			types.ErrInternalServer,
-		)
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
+}
+
+func (h *Handler) cancelWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
+	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	tx, err := h.db.GetWalletTransactionById(txId)
+	if err != nil {
+		if err == types.ErrWalletTransactionNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
+		}
+
+		return
+	}
+
+	if tx.TxType != types.TransactionTypeWithdraw {
+		utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrInvalidTransactionTypeEnum)
+		return
+	}
+
+	err = h.db.UpdateWalletTransaction(tx.WalletId, txId,
+		types.UpdateWalletTransactionPayload{
+			Status: utils.Ptr(types.TransactionStatusFailed),
+		},
+	)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
 		return
 	}
 
