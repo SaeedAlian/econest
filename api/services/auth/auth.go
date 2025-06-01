@@ -287,6 +287,8 @@ func (h *AuthHandler) WithActionPermissionAuth(
 			return
 		}
 
+		actionPermissions = append(actionPermissions, types.ActionFullControl)
+
 		isAllowed, err := manager.IsRoleHasSomeActionPermissions(
 			actionPermissions,
 			userRoleId.(int),
@@ -331,6 +333,8 @@ func (h *AuthHandler) WithResourcePermissionAuth(
 			)
 			return
 		}
+
+		resourcePermissions = append(resourcePermissions, types.ResourceFullAccess)
 
 		isAllowed, err := manager.IsRoleHasSomeResourcePermissions(
 			resourcePermissions,
