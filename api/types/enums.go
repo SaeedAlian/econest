@@ -122,11 +122,11 @@ const (
 	ActionCanUpdateStore Action = "can_update_store"
 	ActionCanDeleteStore Action = "can_delete_store"
 
-	ActionCanCreateOrder Action = "can_create_order"
-	ActionCanUpdateOrder Action = "can_update_order"
-
-	ActionCanCreateOrderShipment Action = "can_create_order_shipment"
+	ActionCanCreateOrder         Action = "can_create_order"
+	ActionCanDeleteOrder         Action = "can_delete_order"
 	ActionCanUpdateOrderShipment Action = "can_update_order_shipment"
+	ActionCanApproveOrderPayment Action = "can_approve_order_payment"
+	ActionCanCancelOrderPayment  Action = "can_cancel_order_payment"
 
 	ActionCanAddRole    Action = "can_add_role"
 	ActionCanUpdateRole Action = "can_update_role"
@@ -181,10 +181,10 @@ var ValidActions = []Action{
 	ActionCanDeleteStore,
 
 	ActionCanCreateOrder,
-	ActionCanUpdateOrder,
-
-	ActionCanCreateOrderShipment,
+	ActionCanDeleteOrder,
 	ActionCanUpdateOrderShipment,
+	ActionCanApproveOrderPayment,
+	ActionCanCancelOrderPayment,
 
 	ActionCanAddRole,
 	ActionCanUpdateRole,
