@@ -167,3 +167,26 @@ INSERT INTO role_group_assignments
     (SELECT id FROM roles WHERE name = 'Customer'),
     (SELECT id FROM permission_groups WHERE name = 'Order Actions')
   );
+
+CREATE OR REPLACE FUNCTION protect_default_roles()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    IF OLD.name IN ('Super Admin', 'Admin', 'Vendor', 'Customer') THEN
+      RAISE EXCEPTION 'cannot delete protected role: %', OLD.name;
+    END IF;
+
+  ELSIF TG_OP = 'UPDATE' THEN
+    IF OLD.name IN ('Super Admin', 'Admin', 'Vendor', 'Customer') AND NEW.name IS DISTINCT FROM OLD.name THEN
+      RAISE EXCEPTION 'cannot rename protected role: %', OLD.name;
+    END IF;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_protect_fixed_roles
+BEFORE DELETE OR UPDATE ON roles
+FOR EACH ROW
+EXECUTE FUNCTION protect_default_roles();

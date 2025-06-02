@@ -1,3 +1,6 @@
+DROP TRIGGER IF EXISTS trg_protect_fixed_roles ON roles;
+DROP FUNCTION IF EXISTS protect_default_roles;
+
 DELETE FROM permission_groups WHERE name = 'Full Control';
 DELETE FROM permission_groups WHERE name = 'User Management';
 DELETE FROM permission_groups WHERE name = 'Store Moderator';
