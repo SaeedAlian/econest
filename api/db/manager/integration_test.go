@@ -1348,6 +1348,14 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 	s.Require().NoError(err)
 	s.Require().Len(store2Orders, 0)
 
+	isStore1HasPartInOrder1, err := s.manager.IsStoreHasParticipationInOrder(orderId, storeId)
+	s.Require().NoError(err)
+	s.Require().True(isStore1HasPartInOrder1)
+
+	isStore2HasPartInOrder1, err := s.manager.IsStoreHasParticipationInOrder(orderId, store2Id)
+	s.Require().NoError(err)
+	s.Require().False(isStore2HasPartInOrder1)
+
 	newProductId, err := s.manager.CreateProduct(types.CreateProductPayload{
 		Base: types.CreateProductBasePayload{
 			Name:          "new prod",
