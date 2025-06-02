@@ -458,7 +458,7 @@ func (h *Handler) addResourcePermissionsToGroup(w http.ResponseWriter, r *http.R
 	for i, r := range payload.Resources {
 		parsed := types.Resource(r)
 		if !parsed.IsValid() {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidResourceName)
+			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidResourceEnum)
 			return
 		}
 
@@ -487,7 +487,7 @@ func (h *Handler) addActionPermissionsToGroup(w http.ResponseWriter, r *http.Req
 	for i, a := range payload.Actions {
 		parsed := types.Action(a)
 		if !parsed.IsValid() {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidActionName)
+			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidActionEnum)
 			return
 		}
 
@@ -516,7 +516,7 @@ func (h *Handler) removeResourcePermissionsFromGroup(w http.ResponseWriter, r *h
 	for i, r := range payload.Resources {
 		parsed := types.Resource(r)
 		if !parsed.IsValid() {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidResourceName)
+			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidResourceEnum)
 			return
 		}
 
@@ -545,7 +545,7 @@ func (h *Handler) removeActionPermissionsFromGroup(w http.ResponseWriter, r *htt
 	for i, a := range payload.Actions {
 		parsed := types.Action(a)
 		if !parsed.IsValid() {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidActionName)
+			utils.WriteErrorInResponse(w, http.StatusBadRequest, types.ErrInvalidActionEnum)
 			return
 		}
 
