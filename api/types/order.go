@@ -105,3 +105,11 @@ type UpdateOrderShipmentPayload struct {
 type UpdateOrderPaymentPayload struct {
 	Status *OrderPaymentStatus `json:"status"`
 }
+
+type OrderProductVariantInsertData struct {
+	Quantity      int
+	VariantPrice  float64
+	ShippingPrice float64
+	VariantId     int
+	OrderId       int
+}

@@ -57,9 +57,13 @@ var (
 	ErrInvalidOptionId  = errors.New("invalid option id")
 	ErrInvalidPageQuery = errors.New("invalid page")
 
-	ErrProductQuantityIsNotEnough = errors.New("product quantity is not enough")
-	ErrProductVariantsAreEmpty    = errors.New("product variants are empty")
-	ErrBalanceInsufficient        = errors.New("insufficient wallet balance")
+	ErrProductQuantityIsNotEnough = func(productId int) error {
+		return errors.New(
+			fmt.Sprintf("product with id %d has not insufficient quantity", productId),
+		)
+	}
+	ErrProductVariantsAreEmpty = errors.New("product variants are empty")
+	ErrBalanceInsufficient     = errors.New("insufficient wallet balance")
 
 	ErrInvalidCredentials  = errors.New("invalid credentials received")
 	ErrInvalidPayload      = errors.New("invalid payload received")

@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/lib/pq"
+
 	"github.com/SaeedAlian/econest/api/config"
 	"github.com/SaeedAlian/econest/api/types"
 )
@@ -35,42 +37,96 @@ func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
 	var totalVariantsPrice float64 = 0
 	var orderFee float64 = 0
 
-	for _, pv := range p.ProductVariants {
+	variantQtyMap := make(map[int]int, len(p.ProductVariants))
+	variantIds := make([]int, len(p.ProductVariants))
+	for i, pv := range p.ProductVariants {
+		variantQtyMap[pv.VariantId] = pv.Quantity
+		variantIds[i] = pv.VariantId
+	}
+
+	variantRows, err := tx.Query(`
+		SELECT
+			p.id, pv.id, pv.quantity, p.shipment_factor,
+			COALESCE(
+				p.price * (1 - (
+					SELECT discount FROM product_offers po
+					WHERE po.product_id = p.id AND po.expire_at > NOW()
+					LIMIT 1
+				)), p.price
+			) AS final_price
+		FROM product_variants pv
+		JOIN products p ON p.id = pv.product_id
+		WHERE pv.id = ANY($1)
+	`, pq.Array(variantIds))
+	if err != nil {
+		tx.Rollback()
+		return -1, err
+	}
+	defer variantRows.Close()
+
+	insertData := make([]types.OrderProductVariantInsertData, 0, len(p.ProductVariants))
+
+	for variantRows.Next() {
+		var productId int = -1
+		var variantId int = -1
 		var currentQuantity int = -1
 		var shipmentFactor float64 = 0
 		var variantPrice float64 = 0
-		err := tx.QueryRow(`
-			SELECT 
-				pv.quantity, p.shipment_factor,
-				COALESCE(
-					p.price * (1 - (
-						SELECT discount FROM product_offers po
-						WHERE po.product_id = p.id AND po.expire_at > NOW()
-					)),
-					p.price
-				) AS final_price
-			FROM product_variants pv
-			JOIN products p ON p.id = pv.product_id
-			WHERE pv.id = $1
-		`, pv.VariantId).Scan(&currentQuantity, &shipmentFactor, &variantPrice)
+		err := variantRows.Scan(
+			&productId,
+			&variantId,
+			&currentQuantity,
+			&shipmentFactor,
+			&variantPrice,
+		)
 		if err != nil {
 			tx.Rollback()
 			return -1, err
 		}
-		if currentQuantity < pv.Quantity {
+		if productId == -1 {
 			tx.Rollback()
-			return -1, types.ErrProductQuantityIsNotEnough
+			return -1, types.ErrProductNotFound
+		}
+
+		selectedQuantity, ok := variantQtyMap[variantId]
+		if !ok {
+			tx.Rollback()
+			return -1, types.ErrProductVariantNotFound
+		}
+
+		if currentQuantity < selectedQuantity {
+			tx.Rollback()
+			return -1, types.ErrProductQuantityIsNotEnough(productId)
 		}
 
 		shippingPrice := config.Env.ShipmentPrice * shipmentFactor
 
 		totalShipmentPrice += shippingPrice
-		totalVariantsPrice += variantPrice * float64(pv.Quantity)
+		totalVariantsPrice += variantPrice * float64(selectedQuantity)
 
-		_, err = tx.Exec(`
-			INSERT INTO order_product_variants 
-				(quantity, variant_price, shipping_price, variant_id, order_id) VALUES ($1, $2, $3, $4, $5);
-		`, pv.Quantity, variantPrice, shippingPrice, pv.VariantId, rowId)
+		insertData = append(insertData, types.OrderProductVariantInsertData{
+			Quantity:      selectedQuantity,
+			VariantPrice:  variantPrice,
+			ShippingPrice: shippingPrice,
+			VariantId:     variantId,
+			OrderId:       rowId,
+		})
+	}
+
+	if len(insertData) != len(variantIds) {
+		tx.Rollback()
+		return -1, types.ErrProductVariantNotFound
+	}
+
+	for _, d := range insertData {
+		_, err = tx.Exec(
+			"INSERT INTO order_product_variants (quantity, variant_price, shipping_price, variant_id, order_id) VALUES ($1, $2, $3, $4, $5)",
+			d.Quantity,
+			d.VariantPrice,
+			d.ShippingPrice,
+			d.VariantId,
+			d.OrderId,
+		)
 		if err != nil {
 			tx.Rollback()
 			return -1, err
@@ -80,7 +136,7 @@ func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
 	orderFee = totalVariantsPrice * config.Env.OrderFeeFactor
 
 	_, err = tx.Exec(
-		"INSERT INTO order_shipments (arrival_date, order_id, receiver_address_id) VALUES ($1, $2, $3);",
+		"INSERT INTO order_shipments (arrival_date, order_id, receiver_address_id) VALUES ($1, $2, $3)",
 		p.ArrivalDate,
 		rowId,
 		p.ReceiverAddressId,
@@ -90,10 +146,13 @@ func (m *Manager) CreateOrder(p types.CreateOrderPayload) (int, error) {
 		return -1, err
 	}
 
-	_, err = tx.Exec(`
-		INSERT INTO order_payments 
-			(total_variants_price, total_shipment_price, fee, order_id) VALUES ($1, $2, $3, $4);
-	`, totalVariantsPrice, totalShipmentPrice, orderFee, rowId)
+	_, err = tx.Exec(
+		"INSERT INTO order_payments (total_variants_price, total_shipment_price, fee, order_id) VALUES ($1, $2, $3, $4)",
+		totalVariantsPrice,
+		totalShipmentPrice,
+		orderFee,
+		rowId,
+	)
 	if err != nil {
 		tx.Rollback()
 		return -1, err
