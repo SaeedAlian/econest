@@ -10,8 +10,8 @@ This is the backend API for **Econest**, an e-commerce platform. It is built wit
 - [Getting Started](#getting-started)
 
   - [Prerequisites](#prerequisites)
-  - [Super admin CLI](#super-admin-cli)
   - [Installation](#installation)
+  - [Super admin CLI](#super-admin-cli)
   - [Running the Server](#running-the-server)
 
 - [Environment Variables](#environment-variables)
@@ -42,25 +42,6 @@ This is the backend API for **Econest**, an e-commerce platform. It is built wit
 - Redis
 - `make` (optional, for using provided Makefile scripts)
 
-### Super admin CLI
-
-This API works with a hierarchy of user roles & permissions. This assures integrity and security
-through the API routes. There is a special role called 'Super Admin' which can access all the
-database and the super admin cli without any issues, but this user cannot log into the site via api,
-and cannot be registered via the api, for security reasons. To create a super admin and an admin
-user (for logging into the website with an admin account) please use the super admin cli first.
-You can run the cli with this command:
-
-```bash
-go build -o bin/econestapi main.go && ./bin/econestapi --cli
-```
-
-Or with Makefile:
-
-```bash
-make run-super-admin-cli
-```
-
 ### Installation
 
 1. Clone the repository:
@@ -82,6 +63,25 @@ make run-super-admin-cli
    ```bash
    go mod tidy
    ```
+
+### Super admin CLI
+
+This API works with a hierarchy of user roles & permissions. This assures integrity and security
+through the API routes. There is a special role called 'Super Admin' which can access all the
+database and the super admin cli without any issues, but this user cannot log into the site via api,
+and cannot be registered via the api, for security reasons. To create a super admin and an admin
+user (for logging into the website with an admin account) please use the super admin cli first.
+You can run the cli with this command:
+
+```bash
+go build -o bin/econestapi main.go && ./bin/econestapi --cli
+```
+
+Or with Makefile:
+
+```bash
+make run-super-admin-cli
+```
 
 ### Running the Server
 
