@@ -196,4 +196,14 @@ var (
 			),
 		)
 	}
+
+	ErrInvalidMenuInput              = errors.New("invalid input")
+	ErrTargetMustBeNonNilPtrToStruct = errors.New("target must be a non-nil pointer to struct")
+	ErrTargetMustBePtrStruct         = errors.New("target must point to a struct")
+	ErrInvalidTargetFieldType        = errors.New("invalid target field type")
+	ErrDBHasMoreThanOneSuperAdmin    = errors.New("database has more than one super admin")
+	ErrPageNotFound                  = errors.New("page not found")
+	ErrPageHasNoOptions              = errors.New("page has no options")
+	ErrPageOptionNotFound            = errors.New("page option not found")
+	ErrUserNotLoggedIn               = errors.New("user not logged in")
 )
