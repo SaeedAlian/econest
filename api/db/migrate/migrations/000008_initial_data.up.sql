@@ -176,13 +176,16 @@ BEGIN
       RAISE EXCEPTION 'cannot delete protected role: %', OLD.name;
     END IF;
 
-  ELSIF TG_OP = 'UPDATE' THEN
+    RETURN OLD;
+  END IF;
+
+  IF TG_OP = 'UPDATE' THEN
     IF OLD.name IN ('Super Admin', 'Admin', 'Vendor', 'Customer') AND NEW.name IS DISTINCT FROM OLD.name THEN
       RAISE EXCEPTION 'cannot rename protected role: %', OLD.name;
     END IF;
-  END IF;
 
-  RETURN NEW;
+    RETURN NEW;
+  END IF;
 END;
 $$ LANGUAGE plpgsql;
 
