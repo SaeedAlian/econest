@@ -1,14 +1,19 @@
-DELETE FROM role_group_assignments WHERE
-  role_id = (SELECT id FROM roles WHERE name = 'Super Admin') AND
-  permission_group_id = (SELECT id FROM permission_groups WHERE name = 'Full Control');
-
-DELETE FROM group_action_permissions
-  WHERE action = 'full_control' AND
-  group_id = (SELECT id FROM permission_groups WHERE name = 'Full Control');
-
-DELETE FROM group_resource_permissions
-  WHERE resource = 'full_access' AND
-  group_id = (SELECT id FROM permission_groups WHERE name = 'Full Control');
-
 DELETE FROM permission_groups WHERE name = 'Full Control';
+DELETE FROM permission_groups WHERE name = 'User Management';
+DELETE FROM permission_groups WHERE name = 'Store Moderator';
+DELETE FROM permission_groups WHERE name = 'Personal Store Management';
+DELETE FROM permission_groups WHERE name = 'Order Actions';
+DELETE FROM permission_groups WHERE name = 'Order Moderator';
+DELETE FROM permission_groups WHERE name = 'Withdrawal Transaction Moderator';
+DELETE FROM permission_groups WHERE name = 'Role & Permission Management';
+DELETE FROM permission_groups WHERE name = 'User Registration';
+DELETE FROM permission_groups WHERE name = 'Product Category Management';
+DELETE FROM permission_groups WHERE name = 'Product Attribute Management';
+DELETE FROM permission_groups WHERE name = 'Product Attribute Management (Restricted)';
+DELETE FROM permission_groups WHERE name = 'Product Management';
+DELETE FROM permission_groups WHERE name = 'Product Comment Moderator';
+
+DELETE FROM roles WHERE name = 'Customer';
+DELETE FROM roles WHERE name = 'Vendor';
+DELETE FROM roles WHERE name = 'Admin';
 DELETE FROM roles WHERE name = 'Super Admin';
