@@ -32,10 +32,18 @@ func NewHandler(
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	registerRouter := router.PathPrefix("/register").Methods("POST").Subrouter()
-	registerRouter.HandleFunc("/vendor", h.register(types.DefaultRoleVendor.String())).
-		Methods("POST")
-	registerRouter.HandleFunc("/customer", h.register(types.DefaultRoleCustomer.String())).
-		Methods("POST")
+	registerRouter.HandleFunc("/vendor", h.registerVendor).Methods("POST")
+	registerRouter.HandleFunc("/customer", h.registerCustomer).Methods("POST")
+
+	withRoleRegisterRouter := registerRouter.PathPrefix("/withrole").Subrouter()
+	withRoleRegisterRouter.HandleFunc(
+		"/{roleName}",
+		h.authHandler.WithActionPermissionAuth(
+			h.registerWithRole,
+			h.db,
+			[]types.Action{types.ActionCanAddUserWithRole},
+		),
+	).Methods("PATCH")
 
 	authRouter := router.Methods("POST").Subrouter()
 	authRouter.HandleFunc("/login", h.login).Methods("POST")
@@ -98,50 +106,63 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	phoneNumberHandlerRouter.HandleFunc("/{phoneId}", h.deletePhoneNumber).Methods("DELETE")
 }
 
-func (h *Handler) register(roleName string) func(w http.ResponseWriter, r *http.Request) {
-	var callback func(w http.ResponseWriter, r *http.Request)
-	callback = func(w http.ResponseWriter, r *http.Request) {
-		var user types.CreateUserPayload
-		err := utils.ParseRequestPayload(r, &user)
-		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
-			return
-		}
-
-		hashedPassword, err := auth.HashPassword(user.Password)
-		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
-			return
-		}
-
-		role, err := h.db.GetRoleByName(roleName)
-		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
-			return
-		}
-
-		if role.Name == types.DefaultRoleSuperAdmin.String() {
-			utils.WriteErrorInResponse(w, http.StatusForbidden, types.ErrCannotRegisterThisUser)
-			return
-		}
-
-		createdUser, err := h.db.CreateUser(types.CreateUserPayload{
-			Username:  strings.ToLower(user.Username),
-			Email:     strings.ToLower(user.Email),
-			FullName:  user.FullName,
-			BirthDate: user.BirthDate,
-			Password:  hashedPassword,
-			RoleId:    role.Id,
-		})
-		if err != nil {
-			utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
-			return
-		}
-
-		utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"userId": createdUser}, nil)
+func (h *Handler) register(roleName string, w *http.ResponseWriter, r **http.Request) {
+	var user types.CreateUserPayload
+	err := utils.ParseRequestPayload(*r, &user)
+	if err != nil {
+		utils.WriteErrorInResponse(*w, http.StatusBadRequest, err)
+		return
 	}
 
-	return callback
+	hashedPassword, err := auth.HashPassword(user.Password)
+	if err != nil {
+		utils.WriteErrorInResponse(*w, http.StatusInternalServerError, err)
+		return
+	}
+
+	role, err := h.db.GetRoleByName(roleName)
+	if err != nil {
+		utils.WriteErrorInResponse(*w, http.StatusBadRequest, err)
+		return
+	}
+
+	if role.Name == types.DefaultRoleSuperAdmin.String() {
+		utils.WriteErrorInResponse(*w, http.StatusForbidden, types.ErrCannotRegisterThisUser)
+		return
+	}
+
+	createdUser, err := h.db.CreateUser(types.CreateUserPayload{
+		Username:  strings.ToLower(user.Username),
+		Email:     strings.ToLower(user.Email),
+		FullName:  user.FullName,
+		BirthDate: user.BirthDate,
+		Password:  hashedPassword,
+		RoleId:    role.Id,
+	})
+	if err != nil {
+		utils.WriteErrorInResponse(*w, http.StatusBadRequest, err)
+		return
+	}
+
+	utils.WriteJSONInResponse(*w, http.StatusCreated, map[string]int{"userId": createdUser}, nil)
+}
+
+func (h *Handler) registerWithRole(w http.ResponseWriter, r *http.Request) {
+	roleName, err := utils.ParseStringURLParam("roleName", mux.Vars(r))
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	h.register(roleName, &w, &r)
+}
+
+func (h *Handler) registerCustomer(w http.ResponseWriter, r *http.Request) {
+	h.register(types.DefaultRoleCustomer.String(), &w, &r)
+}
+
+func (h *Handler) registerVendor(w http.ResponseWriter, r *http.Request) {
+	h.register(types.DefaultRoleVendor.String(), &w, &r)
 }
 
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
