@@ -543,6 +543,19 @@ func buildOrderSearchQuery(
 		argsPos++
 	}
 
+	if query.StoreId != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      EXISTS (
+				SELECT 1 FROM order_product_variants opv
+				JOIN product_variants pv ON pv.id = opv.variant_id
+				JOIN store_owned_products sop ON sop.product_id = pv.product_id
+				WHERE sop.store_id = $%d
+			)
+    `, argsPos))
+		args = append(args, *query.StoreId)
+		argsPos++
+	}
+
 	if query.CreatedAtLessThan != nil {
 		clauses = append(clauses, fmt.Sprintf("o.created_at <= $%d", argsPos))
 		args = append(args, *query.CreatedAtLessThan)

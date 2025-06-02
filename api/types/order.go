@@ -88,6 +88,7 @@ type CreateOrderPayload struct {
 
 type OrderSearchQuery struct {
 	UserId            *int                `json:"userId"`
+	StoreId           *int                `json:"storeId"`
 	PaymentStatus     *OrderPaymentStatus `json:"paymentStatus"`
 	ShipmentStatus    *OrderPaymentStatus `json:"shipmentStatus"`
 	CreatedAtLessThan *time.Time          `json:"createdAtLessThan"`
