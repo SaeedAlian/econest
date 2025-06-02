@@ -690,6 +690,14 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 	s.Require().NoError(err)
 	s.Require().Greater(storeId, 0)
 
+	store2Id, err := s.manager.CreateStore(types.CreateStorePayload{
+		Name:        "STORE 2",
+		Description: "Test Store 2",
+		OwnerId:     userId2,
+	})
+	s.Require().NoError(err)
+	s.Require().Greater(store2Id, 1)
+
 	storePhoneNumberId, err := s.manager.CreateStorePhoneNumber(types.CreateStorePhoneNumberPayload{
 		CountryCode: "+98",
 		Number:      "9212229292",
@@ -711,7 +719,7 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 
 	stores, err := s.manager.GetStores(types.StoreSearchQuery{})
 	s.Require().NoError(err)
-	s.Require().Len(stores, 1)
+	s.Require().Len(stores, 2)
 
 	storeWithSettings, err := s.manager.GetStoreWithSettingsById(storeId)
 	s.Require().NoError(err)
@@ -1327,6 +1335,18 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 	s.Require().NotNil(user2Wallet)
 	s.Require().Equal(userId2, user2Wallet.UserId)
 	s.Require().Less(user2Wallet.Balance, float64(10000))
+
+	store1Orders, err := s.manager.GetOrders(types.OrderSearchQuery{
+		StoreId: &storeId,
+	})
+	s.Require().NoError(err)
+	s.Require().Len(store1Orders, 2)
+
+	store2Orders, err := s.manager.GetOrders(types.OrderSearchQuery{
+		StoreId: &store2Id,
+	})
+	s.Require().NoError(err)
+	s.Require().Len(store2Orders, 0)
 
 	newProductId, err := s.manager.CreateProduct(types.CreateProductPayload{
 		Base: types.CreateProductBasePayload{
