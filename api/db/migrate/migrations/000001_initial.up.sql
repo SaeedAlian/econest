@@ -11,7 +11,7 @@ CREATE TYPE "actions" AS ENUM (
 	'can_create_order',
 	'can_delete_order',
 	'can_update_order_shipment',
-  'can_approve_order_payment',
+  'can_complete_order_payment',
   'can_cancel_order_payment',
 
 	'can_add_role',
