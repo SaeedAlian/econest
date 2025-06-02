@@ -10,6 +10,9 @@ run: build
 run-prod: build
 	@ENV="prod" ./bin/econestapi
 
+run-super-admin-cli: build
+	@ENV="devel" ./bin/econestapi --cli
+
 migration:
 	@migrate create -ext sql -dir db/migrate/migrations -seq $(filter-out $@,$(MAKECMDGOALS))
 
