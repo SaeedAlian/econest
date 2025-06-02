@@ -198,7 +198,7 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 	// get permission groups
 	pgroups, err := s.manager.GetPermissionGroups(types.PermissionGroupSearchQuery{})
 	s.Require().NoError(err)
-	s.Require().Equal(3, len(pgroups))
+	s.Require().Equal(16, len(pgroups))
 
 	// get permission groups with query
 	pgroups, err = s.manager.GetPermissionGroups(types.PermissionGroupSearchQuery{
@@ -278,7 +278,7 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 		types.PermissionGroupSearchQuery{},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(3, len(pgroupsWithPermissions))
+	s.Require().Equal(16, len(pgroupsWithPermissions))
 
 	found = false
 
@@ -297,11 +297,11 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 		[]types.Resource{"roles_and_permissions", "wallet_transactions_full_access"},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(3, len(roles))
+	s.Require().Equal(5, len(roles))
 
 	roles, err = s.manager.GetRolesBasedOnResourcePermission([]types.Resource{"users_full_access"})
 	s.Require().NoError(err)
-	s.Require().Equal(0, len(roles))
+	s.Require().Equal(1, len(roles))
 
 	roles, err = s.manager.GetRolesBasedOnResourcePermission(
 		[]types.Resource{"can_delete_product_comment"},
@@ -311,11 +311,11 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 	// get roles based on action permission
 	roles, err = s.manager.GetRolesBasedOnActionPermission([]types.Action{"can_ban_user"})
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(roles))
+	s.Require().Equal(2, len(roles))
 
 	roles, err = s.manager.GetRolesBasedOnActionPermission([]types.Action{"can_create_order"})
 	s.Require().NoError(err)
-	s.Require().Equal(0, len(roles))
+	s.Require().Equal(1, len(roles))
 
 	roles, err = s.manager.GetRolesBasedOnActionPermission([]types.Action{"users_full_access"})
 	s.Require().Error(err)
@@ -325,13 +325,13 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 		[]types.Resource{"roles_and_permissions"},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(pgroups))
+	s.Require().Equal(2, len(pgroups))
 
 	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission(
 		[]types.Resource{"users_full_access"},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(0, len(pgroups))
+	s.Require().Equal(1, len(pgroups))
 
 	pgroups, err = s.manager.GetPermissionGroupsBasedOnResourcePermission(
 		[]types.Resource{"can_delete_product_comment"},
@@ -343,13 +343,13 @@ func (s *DBIntegrationTestSuite) TestOperations() {
 		[]types.Action{"can_ban_user"},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(1, len(pgroups))
+	s.Require().Equal(2, len(pgroups))
 
 	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission(
 		[]types.Action{"can_create_order"},
 	)
 	s.Require().NoError(err)
-	s.Require().Equal(0, len(pgroups))
+	s.Require().Equal(1, len(pgroups))
 
 	pgroups, err = s.manager.GetPermissionGroupsBasedOnActionPermission(
 		[]types.Action{"users_full_access"},

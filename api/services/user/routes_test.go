@@ -145,8 +145,8 @@ func TestUserService(t *testing.T) {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/login", handler.login).Methods("POST")
-	router.HandleFunc("/register/customer", handler.register("Customer")).Methods("POST")
-	router.HandleFunc("/register/vendor", handler.register("Vendor")).Methods("POST")
+	router.HandleFunc("/register/customer", handler.registerCustomer).Methods("POST")
+	router.HandleFunc("/register/vendor", handler.registerVendor).Methods("POST")
 	router.HandleFunc("/refresh", handler.refresh).Methods("POST")
 
 	withAuthRouter := router.Methods("GET", "POST", "PATCH", "DELETE").Subrouter()
