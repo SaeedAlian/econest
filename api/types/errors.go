@@ -118,6 +118,7 @@ var (
 	ErrCannotAccessWalletTransaction = errors.New("you cannot access this wallet transaction")
 	ErrCannotBanThisUser             = errors.New("you cannot ban this user")
 	ErrCannotAccessStore             = errors.New("you cannot access this store")
+	ErrCannotAccessOrder             = errors.New("you cannot access this order")
 	ErrCannotAccessComment           = errors.New("you cannot access this comment")
 	ErrTransactionIsNotForWallet     = errors.New(
 		"this transaction is not for the provided user wallet",

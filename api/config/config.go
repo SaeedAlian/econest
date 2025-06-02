@@ -37,6 +37,7 @@ type Config struct {
 	MaxProductCommentsInPage              int32
 	MaxProductCategoriesInPage            int32
 	MaxStoresInPage                       int32
+	MaxOrdersInPage                       int32
 	MaxWalletTransactionsInPage           int32
 	SMTPHost                              string
 	SMTPPort                              string
@@ -112,6 +113,7 @@ func InitConfig() Config {
 		MaxProductAttributesInPage:            int32(15),
 		MaxProductCommentsInPage:              int32(5),
 		MaxProductCategoriesInPage:            int32(15),
+		MaxOrdersInPage:                       int32(10),
 		SMTPHost:                              getEnv("SMTP_HOST", ""),
 		SMTPPort:                              getEnv("SMTP_PORT", ""),
 		SMTPEmail:                             getEnv("SMTP_MAIL", ""),
@@ -134,7 +136,7 @@ func InitConfig() Config {
 }
 
 func getEnv(key string, fallback string) string {
-	if val, ok := os.LookupEnv(key); ok {
+	if val, ok := os.LookupEnv(key); ok && len(val) > 0 {
 		return val
 	}
 
@@ -142,7 +144,7 @@ func getEnv(key string, fallback string) string {
 }
 
 func getEnvAsInt(key string, fallback int64) int64 {
-	if val, ok := os.LookupEnv(key); ok {
+	if val, ok := os.LookupEnv(key); ok && len(val) > 0 {
 		v, err := strconv.ParseInt(val, 10, 64)
 		if err != nil {
 			return fallback
@@ -155,7 +157,7 @@ func getEnvAsInt(key string, fallback int64) int64 {
 }
 
 func getEnvAsFloat64(key string, fallback float64) float64 {
-	if val, ok := os.LookupEnv(key); ok {
+	if val, ok := os.LookupEnv(key); ok && len(val) > 0 {
 		v, err := strconv.ParseFloat(val, 64)
 		if err != nil {
 			return fallback
