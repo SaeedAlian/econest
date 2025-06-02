@@ -409,6 +409,37 @@ func (m *Manager) GetOrderWithFullInfoById(id int) (*types.OrderWithFullInfo, er
 	return order, nil
 }
 
+func (m *Manager) IsStoreHasParticipationInOrder(orderId int, storeId int) (bool, error) {
+	rows, err := m.db.Query(`
+		SELECT o.id FROM orders o 
+		WHERE o.id = $1 AND EXISTS (
+			SELECT 1 FROM order_product_variants opv
+			JOIN product_variants pv ON pv.id = opv.variant_id
+			JOIN store_owned_products sop ON sop.product_id = pv.product_id
+			WHERE sop.store_id = $2
+		)
+	`, orderId, storeId)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	id := -1
+
+	for rows.Next() {
+		err := rows.Scan(&id)
+		if err != nil {
+			return false, err
+		}
+	}
+
+	if id == -1 {
+		return false, nil
+	}
+
+	return true, nil
+}
+
 func (m *Manager) UpdateOrderShipment(
 	orderId int,
 	p types.UpdateOrderShipmentPayload,
