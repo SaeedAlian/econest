@@ -11,6 +11,7 @@ import (
 
 	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
+	_ "github.com/SaeedAlian/econest/api/docs"
 	"github.com/SaeedAlian/econest/api/services/auth"
 	"github.com/SaeedAlian/econest/api/services/product"
 	"github.com/SaeedAlian/econest/api/services/smtp"
