@@ -33,81 +33,10 @@ func main() {
 	initStorage(db)
 
 	if *cliMode {
-		reader := bufio.NewReader(os.Stdin)
-		dbManager := db_manager.NewManager(db)
-
-		menu := lib.NewMenu(reader, dbManager, map[int]lib.MenuPage{
-			1: {
-				Label: "Home",
-				Options: []lib.MenuPageOption{
-					{
-						Id:    1,
-						Label: "Create Admin User",
-						OnClick: func(m *lib.Menu) error {
-							err := createAdminUser(m, dbManager)
-							if err != nil {
-								return err
-							}
-							return nil
-						},
-					},
-					{
-						Id:    2,
-						Label: "Change Super Admin Password",
-						OnClick: func(m *lib.Menu) error {
-							err := changeSuperAdminPassword(m, dbManager)
-							if err != nil {
-								return err
-							}
-							return nil
-						},
-					},
-					{
-						Id:    3,
-						Label: "Exit",
-						OnClick: func(m *lib.Menu) error {
-							m.Exit()
-							return nil
-						},
-					},
-				},
-			},
-		})
-
-		superAdminRole, err := dbManager.GetRoleByName(types.DefaultRoleSuperAdmin.String())
+		err := runCli(db)
 		if err != nil {
 			panic(err)
 		}
-
-		superAdmins, err := dbManager.GetUsers(types.UserSearchQuery{
-			RoleId: &superAdminRole.Id,
-		})
-		if err != nil {
-			panic(err)
-		}
-
-		if len(superAdmins) > 1 {
-			panic(types.ErrDBHasMoreThanOneSuperAdmin)
-		}
-
-		if len(superAdmins) == 0 {
-			fmt.Println("No super admin found. Creating initial super admin account...")
-			err := createSuperAdmin(menu, dbManager)
-			if err != nil {
-				panic(err)
-			}
-		} else {
-			err := cliLogin(menu, dbManager)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		err = menu.Display()
-		if err != nil {
-			panic(err)
-		}
-
 		return
 	}
 
@@ -151,6 +80,85 @@ func rotateKeys(keyServer *auth.KeyServer) {
 	}
 
 	log.Println("keys rotated")
+}
+
+func runCli(db *sql.DB) error {
+	reader := bufio.NewReader(os.Stdin)
+	dbManager := db_manager.NewManager(db)
+
+	menu := lib.NewMenu(reader, dbManager, map[int]lib.MenuPage{
+		1: {
+			Label: "Home",
+			Options: []lib.MenuPageOption{
+				{
+					Id:    1,
+					Label: "Create Admin User",
+					OnClick: func(m *lib.Menu) error {
+						err := createAdminUser(m, dbManager)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				},
+				{
+					Id:    2,
+					Label: "Change Super Admin Password",
+					OnClick: func(m *lib.Menu) error {
+						err := changeSuperAdminPassword(m, dbManager)
+						if err != nil {
+							return err
+						}
+						return nil
+					},
+				},
+				{
+					Id:    3,
+					Label: "Exit",
+					OnClick: func(m *lib.Menu) error {
+						m.Exit()
+						return nil
+					},
+				},
+			},
+		},
+	})
+
+	superAdminRole, err := dbManager.GetRoleByName(types.DefaultRoleSuperAdmin.String())
+	if err != nil {
+		return err
+	}
+
+	superAdmins, err := dbManager.GetUsers(types.UserSearchQuery{
+		RoleId: &superAdminRole.Id,
+	})
+	if err != nil {
+		return err
+	}
+
+	if len(superAdmins) > 1 {
+		return types.ErrDBHasMoreThanOneSuperAdmin
+	}
+
+	if len(superAdmins) == 0 {
+		fmt.Println("No super admin found. Creating initial super admin account...")
+		err := createSuperAdmin(menu, dbManager)
+		if err != nil {
+			return err
+		}
+	} else {
+		err := cliLogin(menu, dbManager)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = menu.Display()
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func createSuperAdmin(m *lib.Menu, db *db_manager.Manager) error {
