@@ -7,6 +7,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
+	"github.com/swaggo/http-swagger"
 
 	"github.com/SaeedAlian/econest/api/config"
 	db_manager "github.com/SaeedAlian/econest/api/db/manager"
@@ -34,6 +35,15 @@ func NewServer(addr string, db *sql.DB, keyServer *auth.KeyServer) *Server {
 
 func (s *Server) Run() error {
 	router := mux.NewRouter()
+
+	router.PathPrefix("/swagger/").Handler(httpSwagger.Handler(
+		httpSwagger.URL(
+			"http://localhost:5000/swagger/doc.json",
+		),
+		httpSwagger.DeepLinking(true),
+		httpSwagger.DocExpansion("none"),
+		httpSwagger.DomID("swagger-ui"),
+	)).Methods("GET")
 
 	userSubrouter := router.PathPrefix("/user").Subrouter()
 	storeSubrouter := router.PathPrefix("/store").Subrouter()
