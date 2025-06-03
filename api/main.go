@@ -22,6 +22,12 @@ import (
 
 var cliMode = flag.Bool("cli", false, "Run in CLI mode")
 
+// @title           EcoNest API
+// @version         0.1.0 (BETA)
+// @description     This is the backend API for EcoNest, an e-commerce platform.
+
+// @host      localhost:5000
+// @BasePath  /
 func main() {
 	flag.Parse()
 
