@@ -110,6 +110,20 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 }
 
+// register godoc
+// @Summary      Register a new store
+// @Description  Creates a new store with the authenticated user as owner. Requires permission to add stores.
+// @Tags         store
+// @Accept       json
+// @Produce      json
+// @Param        store  body      types.CreateStorePayload  true  "Store details"
+// @Success      201    {object}  types.NewStoreResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      403    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/register [post]
 func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	var store types.CreateStorePayload
 	err := utils.ParseRequestPayload(r, &store)
@@ -159,6 +173,22 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// createAddress godoc
+// @Summary      Create a new store address
+// @Description  Creates a new address for the specified store. Requires permission to update stores.
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        storeId  path      int                             true  "Store ID"
+// @Param        address  body      types.CreateStoreAddressPayload  true  "Address details"
+// @Success      201      {object}  types.NewAddressResponse
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/address/{storeId} [post]
 func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -222,6 +252,22 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// createPhoneNumber godoc
+// @Summary      Create a new store phone number
+// @Description  Creates a new phone number for the specified store. Requires permission to update stores.
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        storeId  path      int                               true  "Store ID"
+// @Param        phone    body      types.CreateStorePhoneNumberPayload  true  "Phone number details"
+// @Success      201      {object}  types.NewPhoneNumberResponse
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/phonenumber/{storeId} [post]
 func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -282,6 +328,22 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// getMyStoreAddresses godoc
+// @Summary      Get current user's store addresses
+// @Description  Returns all addresses belonging to the specified store owned by current user with optional filters
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        storeId     path      int     true   "Store ID"
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Success      200         {array}   types.StoreAddress
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      403         {object}  types.HTTPError
+// @Failure      404         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/address/me/{storeId} [get]
 func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -354,6 +416,23 @@ func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, addresses, nil)
 }
 
+// getMyStorePhoneNumbers godoc
+// @Summary      Get current user's store phone numbers
+// @Description  Returns all phone numbers belonging to the specified store owned by current user with optional filters
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        storeId     path      int     true   "Store ID"
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Param        verified    query     string  false  "Filter by verification status (verified/unverified)"
+// @Success      200         {array}   types.StorePhoneNumber
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      403         {object}  types.HTTPError
+// @Failure      404         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/phonenumber/me/{storeId} [get]
 func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -438,6 +517,22 @@ func (h *Handler) getMyStorePhoneNumbers(w http.ResponseWriter, r *http.Request)
 	utils.WriteJSONInResponse(w, http.StatusOK, phones, nil)
 }
 
+// updateAddress godoc
+// @Summary      Update a store address
+// @Description  Updates an existing address belonging to the specified store. Requires permission to update stores.
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        addrId  path      int                             true  "Address ID"
+// @Param        address body      types.UpdateStoreAddressPayload  true  "Address update payload"
+// @Success      200			"Address updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/address/{addrId} [patch]
 func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
@@ -510,6 +605,22 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updatePhoneNumber godoc
+// @Summary      Update a store phone number
+// @Description  Updates an existing phone number belonging to the specified store. Requires permission to update stores.
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        phoneId  path      int                               true  "Phone number ID"
+// @Param        phone    body      types.UpdateStorePhoneNumberPayload  true  "Phone number update payload"
+// @Success      200			"Phone number updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/phonenumber/{phoneId} [patch]
 func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
@@ -579,6 +690,21 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteAddress godoc
+// @Summary      Delete a store address
+// @Description  Deletes an existing address belonging to the specified store. Requires permission to update stores.
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        addrId  path      int  true  "Address ID"
+// @Success      200			"Address deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/address/{addrId} [delete]
 func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
@@ -637,6 +763,21 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deletePhoneNumber godoc
+// @Summary      Delete a store phone number
+// @Description  Deletes an existing phone number belonging to the specified store. Requires permission to update stores.
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        phoneId  path      int  true  "Phone number ID"
+// @Success      200			"Phone number deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/phonenumber/{phoneId} [delete]
 func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
@@ -695,6 +836,20 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// getStoreAddresses godoc
+// @Summary      Get store addresses
+// @Description  Returns all addresses belonging to the specified store with optional filters. Response fields are filtered based on store privacy settings and requester's permissions.
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        storeId     path      int     true   "Store ID"
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Success      200         {array}   types.StoreAddress
+// @Failure      400         {object}  types.HTTPError
+// @Failure      404         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/address/{storeId} [get]
 func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -772,6 +927,21 @@ func (h *Handler) getStoreAddresses(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredAddresses, nil)
 }
 
+// getStorePhoneNumbers godoc
+// @Summary      Get store phone numbers
+// @Description  Returns all phone numbers belonging to the specified store with optional filters. Response fields are filtered based on store privacy settings and requester's permissions.
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        storeId     path      int     true   "Store ID"
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Param        verified    query     string  false  "Filter by verification status (verified/unverified)"
+// @Success      200         {array}   types.StorePhoneNumber
+// @Failure      400         {object}  types.HTTPError
+// @Failure      404         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/phonenumber/{storeId} [get]
 func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -862,6 +1032,19 @@ func (h *Handler) getStorePhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredPhones, nil)
 }
 
+// getStores godoc
+// @Summary      Get stores list
+// @Description  Retrieves a paginated list of stores with optional filtering. The response fields are filtered based on store privacy settings and requester's permissions.
+// @Tags         store
+// @Produce      json
+// @Param        name   query     string  false  "Filter stores by name (partial match)"
+// @Param        owner  query     int     false  "Filter stores by owner ID (requires permissions)"
+// @Param        p      query     int     false  "Page number (default: 1)"
+// @Success      200    {array}   types.Store     "List of stores with filtered fields"
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store [get]
 func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -933,6 +1116,18 @@ func (h *Handler) getStores(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredStores, nil)
 }
 
+// getStoresPages godoc
+// @Summary      Get total stores pages count
+// @Description  Calculates the total number of pages available for stores listing based on filters and pagination settings
+// @Tags         store
+// @Produce      json
+// @Param        name   query     string  false  "Filter stores by name (partial match)"
+// @Param        owner  query     int     false  "Filter stores by owner ID (requires permissions)"
+// @Success      200    {object}  types.TotalPageCountResponse  "Returns total page count"
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/pages [get]
 func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -986,6 +1181,18 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getStore godoc
+// @Summary      Get store details
+// @Description  Returns details for a specific store. The response fields are filtered based on store privacy settings and requester's permissions.
+// @Tags         store
+// @Produce      json
+// @Param        storeId  path      int     true  "Store ID"
+// @Success      200      {object}  types.Store
+// @Failure      400      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/{storeId} [get]
 func (h *Handler) getStore(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -1033,6 +1240,18 @@ func (h *Handler) getStore(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredStore, nil)
 }
 
+// getMyStores godoc
+// @Summary      Get current user's stores
+// @Description  Returns all stores owned by the current user with optional name filtering
+// @Tags         store
+// @Produce      json
+// @Param        name  query     string  false  "Filter stores by name (partial match)"
+// @Success      200   {array}   types.Store
+// @Failure      400   {object}  types.HTTPError
+// @Failure      401   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/me [get]
 func (h *Handler) getMyStores(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1084,6 +1303,20 @@ func (h *Handler) getMyStores(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredStores, nil)
 }
 
+// getMyStore godoc
+// @Summary      Get current user's store details
+// @Description  Returns details for a specific store owned by the current user
+// @Tags         store
+// @Produce      json
+// @Param        storeId  path      int     true  "Store ID"
+// @Success      200      {object}  types.Store
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/me/{storeId} [get]
 func (h *Handler) getMyStore(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1129,6 +1362,22 @@ func (h *Handler) getMyStore(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredStore, nil)
 }
 
+// updateStore godoc
+// @Summary      Update store details
+// @Description  Updates details for a specific store. Requires permission to update stores.
+// @Tags         store
+// @Accept       json
+// @Produce      json
+// @Param        storeId  path      int                       true  "Store ID"
+// @Param        store    body      types.UpdateStorePayload  true  "Store update payload"
+// @Success      200      "Store updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/{storeId} [patch]
 func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateStorePayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1202,6 +1451,22 @@ func (h *Handler) updateStore(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updateSettings godoc
+// @Summary      Update store settings
+// @Description  Updates privacy settings for a specific store. Requires permission to update stores.
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        storeId  path      int                               true  "Store ID"
+// @Param        settings body      types.UpdateStoreSettingsPayload  true  "Settings update payload"
+// @Success      200      "Store settings updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/settings/{storeId} [patch]
 func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateStoreSettingsPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1256,6 +1521,18 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// getStoreSettings godoc
+// @Summary      Get store settings
+// @Description  Returns the settings for a specific store. Response fields are filtered based on privacy settings.
+// @Tags         settings
+// @Produce      json
+// @Param        storeId  path      int  true  "Store ID"
+// @Success      200      {object}  types.StoreSettings
+// @Failure      400      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/settings/{storeId} [get]
 func (h *Handler) getStoreSettings(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -1281,6 +1558,20 @@ func (h *Handler) getStoreSettings(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredSettings, nil)
 }
 
+// getMyStoreSettings godoc
+// @Summary      Get current user's store settings
+// @Description  Returns all settings for a store owned by the current user (includes private settings)
+// @Tags         settings
+// @Produce      json
+// @Param        storeId  path      int  true  "Store ID"
+// @Success      200      {object}  types.StoreSettings
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/settings/me/{storeId} [get]
 func (h *Handler) getMyStoreSettings(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -1337,6 +1628,20 @@ func (h *Handler) getMyStoreSettings(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, settingsRes, nil)
 }
 
+// deleteStore godoc
+// @Summary      Delete a store
+// @Description  Permanently deletes a store and all its associated data. Requires permission to delete stores.
+// @Tags         store
+// @Produce      json
+// @Param        storeId  path      int  true  "Store ID"
+// @Success      200      "Store deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /store/{storeId} [delete]
 func (h *Handler) deleteStore(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 

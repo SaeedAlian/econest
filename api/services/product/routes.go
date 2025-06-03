@@ -188,6 +188,21 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 }
 
+// uploadProductImage godoc
+// @Summary      Upload product image
+// @Description  Uploads an image for a product (requires authentication and permissions). Max size 3MB, allowed types: jpeg, png, jpg, webp.
+// @Tags         product
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        image  formData  file    true   "Product image file"
+// @Success      200    {object}  types.FileUploadResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      403    {object}  types.HTTPError
+// @Failure      413    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/image [post]
 func (h *Handler) uploadProductImage() http.HandlerFunc {
 	productImageUploadHandler := utils.FileUploadHandler(
 		"image",
@@ -199,6 +214,21 @@ func (h *Handler) uploadProductImage() http.HandlerFunc {
 	return productImageUploadHandler
 }
 
+// uploadProductCategoryImage godoc
+// @Summary      Upload product category image
+// @Description  Uploads an image for a product category (requires authentication and permissions). Max size 3MB, allowed types: jpeg, png, jpg, webp.
+// @Tags         product
+// @Accept       multipart/form-data
+// @Produce      json
+// @Param        image  formData  file    true   "Category image file"
+// @Success      200    {object}  types.FileUploadResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      403    {object}  types.HTTPError
+// @Failure      413    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/category/image [post]
 func (h *Handler) uploadProductCategoryImage() http.HandlerFunc {
 	productCategoryImageUploadHandler := utils.FileUploadHandler(
 		"image",
@@ -210,16 +240,56 @@ func (h *Handler) uploadProductCategoryImage() http.HandlerFunc {
 	return productCategoryImageUploadHandler
 }
 
+// getProductImage godoc
+// @Summary      Get product image
+// @Description  Retrieves a product image file by filename. Supported formats: jpeg, png, jpg, webp.
+// @Tags         product
+// @Produce      image/jpeg,image/png,image/jpg,image/webp
+// @Param        filename  path      string  true  "Image filename"
+// @Success      200       {file}    binary  "Image file"
+// @Failure      400       {object}  types.HTTPError  "Invalid filename"
+// @Failure      404       {object}  types.HTTPError  "File not found"
+// @Failure      500       {object}  types.HTTPError  "Internal server error"
+// @Router       /product/image/{filename} [get]
 func (h *Handler) getProductImage(w http.ResponseWriter, r *http.Request) {
 	filename := mux.Vars(r)["filename"]
 	utils.CopyFileIntoResponse(h.productImageUploadDir, filename, w)
 }
 
+// getProductCategoryImage godoc
+// @Summary      Get product category image
+// @Description  Retrieves a product category image file by filename. Supported formats: jpeg, png, jpg, webp.
+// @Tags         product
+// @Produce      image/jpeg,image/png,image/jpg,image/webp
+// @Param        filename  path      string  true  "Image filename"
+// @Success      200       {file}    binary  "Image file"
+// @Failure      400       {object}  types.HTTPError  "Invalid filename"
+// @Failure      404       {object}  types.HTTPError  "File not found"
+// @Failure      500       {object}  types.HTTPError  "Internal server error"
+// @Router       /product/category/image/{filename} [get]
 func (h *Handler) getProductCategoryImage(w http.ResponseWriter, r *http.Request) {
 	filename := mux.Vars(r)["filename"]
 	utils.CopyFileIntoResponse(h.productCategoryImageUploadDir, filename, w)
 }
 
+// getProducts godoc
+// @Summary      Get products
+// @Description  Retrieves a paginated list of products with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        k      query     string  false  "Search keyword"
+// @Param        minq   query     int     false  "Minimum quantity filter"
+// @Param        offr   query     bool    false  "Filter products with offers"
+// @Param        cat    query     int     false  "Filter by category ID"
+// @Param        tag    query     int     false  "Filter by tag ID"
+// @Param        pmt    query     int     false  "Filter products with price more than value"
+// @Param        plt    query     int     false  "Filter products with price less than value"
+// @Param        store  query     int     false  "Filter by store ID"
+// @Param        p      query     int     false  "Page number (default: 1)"
+// @Success      200    {array}   types.Product
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product [get]
 func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductSearchQuery{}
 	var page *int = nil
@@ -261,6 +331,23 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, products, nil)
 }
 
+// getProductsPages godoc
+// @Summary      Get product page count
+// @Description  Returns the total number of pages available for products based on filters
+// @Tags         product
+// @Produce      json
+// @Param        k      query     string  false  "Search keyword"
+// @Param        minq   query     int     false  "Minimum quantity filter"
+// @Param        offr   query     bool    false  "Filter products with offers"
+// @Param        cat    query     int     false  "Filter by category ID"
+// @Param        tag    query     int     false  "Filter by tag ID"
+// @Param        pmt    query     int     false  "Filter products with price more than value"
+// @Param        plt    query     int     false  "Filter products with price less than value"
+// @Param        store  query     int     false  "Filter by store ID"
+// @Success      200    {object}  types.TotalPageCountResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product/pages [get]
 func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductSearchQuery{}
 
@@ -296,6 +383,17 @@ func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getProduct godoc
+// @Summary      Get a product
+// @Description  Retrieves details of a specific product by ID
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        {object}  types.Product
+// @Failure      400        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/{productId} [get]
 func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
 	if err != nil {
@@ -317,6 +415,17 @@ func (h *Handler) getProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, product, nil)
 }
 
+// getProductExtended godoc
+// @Summary      Get extended product details
+// @Description  Retrieves extended details of a specific product by ID including additional information
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        {object}  types.ProductExtended
+// @Failure      400        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/{productId}/extended [get]
 func (h *Handler) getProductExtended(w http.ResponseWriter, r *http.Request) {
 	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
 	if err != nil {
@@ -338,6 +447,16 @@ func (h *Handler) getProductExtended(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, product, nil)
 }
 
+// getProductInventory godoc
+// @Summary      Get product inventory
+// @Description  Retrieves inventory information for a specific product by ID
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        {object}  types.ProductInventoryResponse  "Returns object with total and inStock counts"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/{productId}/inventory [get]
 func (h *Handler) getProductInventory(w http.ResponseWriter, r *http.Request) {
 	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
 	if err != nil {
@@ -357,6 +476,18 @@ func (h *Handler) getProductInventory(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getProductCategories godoc
+// @Summary      Get product categories
+// @Description  Retrieves a paginated list of product categories with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        name    query     string  false  "Filter by category name"
+// @Param        parent  query     int     false  "Filter by parent category ID"
+// @Param        p       query     int     false  "Page number (default: 1)"
+// @Success      200     {array}   types.ProductCategory
+// @Failure      400     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Router       /product/category [get]
 func (h *Handler) getProductCategories(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductCategorySearchQuery{}
 	var page *int = nil
@@ -392,6 +523,18 @@ func (h *Handler) getProductCategories(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, cats, nil)
 }
 
+// getProductCategoriesWithParents godoc
+// @Summary      Get product categories with parent info
+// @Description  Retrieves a paginated list of product categories including parent category information
+// @Tags         product
+// @Produce      json
+// @Param        name    query     string  false  "Filter by category name"
+// @Param        parent  query     int     false  "Filter by parent category ID"
+// @Param        p       query     int     false  "Page number (default: 1)"
+// @Success      200     {array}   types.ProductCategoryWithParents
+// @Failure      400     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Router       /product/category/full [get]
 func (h *Handler) getProductCategoriesWithParents(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductCategorySearchQuery{}
 	var page *int = nil
@@ -427,6 +570,17 @@ func (h *Handler) getProductCategoriesWithParents(w http.ResponseWriter, r *http
 	utils.WriteJSONInResponse(w, http.StatusOK, cats, nil)
 }
 
+// getProductCategoriesPages godoc
+// @Summary      Get product category page count
+// @Description  Returns the total number of pages available for product categories based on filters
+// @Tags         product
+// @Produce      json
+// @Param        name    query     string  false  "Filter by category name"
+// @Param        parent  query     int     false  "Filter by parent category ID"
+// @Success      200     {object}  types.TotalPageCountResponse
+// @Failure      400     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Router       /product/category/pages [get]
 func (h *Handler) getProductCategoriesPages(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductCategorySearchQuery{}
 
@@ -456,6 +610,17 @@ func (h *Handler) getProductCategoriesPages(w http.ResponseWriter, r *http.Reque
 	}, nil)
 }
 
+// getProductCategory godoc
+// @Summary      Get a product category
+// @Description  Retrieves details of a specific product category by ID
+// @Tags         product
+// @Produce      json
+// @Param        categoryId  path      int  true  "Category ID"
+// @Success      200         {object}  types.ProductCategory
+// @Failure      400         {object}  types.HTTPError
+// @Failure      404         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Router       /product/category/{categoryId} [get]
 func (h *Handler) getProductCategory(w http.ResponseWriter, r *http.Request) {
 	categoryId, err := utils.ParseIntURLParam("categoryId", mux.Vars(r))
 	if err != nil {
@@ -477,6 +642,18 @@ func (h *Handler) getProductCategory(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, cat, nil)
 }
 
+// getProductTags godoc
+// @Summary      Get product tags
+// @Description  Retrieves a paginated list of product tags with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        name     query     string  false  "Filter by tag name"
+// @Param        product  query     int     false  "Filter by product ID"
+// @Param        p        query     int     false  "Page number (default: 1)"
+// @Success      200      {array}   types.ProductTag
+// @Failure      400      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Router       /product/tag [get]
 func (h *Handler) getProductTags(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductTagSearchQuery{}
 	var page *int = nil
@@ -512,6 +689,17 @@ func (h *Handler) getProductTags(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, tags, nil)
 }
 
+// getProductTagsPages godoc
+// @Summary      Get product tags page count
+// @Description  Returns the total number of pages available for product tags based on filters
+// @Tags         product
+// @Produce      json
+// @Param        name     query     string  false  "Filter by tag name"
+// @Param        product  query     int     false  "Filter by product ID"
+// @Success      200      {object}  types.TotalPageCountResponse
+// @Failure      400      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Router       /product/tag/pages [get]
 func (h *Handler) getProductTagsPages(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductTagSearchQuery{}
 
@@ -541,6 +729,17 @@ func (h *Handler) getProductTagsPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getProductTag godoc
+// @Summary      Get a product tag
+// @Description  Retrieves details of a specific product tag by ID
+// @Tags         product
+// @Produce      json
+// @Param        tagId  path      int  true  "Tag ID"
+// @Success      200    {object}  types.ProductTag
+// @Failure      400    {object}  types.HTTPError
+// @Failure      404    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product/tag/{tagId} [get]
 func (h *Handler) getProductTag(w http.ResponseWriter, r *http.Request) {
 	tagId, err := utils.ParseIntURLParam("tagId", mux.Vars(r))
 	if err != nil {
@@ -562,6 +761,20 @@ func (h *Handler) getProductTag(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, tag, nil)
 }
 
+// getProductOffers godoc
+// @Summary      Get product offers
+// @Description  Retrieves a paginated list of product offers with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        dlt    query     int  false  "Filter offers with discount less than value"
+// @Param        dmt    query     int  false  "Filter offers with discount more than value"
+// @Param        exalt  query     int  false  "Filter offers expiring before timestamp"
+// @Param        examt  query     int  false  "Filter offers expiring after timestamp"
+// @Param        p      query     int  false  "Page number (default: 1)"
+// @Success      200    {array}   types.ProductOffer
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product/offer [get]
 func (h *Handler) getProductOffers(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductOfferSearchQuery{}
 	var page *int = nil
@@ -599,6 +812,19 @@ func (h *Handler) getProductOffers(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, offs, nil)
 }
 
+// getProductOffersPages godoc
+// @Summary      Get product offers page count
+// @Description  Returns the total number of pages available for product offers based on filters
+// @Tags         product
+// @Produce      json
+// @Param        dlt    query     int  false  "Filter offers with discount less than value"
+// @Param        dmt    query     int  false  "Filter offers with discount more than value"
+// @Param        exalt  query     int  false  "Filter offers expiring before timestamp"
+// @Param        examt  query     int  false  "Filter offers expiring after timestamp"
+// @Success      200    {object}  types.TotalPageCountResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product/offer/pages [get]
 func (h *Handler) getProductOffersPages(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductOfferSearchQuery{}
 
@@ -630,6 +856,17 @@ func (h *Handler) getProductOffersPages(w http.ResponseWriter, r *http.Request) 
 	}, nil)
 }
 
+// getProductOffer godoc
+// @Summary      Get a product offer
+// @Description  Retrieves details of a specific product offer by ID
+// @Tags         product
+// @Produce      json
+// @Param        offerId  path      int  true  "Offer ID"
+// @Success      200      {object}  types.ProductOffer
+// @Failure      400      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Router       /product/offer/{offerId} [get]
 func (h *Handler) getProductOffer(w http.ResponseWriter, r *http.Request) {
 	offerId, err := utils.ParseIntURLParam("offerId", mux.Vars(r))
 	if err != nil {
@@ -651,6 +888,17 @@ func (h *Handler) getProductOffer(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, off, nil)
 }
 
+// getProductOfferByProductId godoc
+// @Summary      Get product offer by product ID
+// @Description  Retrieves the offer for a specific product by product ID
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        {object}  types.ProductOffer
+// @Failure      400        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/offer/byproduct/{productId} [get]
 func (h *Handler) getProductOfferByProductId(w http.ResponseWriter, r *http.Request) {
 	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
 	if err != nil {
@@ -672,6 +920,17 @@ func (h *Handler) getProductOfferByProductId(w http.ResponseWriter, r *http.Requ
 	utils.WriteJSONInResponse(w, http.StatusOK, off, nil)
 }
 
+// getProductAttributes godoc
+// @Summary      Get product attributes
+// @Description  Retrieves a paginated list of product attributes with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        label  query     string  false  "Filter by attribute label"
+// @Param        p      query     int     false  "Page number (default: 1)"
+// @Success      200    {array}   types.ProductAttributeWithOptions
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product/attribute [get]
 func (h *Handler) getProductAttributes(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductAttributeSearchQuery{}
 	var page *int = nil
@@ -706,6 +965,16 @@ func (h *Handler) getProductAttributes(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, attrs, nil)
 }
 
+// getProductAttributesPages godoc
+// @Summary      Get product attributes page count
+// @Description  Returns the total number of pages available for product attributes based on filters
+// @Tags         product
+// @Produce      json
+// @Param        label  query     string  false  "Filter by attribute label"
+// @Success      200    {object}  types.TotalPageCountResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /product/attribute/pages [get]
 func (h *Handler) getProductAttributesPages(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductAttributeSearchQuery{}
 
@@ -734,6 +1003,17 @@ func (h *Handler) getProductAttributesPages(w http.ResponseWriter, r *http.Reque
 	}, nil)
 }
 
+// getProductAttribute godoc
+// @Summary      Get a product attribute
+// @Description  Retrieves details of a specific product attribute by ID including options
+// @Tags         product
+// @Produce      json
+// @Param        attributeId  path      int  true  "Attribute ID"
+// @Success      200          {object}  types.ProductAttributeWithOptions
+// @Failure      400          {object}  types.HTTPError
+// @Failure      404          {object}  types.HTTPError
+// @Failure      500          {object}  types.HTTPError
+// @Router       /product/attribute/{attributeId} [get]
 func (h *Handler) getProductAttribute(w http.ResponseWriter, r *http.Request) {
 	attributeId, err := utils.ParseIntURLParam("attributeId", mux.Vars(r))
 	if err != nil {
@@ -755,6 +1035,19 @@ func (h *Handler) getProductAttribute(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, attr, nil)
 }
 
+// getProductComments godoc
+// @Summary      Get product comments
+// @Description  Retrieves a paginated list of comments for a specific product with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int     true   "Product ID"
+// @Param        slt        query     int     false  "Filter comments with score less than value"
+// @Param        smt        query     int     false  "Filter comments with score more than value"
+// @Param        p          query     int     false  "Page number (default: 1)"
+// @Success      200        {array}   types.ProductComment
+// @Failure      400        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/comment/product/{productId} [get]
 func (h *Handler) getProductComments(w http.ResponseWriter, r *http.Request) {
 	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
 	if err != nil {
@@ -796,6 +1089,18 @@ func (h *Handler) getProductComments(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, comments, nil)
 }
 
+// getProductCommentsPages godoc
+// @Summary      Get product comments page count
+// @Description  Returns the total number of pages available for product comments based on filters
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int     true   "Product ID"
+// @Param        slt        query     int     false  "Filter comments with score less than value"
+// @Param        smt        query     int     false  "Filter comments with score more than value"
+// @Success      200        {object}  types.TotalPageCountResponse
+// @Failure      400        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/comment/product/{productId}/pages [get]
 func (h *Handler) getProductCommentsPages(w http.ResponseWriter, r *http.Request) {
 	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
 	if err != nil {
@@ -831,6 +1136,17 @@ func (h *Handler) getProductCommentsPages(w http.ResponseWriter, r *http.Request
 	}, nil)
 }
 
+// getProductComment godoc
+// @Summary      Get a product comment
+// @Description  Retrieves details of a specific product comment by ID
+// @Tags         product
+// @Produce      json
+// @Param        commentId  path      int  true  "Comment ID"
+// @Success      200        {object}  types.ProductComment
+// @Failure      400        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/comment/{commentId} [get]
 func (h *Handler) getProductComment(w http.ResponseWriter, r *http.Request) {
 	commentId, err := utils.ParseIntURLParam("commentId", mux.Vars(r))
 	if err != nil {
@@ -852,6 +1168,21 @@ func (h *Handler) getProductComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, comment, nil)
 }
 
+// createProduct godoc
+// @Summary      Create a product
+// @Description  Creates a new product with the provided details
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        product  body      types.CreateProductPayload  true  "Product details"
+// @Success      201      {object}  types.NewProductResponse
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product [post]
 func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateProductPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -930,6 +1261,22 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// updateProduct godoc
+// @Summary      Update a product
+// @Description  Updates an existing product with the provided details
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        productId  path      int                          true  "Product ID"
+// @Param        product    body      types.UpdateProductPayload   true  "Product update details"
+// @Success      200        "Product updated successfully"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/{productId} [patch]
 func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateProductPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1034,6 +1381,20 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// activeProduct godoc
+// @Summary      Activate a product
+// @Description  Sets a product's active status to true
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        "Product activated successfully"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/active/{productId} [patch]
 func (h *Handler) activeProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1085,6 +1446,20 @@ func (h *Handler) activeProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deactiveProduct godoc
+// @Summary      Deactivate a product
+// @Description  Sets a product's active status to false
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        "Product deactivated successfully"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/deactive/{productId} [patch]
 func (h *Handler) deactiveProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1136,6 +1511,20 @@ func (h *Handler) deactiveProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteProduct godoc
+// @Summary      Delete a product
+// @Description  Permanently deletes a product
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int  true  "Product ID"
+// @Success      200        "Product deleted successfully"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/{productId} [delete]
 func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1183,6 +1572,22 @@ func (h *Handler) deleteProduct(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// createProductOffer godoc
+// @Summary      Create a product offer
+// @Description  Creates a new offer for a product
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        productId  path      int                             true  "Product ID"
+// @Param        offer      body      types.CreateProductOfferPayload  true  "Offer details"
+// @Success      201        {object}  types.NewProductOfferResponse
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/offer/{productId} [post]
 func (h *Handler) createProductOffer(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateProductOfferPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1243,6 +1648,22 @@ func (h *Handler) createProductOffer(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// updateProductOffer godoc
+// @Summary      Update a product offer
+// @Description  Updates an existing product offer
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        offerId  path      int                             true  "Offer ID"
+// @Param        offer    body      types.UpdateProductOfferPayload  true  "Offer update details"
+// @Success      200      "Product offer updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/offer/{offerId} [patch]
 func (h *Handler) updateProductOffer(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateProductOfferPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1311,6 +1732,20 @@ func (h *Handler) updateProductOffer(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteProductOffer godoc
+// @Summary      Delete a product offer
+// @Description  Permanently deletes a product offer
+// @Tags         product
+// @Produce      json
+// @Param        offerId  path      int  true  "Offer ID"
+// @Success      200      "Product offer deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/offer/{offerId} [delete]
 func (h *Handler) deleteProductOffer(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1369,6 +1804,19 @@ func (h *Handler) deleteProductOffer(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// createProductAttribute godoc
+// @Summary      Create a product attribute
+// @Description  Creates a new product attribute with options
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        attribute  body      types.CreateProductAttributePayload  true  "Attribute details"
+// @Success      201        {object}  types.NewProductAttributeResponse
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/attribute [post]
 func (h *Handler) createProductAttribute(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateProductAttributePayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1393,6 +1841,20 @@ func (h *Handler) createProductAttribute(w http.ResponseWriter, r *http.Request)
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// updateProductAttribute godoc
+// @Summary      Update a product attribute
+// @Description  Updates an existing product attribute
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        attributeId  path      int                               true  "Attribute ID"
+// @Param        attribute    body      types.UpdateProductAttributePayload  true  "Attribute update details"
+// @Success      200          "Product attribute updated"
+// @Failure      400          {object}  types.HTTPError
+// @Failure      401          {object}  types.HTTPError
+// @Failure      500          {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/attribute/{attributeId} [patch]
 func (h *Handler) updateProductAttribute(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateProductAttributePayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1421,6 +1883,18 @@ func (h *Handler) updateProductAttribute(w http.ResponseWriter, r *http.Request)
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteProductAttribute godoc
+// @Summary      Delete a product attribute
+// @Description  Permanently deletes a product attribute
+// @Tags         product
+// @Produce      json
+// @Param        attributeId  path      int  true  "Attribute ID"
+// @Success      200          "Product attribute deleted"
+// @Failure      400          {object}  types.HTTPError
+// @Failure      401          {object}  types.HTTPError
+// @Failure      500          {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/attribute/{attributeId} [delete]
 func (h *Handler) deleteProductAttribute(w http.ResponseWriter, r *http.Request) {
 	attributeId, err := utils.ParseIntURLParam("attributeId", mux.Vars(r))
 	if err != nil {
@@ -1437,6 +1911,20 @@ func (h *Handler) deleteProductAttribute(w http.ResponseWriter, r *http.Request)
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// createProductComment godoc
+// @Summary      Create a product comment
+// @Description  Creates a new comment on a product
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        productId  path      int                               true  "Product ID"
+// @Param        comment    body      types.CreateProductCommentPayload  true  "Comment details"
+// @Success      201        {object}  types.NewProductCommentResponse
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/comment/{productId} [post]
 func (h *Handler) createProductComment(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateProductCommentPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1484,6 +1972,22 @@ func (h *Handler) createProductComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// editMyComment godoc
+// @Summary      Edit my comment
+// @Description  Updates a comment made by the current user
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        commentId  path      int                               true  "Comment ID"
+// @Param        comment    body      types.UpdateProductCommentPayload  true  "Updated comment details"
+// @Success      200        "Product comment ddited"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/comment/me/{commentId} [patch]
 func (h *Handler) editMyComment(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateProductCommentPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1541,6 +2045,20 @@ func (h *Handler) editMyComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteMyComment godoc
+// @Summary      Delete my comment
+// @Description  Deletes a comment made by the current user
+// @Tags         product
+// @Produce      json
+// @Param        commentId  path      int  true  "Comment ID"
+// @Success      200        "Product comment deleted"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/comment/me/{commentId} [delete]
 func (h *Handler) deleteMyComment(w http.ResponseWriter, r *http.Request) {
 	commentId, err := utils.ParseIntURLParam("commentId", mux.Vars(r))
 	if err != nil {
@@ -1588,6 +2106,19 @@ func (h *Handler) deleteMyComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteProductComment godoc
+// @Summary      Delete a product comment (admin)
+// @Description  Deletes any product comment (requires admin permissions)
+// @Tags         product
+// @Produce      json
+// @Param        commentId  path      int  true  "Comment ID"
+// @Success      200        "Product comment deleted"
+// @Failure      400        {object}  types.HTTPError
+// @Failure      401        {object}  types.HTTPError
+// @Failure      403        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/comment/{commentId} [delete]
 func (h *Handler) deleteProductComment(w http.ResponseWriter, r *http.Request) {
 	commentId, err := utils.ParseIntURLParam("commentId", mux.Vars(r))
 	if err != nil {
@@ -1604,6 +2135,19 @@ func (h *Handler) deleteProductComment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// createProductCategory godoc
+// @Summary      Create a product category
+// @Description  Creates a new product category
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        category  body      types.CreateProductCategoryPayload  true  "Category details"
+// @Success      201       {object}  types.NewProductCategoryResponse
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/category [post]
 func (h *Handler) createProductCategory(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateProductCategoryPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1646,6 +2190,20 @@ func (h *Handler) createProductCategory(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// updateProductCategory godoc
+// @Summary      Update a product category
+// @Description  Updates an existing product category
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        categoryId  path      int                               true  "Category ID"
+// @Param        category    body      types.UpdateProductCategoryPayload  true  "Category update details"
+// @Success      200         "Product category updated"
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/category/{categoryId} [patch]
 func (h *Handler) updateProductCategory(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateProductCategoryPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1691,6 +2249,18 @@ func (h *Handler) updateProductCategory(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteProductCategory godoc
+// @Summary      Delete a product category
+// @Description  Permanently deletes a product category
+// @Tags         product
+// @Produce      json
+// @Param        categoryId  path      int  true  "Category ID"
+// @Success      200         "Product category deleted"
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/category/{categoryId} [delete]
 func (h *Handler) deleteProductCategory(w http.ResponseWriter, r *http.Request) {
 	categoryId, err := utils.ParseIntURLParam("categoryId", mux.Vars(r))
 	if err != nil {
@@ -1709,6 +2279,19 @@ func (h *Handler) deleteProductCategory(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// createProductTag godoc
+// @Summary      Create a product tag
+// @Description  Creates a new product tag
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        tag  body      types.CreateProductTagPayload  true  "Tag details"
+// @Success      201  {object}  types.NewProductTagResponse
+// @Failure      400  {object}  types.HTTPError
+// @Failure      401  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/tag [post]
 func (h *Handler) createProductTag(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateProductTagPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1732,6 +2315,20 @@ func (h *Handler) createProductTag(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// updateProductTag godoc
+// @Summary      Update a product tag
+// @Description  Updates an existing product tag
+// @Tags         product
+// @Accept       json
+// @Produce      json
+// @Param        tagId  path      int                          true  "Tag ID"
+// @Param        tag    body      types.UpdateProductTagPayload  true  "Tag update details"
+// @Success      200    "Product tag updated"
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/tag/{tagId} [patch]
 func (h *Handler) updateProductTag(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateProductTagPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1757,6 +2354,18 @@ func (h *Handler) updateProductTag(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteProductTag godoc
+// @Summary      Delete a product tag
+// @Description  Permanently deletes a product tag
+// @Tags         product
+// @Produce      json
+// @Param        tagId  path      int  true  "Tag ID"
+// @Success      200    "Product tag deleted"
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /product/tag/{tagId} [delete]
 func (h *Handler) deleteProductTag(w http.ResponseWriter, r *http.Request) {
 	tagId, err := utils.ParseIntURLParam("tagId", mux.Vars(r))
 	if err != nil {

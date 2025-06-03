@@ -109,6 +109,25 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 }
 
+// getOrders godoc
+// @Summary      Get orders list
+// @Description  Retrieves a paginated list of orders with optional filtering. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        user      query     int     false  "Filter by user ID"
+// @Param        store     query     int     false  "Filter by store ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Param        p         query     int     false  "Page number (default: 1)"
+// @Success      200       {array}   types.Order
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order [get]
 func (h *Handler) getOrders(w http.ResponseWriter, r *http.Request) {
 	query := types.OrderSearchQuery{}
 	var page *int = nil
@@ -170,6 +189,24 @@ func (h *Handler) getOrders(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, orders, nil)
 }
 
+// getOrdersPages godoc
+// @Summary      Get total orders pages count
+// @Description  Calculates the total number of pages available for orders listing based on filters. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        user      query     int     false  "Filter by user ID"
+// @Param        store     query     int     false  "Filter by store ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Success      200       {object}  types.TotalPageCountResponse
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/pages [get]
 func (h *Handler) getOrdersPages(w http.ResponseWriter, r *http.Request) {
 	query := types.OrderSearchQuery{}
 
@@ -225,6 +262,25 @@ func (h *Handler) getOrdersPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getStoreOrders godoc
+// @Summary      Get store's orders
+// @Description  Retrieves a paginated list of orders for a specific store with optional filtering. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        storeId   path      int     true   "Store ID"
+// @Param        user      query     int     false  "Filter by user ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Param        p         query     int     false  "Page number (default: 1)"
+// @Success      200       {array}   types.Order
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/store/{storeId} [get]
 func (h *Handler) getStoreOrders(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -300,6 +356,24 @@ func (h *Handler) getStoreOrders(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, orders, nil)
 }
 
+// getStoreOrdersPages godoc
+// @Summary      Get store's orders pages count
+// @Description  Calculates the total number of pages available for a store's orders listing. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        storeId   path      int     true   "Store ID"
+// @Param        user      query     int     false  "Filter by user ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Success      200       {object}  types.TotalPageCountResponse
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/store/{storeId}/pages [get]
 func (h *Handler) getStoreOrdersPages(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -371,6 +445,25 @@ func (h *Handler) getStoreOrdersPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getUserOrders godoc
+// @Summary      Get user's orders
+// @Description  Retrieves a paginated list of orders for a specific user with optional filtering. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        userId    path      int     true   "User ID"
+// @Param        store     query     int     false  "Filter by store ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Param        p         query     int     false  "Page number (default: 1)"
+// @Success      200       {array}   types.Order
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/user/{userId} [get]
 func (h *Handler) getUserOrders(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -446,6 +539,24 @@ func (h *Handler) getUserOrders(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, orders, nil)
 }
 
+// getUserOrdersPages godoc
+// @Summary      Get user's orders pages count
+// @Description  Calculates the total number of pages available for a user's orders listing. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        userId    path      int     true   "User ID"
+// @Param        store     query     int     false  "Filter by store ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Success      200       {object}  types.TotalPageCountResponse
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/user/{userId}/pages [get]
 func (h *Handler) getUserOrdersPages(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -517,6 +628,26 @@ func (h *Handler) getUserOrdersPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getMyStoreOrders godoc
+// @Summary      Get current user's store orders
+// @Description  Retrieves a paginated list of orders for the current user's store with optional filtering.
+// @Tags         order
+// @Produce      json
+// @Param        storeId   path      int     true   "Store ID"
+// @Param        user      query     int     false  "Filter by user ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Param        p         query     int     false  "Page number (default: 1)"
+// @Success      200       {array}   types.Order
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      404       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/store/me/{storeId} [get]
 func (h *Handler) getMyStoreOrders(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -623,6 +754,25 @@ func (h *Handler) getMyStoreOrders(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, orders, nil)
 }
 
+// getMyStoreOrdersPages godoc
+// @Summary      Get current user's store orders pages count
+// @Description  Calculates the total number of pages available for the current user's store orders listing.
+// @Tags         order
+// @Produce      json
+// @Param        storeId   path      int     true   "Store ID"
+// @Param        user      query     int     false  "Filter by user ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Success      200       {object}  types.TotalPageCountResponse
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      404       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/store/me/{storeId}/pages [get]
 func (h *Handler) getMyStoreOrdersPages(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -725,6 +875,23 @@ func (h *Handler) getMyStoreOrdersPages(w http.ResponseWriter, r *http.Request) 
 	}, nil)
 }
 
+// getMyOrders godoc
+// @Summary      Get current user's orders
+// @Description  Retrieves a paginated list of orders for the current user with optional filtering.
+// @Tags         order
+// @Produce      json
+// @Param        store     query     int     false  "Filter by store ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Param        p         query     int     false  "Page number (default: 1)"
+// @Success      200       {array}   types.Order
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/me [get]
 func (h *Handler) getMyOrders(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -809,6 +976,22 @@ func (h *Handler) getMyOrders(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, orders, nil)
 }
 
+// getMyOrdersPages godoc
+// @Summary      Get current user's orders pages count
+// @Description  Calculates the total number of pages available for the current user's orders listing.
+// @Tags         order
+// @Produce      json
+// @Param        store     query     int     false  "Filter by store ID"
+// @Param        paystat   query     string  false  "Filter by payment status"
+// @Param        shipstat  query     string  false  "Filter by shipment status"
+// @Param        calt      query     string  false  "Filter by created before date (RFC3339)"
+// @Param        camt      query     string  false  "Filter by created after date (RFC3339)"
+// @Success      200       {object}  types.TotalPageCountResponse
+// @Failure      400       {object}  types.HTTPError
+// @Failure      401       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/me/pages [get]
 func (h *Handler) getMyOrdersPages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -889,6 +1072,20 @@ func (h *Handler) getMyOrdersPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getOrder godoc
+// @Summary      Get order details
+// @Description  Retrieves full details for a specific order. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      {object}  types.Order
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/{orderId} [get]
 func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 	orderId, err := utils.ParseIntURLParam("orderId", mux.Vars(r))
 	if err != nil {
@@ -910,6 +1107,20 @@ func (h *Handler) getOrder(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, order, nil)
 }
 
+// getOrderProducts godoc
+// @Summary      Get order products
+// @Description  Retrieves product variants for a specific order. Requires orders full access permission.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      {array}   types.OrderProductVariantInfo
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/{orderId}/products [get]
 func (h *Handler) getOrderProducts(w http.ResponseWriter, r *http.Request) {
 	orderId, err := utils.ParseIntURLParam("orderId", mux.Vars(r))
 	if err != nil {
@@ -931,6 +1142,21 @@ func (h *Handler) getOrderProducts(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, products, nil)
 }
 
+// getMyStoreOrder godoc
+// @Summary      Get current user's store order
+// @Description  Retrieves full details for a specific order belonging to the current user's store.
+// @Tags         order
+// @Produce      json
+// @Param        storeId  path      int  true  "Store ID"
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      {object}  types.Order
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/store/me/{storeId}/{orderId} [get]
 func (h *Handler) getMyStoreOrder(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -999,6 +1225,21 @@ func (h *Handler) getMyStoreOrder(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, order, nil)
 }
 
+// getMyStoreOrderProducts godoc
+// @Summary      Get current user's store order products
+// @Description  Retrieves product variants for a specific order belonging to the current user's store.
+// @Tags         order
+// @Produce      json
+// @Param        storeId  path      int  true  "Store ID"
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      {array}   types.OrderProductVariantInfo
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/store/me/{storeId}/{orderId}/products [get]
 func (h *Handler) getMyStoreOrderProducts(w http.ResponseWriter, r *http.Request) {
 	storeId, err := utils.ParseIntURLParam("storeId", mux.Vars(r))
 	if err != nil {
@@ -1067,6 +1308,20 @@ func (h *Handler) getMyStoreOrderProducts(w http.ResponseWriter, r *http.Request
 	utils.WriteJSONInResponse(w, http.StatusOK, products, nil)
 }
 
+// getMyOrder godoc
+// @Summary      Get current user's order
+// @Description  Retrieves full details for a specific order belonging to the current user.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      {object}  types.Order
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/me/{orderId} [get]
 func (h *Handler) getMyOrder(w http.ResponseWriter, r *http.Request) {
 	orderId, err := utils.ParseIntURLParam("orderId", mux.Vars(r))
 	if err != nil {
@@ -1108,6 +1363,20 @@ func (h *Handler) getMyOrder(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, order, nil)
 }
 
+// getMyOrderProducts godoc
+// @Summary      Get current user's order products
+// @Description  Retrieves product variants for a specific order belonging to the current user.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      {array}   types.OrderProductVariantInfo
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/me/{orderId}/products [get]
 func (h *Handler) getMyOrderProducts(w http.ResponseWriter, r *http.Request) {
 	orderId, err := utils.ParseIntURLParam("orderId", mux.Vars(r))
 	if err != nil {
@@ -1160,6 +1429,21 @@ func (h *Handler) getMyOrderProducts(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, products, nil)
 }
 
+// createOrder godoc
+// @Summary      Create a new order
+// @Description  Creates a new order with the provided details. Requires create order permission.
+// @Tags         order
+// @Accept       json
+// @Produce      json
+// @Param        order  body      types.CreateOrderPayload  true  "Order details"
+// @Success      201    {object}  types.NewOrderResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      403    {object}  types.HTTPError
+// @Failure      404    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order [post]
 func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateOrderPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1217,6 +1501,20 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// completeOrderPayment godoc
+// @Summary      Complete order payment
+// @Description  Marks an order's payment as completed. Requires complete order payment permission.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200      "Order payment completed"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/complete/{orderId} [patch]
 func (h *Handler) completeOrderPayment(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle payment validation
 
@@ -1268,6 +1566,20 @@ func (h *Handler) completeOrderPayment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// cancelOrderPayment godoc
+// @Summary      Cancel order payment
+// @Description  Marks an order's payment as cancelled. Requires cancel order payment permission.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200			"Order payment cancelled"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/cancel/{orderId} [patch]
 func (h *Handler) cancelOrderPayment(w http.ResponseWriter, r *http.Request) {
 	orderId, err := utils.ParseIntURLParam("orderId", mux.Vars(r))
 	if err != nil {
@@ -1317,6 +1629,22 @@ func (h *Handler) cancelOrderPayment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updateOrderShipment godoc
+// @Summary      Update order shipment
+// @Description  Updates shipment details for an order. Requires update order shipment permission.
+// @Tags         order
+// @Accept       json
+// @Produce      json
+// @Param        orderId  path      int                               true  "Order ID"
+// @Param        shipment body      types.UpdateOrderShipmentPayload  true  "Shipment details"
+// @Success      200			"Order shipment updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/shipment/{orderId} [patch]
 func (h *Handler) updateOrderShipment(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateOrderShipmentPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1343,6 +1671,20 @@ func (h *Handler) updateOrderShipment(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteOrder godoc
+// @Summary      Delete an order
+// @Description  Permanently deletes an order. Requires delete order permission.
+// @Tags         order
+// @Produce      json
+// @Param        orderId  path      int  true  "Order ID"
+// @Success      200    	"Order deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /order/{orderId} [delete]
 func (h *Handler) deleteOrder(w http.ResponseWriter, r *http.Request) {
 	orderId, err := utils.ParseIntURLParam("orderId", mux.Vars(r))
 	if err != nil {

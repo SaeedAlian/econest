@@ -79,6 +79,21 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	depositRouter.HandleFunc("/cancel/{txId}", h.cancelDepositTransaction).Methods("PATCH")
 }
 
+// createDepositTransaction godoc
+// @Summary      Create deposit transaction
+// @Description  Creates a new deposit transaction for the current user's wallet
+// @Tags         wallet
+// @Accept       json
+// @Produce      json
+// @Param        transaction  body      types.CreateWalletTransactionPayload  true  "Deposit transaction details"
+// @Success      201          {object}  types.NewWalletTransactionResponse
+// @Failure      400          {object}  types.HTTPError
+// @Failure      401          {object}  types.HTTPError
+// @Failure      403          {object}  types.HTTPError
+// @Failure      404          {object}  types.HTTPError
+// @Failure      500          {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/deposit [post]
 func (h *Handler) createDepositTransaction(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateWalletTransactionPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -128,6 +143,21 @@ func (h *Handler) createDepositTransaction(w http.ResponseWriter, r *http.Reques
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// createWithdrawTransaction godoc
+// @Summary      Create withdraw transaction
+// @Description  Creates a new withdraw transaction request for the current user's wallet
+// @Tags         wallet
+// @Accept       json
+// @Produce      json
+// @Param        transaction  body      types.CreateWalletTransactionPayload  true  "Withdraw transaction details"
+// @Success      201          {object}  types.NewWalletTransactionResponse
+// @Failure      400          {object}  types.HTTPError
+// @Failure      401          {object}  types.HTTPError
+// @Failure      403          {object}  types.HTTPError
+// @Failure      404          {object}  types.HTTPError
+// @Failure      500          {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/withdraw [post]
 func (h *Handler) createWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
 	var payload types.CreateWalletTransactionPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -177,6 +207,17 @@ func (h *Handler) createWithdrawTransaction(w http.ResponseWriter, r *http.Reque
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// getMyWallet godoc
+// @Summary      Get current user's wallet
+// @Description  Retrieves the wallet information of the currently authenticated user
+// @Tags         wallet
+// @Produce      json
+// @Success      200  {object}  types.Wallet
+// @Failure      401  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/me [get]
 func (h *Handler) getMyWallet(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -207,6 +248,22 @@ func (h *Handler) getMyWallet(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, wallet, nil)
 }
 
+// getMyTransactions godoc
+// @Summary      Get current user's transactions
+// @Description  Retrieves a paginated list of transactions for the current user's wallet with optional filtering
+// @Tags         wallet
+// @Produce      json
+// @Param        typ   query     string  false  "Filter by transaction type"
+// @Param        stat  query     string  false  "Filter by transaction status"
+// @Param        aftd  query     string  false  "Filter transactions after this date (YYYY-MM-DD)"
+// @Param        befd  query     string  false  "Filter transactions before this date (YYYY-MM-DD)"
+// @Param        p     query     int     false  "Page number (default: 1)"
+// @Success      200   {array}   types.WalletTransaction
+// @Failure      400   {object}  types.HTTPError
+// @Failure      401   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/me/transaction [get]
 func (h *Handler) getMyTransactions(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -267,6 +324,21 @@ func (h *Handler) getMyTransactions(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, txs, nil)
 }
 
+// getMyTransactionsPages godoc
+// @Summary      Get current user's transaction page count
+// @Description  Returns the total number of pages available for the current user's transactions based on filters
+// @Tags         wallet
+// @Produce      json
+// @Param        typ   query     string  false  "Filter by transaction type"
+// @Param        stat  query     string  false  "Filter by transaction status"
+// @Param        aftd  query     string  false  "Filter transactions after this date (YYYY-MM-DD)"
+// @Param        befd  query     string  false  "Filter transactions before this date (YYYY-MM-DD)"
+// @Success      200   {object}  types.TotalPageCountResponse
+// @Failure      400   {object}  types.HTTPError
+// @Failure      401   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/me/transaction/pages [get]
 func (h *Handler) getMyTransactionsPages(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -319,6 +391,20 @@ func (h *Handler) getMyTransactionsPages(w http.ResponseWriter, r *http.Request)
 	}, nil)
 }
 
+// getMyTransaction godoc
+// @Summary      Get a specific transaction
+// @Description  Retrieves details of a specific transaction belonging to the current user
+// @Tags         wallet
+// @Produce      json
+// @Param        txId  path      int  true  "Transaction ID"
+// @Success      200   {object}  types.WalletTransaction
+// @Failure      400   {object}  types.HTTPError
+// @Failure      401   {object}  types.HTTPError
+// @Failure      403   {object}  types.HTTPError
+// @Failure      404   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/me/transaction/{txId} [get]
 func (h *Handler) getMyTransaction(w http.ResponseWriter, r *http.Request) {
 	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
 	if err != nil {
@@ -371,6 +457,20 @@ func (h *Handler) getMyTransaction(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, tx, nil)
 }
 
+// getUserWallet godoc
+// @Summary      Get user's wallet (admin)
+// @Description  Retrieves wallet information of a specific user (requires wallet transactions full access permission)
+// @Tags         wallet
+// @Produce      json
+// @Param        userId  path      int  true  "User ID"
+// @Success      200     {object}  types.Wallet
+// @Failure      400     {object}  types.HTTPError
+// @Failure      401     {object}  types.HTTPError
+// @Failure      403     {object}  types.HTTPError
+// @Failure      404     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/user/{userId} [get]
 func (h *Handler) getUserWallet(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -392,6 +492,24 @@ func (h *Handler) getUserWallet(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, wallet, nil)
 }
 
+// getUserTransactions godoc
+// @Summary      Get user's transactions (admin)
+// @Description  Retrieves a paginated list of transactions for a specific user's wallet (requires wallet transactions full access permission)
+// @Tags         wallet
+// @Produce      json
+// @Param        userId  path      int     true  "User ID"
+// @Param        typ     query     string  false "Filter by transaction type"
+// @Param        stat    query     string  false "Filter by transaction status"
+// @Param        aftd    query     string  false "Filter transactions after this date (YYYY-MM-DD)"
+// @Param        befd    query     string  false "Filter transactions before this date (YYYY-MM-DD)"
+// @Param        p       query     int     false "Page number (default: 1)"
+// @Success      200     {array}   types.WalletTransaction
+// @Failure      400     {object}  types.HTTPError
+// @Failure      401     {object}  types.HTTPError
+// @Failure      403     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/user/{userId}/transaction [get]
 func (h *Handler) getUserTransactions(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -443,6 +561,23 @@ func (h *Handler) getUserTransactions(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, txs, nil)
 }
 
+// getUserTransactionsPages godoc
+// @Summary      Get user's transaction page count (admin)
+// @Description  Returns the total number of pages available for a user's transactions based on filters (requires wallet transactions full access permission)
+// @Tags         wallet
+// @Produce      json
+// @Param        userId  path      int     true  "User ID"
+// @Param        typ     query     string  false "Filter by transaction type"
+// @Param        stat    query     string  false "Filter by transaction status"
+// @Param        aftd    query     string  false "Filter transactions after this date (YYYY-MM-DD)"
+// @Param        befd    query     string  false "Filter transactions before this date (YYYY-MM-DD)"
+// @Success      200     {object}  types.TotalPageCountResponse
+// @Failure      400     {object}  types.HTTPError
+// @Failure      401     {object}  types.HTTPError
+// @Failure      403     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/user/{userId}/transaction/pages [get]
 func (h *Handler) getUserTransactionsPages(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -486,6 +621,21 @@ func (h *Handler) getUserTransactionsPages(w http.ResponseWriter, r *http.Reques
 	}, nil)
 }
 
+// getUserTransaction godoc
+// @Summary      Get a specific user's transaction (admin)
+// @Description  Retrieves details of a specific transaction belonging to a user (requires wallet transactions full access permission)
+// @Tags         wallet
+// @Produce      json
+// @Param        userId  path      int  true  "User ID"
+// @Param        txId    path      int  true  "Transaction ID"
+// @Success      200     {object}  types.WalletTransaction
+// @Failure      400     {object}  types.HTTPError
+// @Failure      401     {object}  types.HTTPError
+// @Failure      403     {object}  types.HTTPError
+// @Failure      404     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/user/{userId}/transaction/{txId} [get]
 func (h *Handler) getUserTransaction(w http.ResponseWriter, r *http.Request) {
 	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
 	if err != nil {
@@ -529,6 +679,20 @@ func (h *Handler) getUserTransaction(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, tx, nil)
 }
 
+// completeDepositTransaction godoc
+// @Summary      Complete a deposit transaction
+// @Description  Marks a deposit transaction as completed (successful) after payment validation
+// @Tags         wallet
+// @Produce      json
+// @Param        txId  path      int  true  "Transaction ID"
+// @Success      200  "Deposit transaction completed"
+// @Failure      400  {object}  types.HTTPError
+// @Failure      401  {object}  types.HTTPError
+// @Failure      403  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/deposit/complete/{txId} [patch]
 func (h *Handler) completeDepositTransaction(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle payment validation
 
@@ -598,6 +762,19 @@ func (h *Handler) completeDepositTransaction(w http.ResponseWriter, r *http.Requ
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// completeWithdrawTransaction godoc
+// @Summary      Complete a withdraw transaction
+// @Description  Marks a withdraw transaction request as completed (successful) after processing
+// @Tags         wallet
+// @Produce      json
+// @Param        txId  path      int  true  "Transaction ID"
+// @Success      200  "Withdraw transaction completed"
+// @Failure      400  {object}  types.HTTPError
+// @Failure      403  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/withdraw/complete/{txId} [patch]
 func (h *Handler) completeWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
 	// TODO: handle payment validation
 
@@ -636,6 +813,20 @@ func (h *Handler) completeWithdrawTransaction(w http.ResponseWriter, r *http.Req
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// cancelDepositTransaction godoc
+// @Summary      Cancel a deposit transaction
+// @Description  Marks a deposit transaction as failed/cancelled
+// @Tags         wallet
+// @Produce      json
+// @Param        txId  path      int  true  "Transaction ID"
+// @Success      200  "Deposit transaction cancelled"
+// @Failure      400  {object}  types.HTTPError
+// @Failure      401  {object}  types.HTTPError
+// @Failure      403  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/deposit/cancel/{txId} [patch]
 func (h *Handler) cancelDepositTransaction(w http.ResponseWriter, r *http.Request) {
 	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
 	if err != nil {
@@ -703,6 +894,19 @@ func (h *Handler) cancelDepositTransaction(w http.ResponseWriter, r *http.Reques
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// cancelWithdrawTransaction godoc
+// @Summary      Cancel a withdraw transaction
+// @Description  Marks a withdraw transaction request as failed/cancelled
+// @Tags         wallet
+// @Produce      json
+// @Param        txId  path      int  true  "Transaction ID"
+// @Success      200  "Withdraw transaction cancelled"
+// @Failure      400  {object}  types.HTTPError
+// @Failure      403  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /wallet/withdraw/cancel/{txId} [patch]
 func (h *Handler) cancelWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
 	txId, err := utils.ParseIntURLParam("txId", mux.Vars(r))
 	if err != nil {

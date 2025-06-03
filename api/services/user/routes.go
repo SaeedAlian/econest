@@ -43,7 +43,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 			h.db,
 			[]types.Action{types.ActionCanAddUserWithRole},
 		),
-	).Methods("PATCH")
+	).Methods("POST")
 
 	authRouter := router.Methods("POST").Subrouter()
 	authRouter.HandleFunc("/login", h.login).Methods("POST")
@@ -151,6 +151,20 @@ func (h *Handler) register(roleName string, w *http.ResponseWriter, r **http.Req
 	utils.WriteJSONInResponse(*w, http.StatusCreated, res, nil)
 }
 
+// registerWithRole godoc
+// @Summary      Register a user with a specific role
+// @Description  Registers a new user with a custom role. This route requires permission.
+// @Tags         registration
+// @Accept       json
+// @Produce      json
+// @Param        roleName  path      string                   true  "Role name to assign to the user"
+// @Param        user      body      types.CreateUserPayload  true  "User registration payload"
+// @Success      201   		 {object}  types.NewUserResponse    "User ID of the newly created account"
+// @Failure      400       {object}  types.HTTPError
+// @Failure      403       {object}  types.HTTPError
+// @Failure      500       {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/register/withrole/{roleName} [post]
 func (h *Handler) registerWithRole(w http.ResponseWriter, r *http.Request) {
 	roleName, err := utils.ParseStringURLParam("roleName", mux.Vars(r))
 	if err != nil {
@@ -161,14 +175,48 @@ func (h *Handler) registerWithRole(w http.ResponseWriter, r *http.Request) {
 	h.register(roleName, &w, &r)
 }
 
+// registerCustomer godoc
+// @Summary      Register a new customer account
+// @Description  Registers a new user with the role of 'customer'
+// @Tags         registration
+// @Accept       json
+// @Produce      json
+// @Param        user  body      types.CreateUserPayload  true  "User registration payload"
+// @Success      201   {object}  types.NewUserResponse    "User ID of the newly created account"
+// @Failure      400   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Router       /user/register/customer [post]
 func (h *Handler) registerCustomer(w http.ResponseWriter, r *http.Request) {
 	h.register(types.DefaultRoleCustomer.String(), &w, &r)
 }
 
+// registerVendor godoc
+// @Summary      Register a new vendor account
+// @Description  Registers a new user with the role of 'vendor'
+// @Tags         registration
+// @Accept       json
+// @Produce      json
+// @Param        user  body      types.CreateUserPayload  true  "User registration payload"
+// @Success      201   {object}  types.NewUserResponse    "User ID of the newly created account"
+// @Failure      400   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Router       /user/register/vendor [post]
 func (h *Handler) registerVendor(w http.ResponseWriter, r *http.Request) {
 	h.register(types.DefaultRoleVendor.String(), &w, &r)
 }
 
+// login godoc
+// @Summary      Log in a user
+// @Description  Authenticates a user and returns an access token. Also sets cookies for refresh and CSRF tokens.
+// @Tags         authentication
+// @Accept       json
+// @Produce      json
+// @Param        credentials  body      types.LoginUserPayload      true  "User login credentials"
+// @Success      200          {object}  types.LoginResponsePayload  "Access token for authenticated session"
+// @Failure      400          {object}  types.HTTPError
+// @Failure      403          {object}  types.HTTPError
+// @Failure      500          {object}  types.HTTPError
+// @Router       /user/login [post]
 func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	var payload types.LoginUserPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -283,6 +331,15 @@ func (h *Handler) login(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// refresh godoc
+// @Summary      Refresh access token
+// @Description  Refreshes the access token using a valid refresh token from cookies.
+// @Tags         authentication
+// @Produce      json
+// @Success      200  {object}  types.LoginResponsePayload  "New access token for authenticated session"
+// @Failure      401  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Router       /user/refresh [post]
 func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := r.Cookie("refresh_token")
 	if err != nil {
@@ -392,6 +449,16 @@ func (h *Handler) refresh(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// logout godoc
+// @Summary      Log out user
+// @Description  Invalidates the current session by revoking refresh and CSRF tokens
+// @Tags         authentication
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  types.LogoutResponsePayload
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/logout [post]
 func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	refreshToken, err := r.Cookie("refresh_token")
 
@@ -433,6 +500,18 @@ func (h *Handler) logout(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getMe godoc
+// @Summary      Get current user profile
+// @Description  Returns the profile information of the currently authenticated user
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Success      200  {object}  types.User
+// @Failure      401  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/me [get]
 func (h *Handler) getMe(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -467,6 +546,19 @@ func (h *Handler) getMe(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, userRes, nil)
 }
 
+// createAddress godoc
+// @Summary      Create a new address
+// @Description  Creates a new address for the current user
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        address  body      types.CreateUserAddressPayload  true  "Address details"
+// @Success      201      {object}  types.NewAddressResponse
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/address [post]
 func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -508,6 +600,19 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// createPhoneNumber godoc
+// @Summary      Create a new phone number
+// @Description  Creates a new phone number for the current user
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        phone  body      types.CreateUserPhoneNumberPayload  true  "Phone number details"
+// @Success      201    {object}  types.NewPhoneNumberResponse
+// @Failure      400    {object}  types.HTTPError
+// @Failure      401    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/phonenumber [post]
 func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -546,6 +651,19 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
+// getMyAddresses godoc
+// @Summary      Get current user's addresses
+// @Description  Returns all addresses belonging to the current user with optional filters
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Success      200         {array}   types.UserAddress
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/address [get]
 func (h *Handler) getMyAddresses(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -594,6 +712,20 @@ func (h *Handler) getMyAddresses(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, addresses, nil)
 }
 
+// getMyPhoneNumbers godoc
+// @Summary      Get current user's phone numbers
+// @Description  Returns all phone numbers belonging to the current user with optional filters
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Param        verified    query     string  false  "Filter by verification status (verified/unverified)"
+// @Success      200         {array}   types.UserPhoneNumber
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/phonenumber [get]
 func (h *Handler) getMyPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -654,6 +786,22 @@ func (h *Handler) getMyPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, phones, nil)
 }
 
+// updateAddress godoc
+// @Summary      Update an address
+// @Description  Updates an existing address belonging to the current user
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        addrId  path      int                            true  "Address ID"
+// @Param        address body      types.UpdateUserAddressPayload true  "Address update payload"
+// @Success      200      "Address updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/address/{addrId} [patch]
 func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
@@ -715,6 +863,22 @@ func (h *Handler) updateAddress(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updatePhoneNumber godoc
+// @Summary      Update a phone number
+// @Description  Updates an existing phone number belonging to the current user
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        phoneId path      int                                true  "Phone number ID"
+// @Param        phone   body      types.UpdateUserPhoneNumberPayload true  "Phone number update payload"
+// @Success      200			"Phone number updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/phonenumber/{phoneId} [patch]
 func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
@@ -773,6 +937,21 @@ func (h *Handler) updatePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deleteAddress godoc
+// @Summary      Delete an address
+// @Description  Deletes an existing address belonging to the current user
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        addrId  path      int  true  "Address ID"
+// @Success      200      "Address deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/address/{addrId} [delete]
 func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 	addrId, err := utils.ParseIntURLParam("addrId", mux.Vars(r))
 	if err != nil {
@@ -820,6 +999,21 @@ func (h *Handler) deleteAddress(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// deletePhoneNumber godoc
+// @Summary      Delete a phone number
+// @Description  Deletes an existing phone number belonging to the current user
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        phoneId path      int  true  "Phone number ID"
+// @Success      200			"Phone number deleted"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      403      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/phonenumber/{phoneId} [delete]
 func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	phoneId, err := utils.ParseIntURLParam("phoneId", mux.Vars(r))
 	if err != nil {
@@ -867,6 +1061,20 @@ func (h *Handler) deletePhoneNumber(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// getUserAddresses godoc
+// @Summary      Get user's addresses
+// @Description  Returns addresses belonging to a specific user. Visibility depends on requester's permissions.
+// @Tags         address
+// @Accept       json
+// @Produce      json
+// @Param        userId      path      int     true   "User ID"
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Success      200         {array}   types.UserAddress  "List of filtered address objects"
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/address/{userId} [get]
 func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -948,6 +1156,21 @@ func (h *Handler) getUserAddresses(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredAddresses, nil)
 }
 
+// getUserPhoneNumbers godoc
+// @Summary      Get user's phone numbers
+// @Description  Returns phone numbers belonging to a specific user. Visibility depends on requester's permissions.
+// @Tags         phone
+// @Accept       json
+// @Produce      json
+// @Param        userId      path      int     true   "User ID"
+// @Param        visibility  query     string  false  "Filter by visibility status (public/private)"
+// @Param        verified    query     string  false  "Filter by verification status (verified/unverified)"
+// @Success      200         {array}   types.UserPhoneNumber  "List of filtered phone number objects"
+// @Failure      400         {object}  types.HTTPError
+// @Failure      401         {object}  types.HTTPError
+// @Failure      500         {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/phonenumber/{userId} [get]
 func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -1042,6 +1265,20 @@ func (h *Handler) getUserPhoneNumbers(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredPhones, nil)
 }
 
+// getUsers godoc
+// @Summary      Get users list
+// @Description  Retrieves a paginated list of users with optional filtering. The response fields are filtered based on user privacy settings and requester's permissions.
+// @Tags         user
+// @Produce      json
+// @Param        name  query     string  false  "Filter users by full name (partial match)"
+// @Param        role  query     int     false  "Filter users by role ID"
+// @Param        p     query     int     false  "Page number (default: 1)"
+// @Success      200   {array}   types.User     "List of users with filtered fields"
+// @Failure      400   {object}  types.HTTPError
+// @Failure      401   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user [get]
 func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1114,6 +1351,18 @@ func (h *Handler) getUsers(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredUsers, nil)
 }
 
+// getUsersPages godoc
+// @Summary      Get total pages count
+// @Description  Calculates the total number of pages available for user listing based on filters and pagination settings
+// @Tags         user
+// @Produce      json
+// @Param        name  query     string  false  "Filter users by full name (partial match)"
+// @Param        role  query     int     false  "Filter users by role ID"
+// @Success      200   {object}  types.TotalPageCountResponse  "Returns total page count"
+// @Failure      400   {object}  types.HTTPError
+// @Failure      500   {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/pages [get]
 func (h *Handler) getUsersPages(w http.ResponseWriter, r *http.Request) {
 	query := types.UserSearchQuery{}
 
@@ -1143,6 +1392,19 @@ func (h *Handler) getUsersPages(w http.ResponseWriter, r *http.Request) {
 	}, nil)
 }
 
+// getUser godoc
+// @Summary      Get user by ID
+// @Description  Retrieves a single user's details by ID. The response fields are filtered based on user privacy settings and requester's permissions.
+// @Tags         user
+// @Produce      json
+// @Param        userId  path      int     true  "User ID"
+// @Success      200     {object}    types.User  "User details with filtered fields"
+// @Failure      400     {object}  	 types.HTTPError
+// @Failure      401     {object}    types.HTTPError
+// @Failure      404     {object}    types.HTTPError
+// @Failure      500     {object}    types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/{userId} [get]
 func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -1195,6 +1457,19 @@ func (h *Handler) getUser(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredUser, nil)
 }
 
+// updateProfile godoc
+// @Summary      Update user profile
+// @Description  Updates the authenticated user's profile information (username, full name, birth date)
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      types.UpdateUserPayload  true  "Profile update payload"
+// @Success      200      "Profile updated successfully"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user [patch]
 func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1247,6 +1522,19 @@ func (h *Handler) updateProfile(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updateEmail godoc
+// @Summary      Update user email
+// @Description  Updates the authenticated user's email address and marks it as unverified
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      types.UpdateUserPayload  true  "Email update payload (must include email field)"
+// @Success      200      "Email updated successfully"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/email [patch]
 func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1301,6 +1589,19 @@ func (h *Handler) updateEmail(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updatePassword godoc
+// @Summary      Update user password
+// @Description  Updates the authenticated user's password after verifying current password
+// @Tags         user
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      types.UpdateUserPasswordPayload  true  "Password update payload (must include current and new password)"
+// @Success      200      "Password updated successfully"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/password [patch]
 func (h *Handler) updatePassword(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserPasswordPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1357,6 +1658,19 @@ func (h *Handler) updatePassword(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// updateSettings godoc
+// @Summary      Update user settings
+// @Description  Updates the authenticated user's privacy and website settings
+// @Tags         settings
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      types.UpdateUserSettingsPayload  true  "Settings update payload"
+// @Success      200      "User settings updated"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      401      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/settings [patch]
 func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	var payload types.UpdateUserSettingsPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1389,6 +1703,19 @@ func (h *Handler) updateSettings(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// banUser godoc
+// @Summary      Ban a user
+// @Description  Bans a user account (requires permission to ban users). Cannot be used on admin/superadmin accounts.
+// @Tags         user
+// @Produce      json
+// @Param        userId  path      int  true  "User ID to ban"
+// @Success      200     "User banned successfully"
+// @Failure      400     {object}  types.HTTPError
+// @Failure      403     {object}  types.HTTPError
+// @Failure      404     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/ban/{userId} [patch]
 func (h *Handler) banUser(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -1430,6 +1757,19 @@ func (h *Handler) banUser(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// unbanUser godoc
+// @Summary      Unban a user
+// @Description  Unbans a previously banned user account (requires permission to unban users)
+// @Tags         user
+// @Produce      json
+// @Param        userId  path      int  true  "User ID to unban"
+// @Success      200     "User unbanned successfully"
+// @Failure      400     {object}  types.HTTPError
+// @Failure      403     {object}  types.HTTPError
+// @Failure      404     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/unban/{userId} [patch]
 func (h *Handler) unbanUser(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -1448,6 +1788,18 @@ func (h *Handler) unbanUser(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// getUserSettings godoc
+// @Summary      Get user settings
+// @Description  Retrieves a user's settings (public fields only)
+// @Tags         settings
+// @Produce      json
+// @Param        userId  path      int  true  "User ID"
+// @Success      200     {object}  types.UserSettings  "User settings (filtered by public visibility)"
+// @Failure      400     {object}  types.HTTPError
+// @Failure      404     {object}  types.HTTPError
+// @Failure      500     {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/settings/{userId} [get]
 func (h *Handler) getUserSettings(w http.ResponseWriter, r *http.Request) {
 	userId, err := utils.ParseIntURLParam("userId", mux.Vars(r))
 	if err != nil {
@@ -1473,6 +1825,17 @@ func (h *Handler) getUserSettings(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, filteredSettings, nil)
 }
 
+// getMySettings godoc
+// @Summary      Get current user's settings
+// @Description  Retrieves the authenticated user's complete settings (including private fields)
+// @Tags         settings
+// @Produce      json
+// @Success      200  {object}  types.UserSettings  "User's complete settings"
+// @Failure      401  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/settings/me [get]
 func (h *Handler) getMySettings(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1507,6 +1870,18 @@ func (h *Handler) getMySettings(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, settingsRes, nil)
 }
 
+// forgotPasswordRequest godoc
+// @Summary      Request password reset
+// @Description  Initiates a password reset process by sending a reset link to the user's email
+// @Tags         authentication
+// @Accept       json
+// @Produce      json
+// @Param        payload  body      types.ForgotPasswordRequestPayload  true  "Email address for password reset"
+// @Success      200      "Password reset email sent if account exists"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Router       /user/forgotpass [post]
 func (h *Handler) forgotPasswordRequest(w http.ResponseWriter, r *http.Request) {
 	var payload types.ForgotPasswordRequestPayload
 	err := utils.ParseRequestPayload(r, &payload)
@@ -1556,6 +1931,19 @@ func (h *Handler) forgotPasswordRequest(w http.ResponseWriter, r *http.Request) 
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// resetPassword godoc
+// @Summary      Reset password
+// @Description  Completes the password reset process using a valid reset token
+// @Tags         authentication
+// @Accept       json
+// @Produce      json
+// @Param        token    query     string                        true  "Password reset token"
+// @Param        payload  body      types.ResetPasswordPayload    true  "New password details"
+// @Success      200      "Password reset successful"
+// @Failure      400      {object}  types.HTTPError
+// @Failure      404      {object}  types.HTTPError
+// @Failure      500      {object}  types.HTTPError
+// @Router       /user/forgotpass [patch]
 func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
@@ -1614,6 +2002,18 @@ func (h *Handler) resetPassword(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// verifyEmailRequest godoc
+// @Summary      Request email verification
+// @Description  Sends a verification email to the authenticated user's email address
+// @Tags         authentication
+// @Produce      json
+// @Success      200  "Verification email sent"
+// @Failure      400  {object}  types.HTTPError
+// @Failure      401  {object}  types.HTTPError
+// @Failure      404  {object}  types.HTTPError
+// @Failure      500  {object}  types.HTTPError
+// @Security     ApiKeyAuth
+// @Router       /user/email/verify [post]
 func (h *Handler) verifyEmailRequest(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -1675,6 +2075,17 @@ func (h *Handler) verifyEmailRequest(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, nil, nil)
 }
 
+// verifyEmail godoc
+// @Summary      Verify email
+// @Description  Completes the email verification process using a valid verification token
+// @Tags         authentication
+// @Produce      json
+// @Param        token  query     string  true  "Email verification token"
+// @Success      200    "Email verified successfully"
+// @Failure      400    {object}  types.HTTPError
+// @Failure      404    {object}  types.HTTPError
+// @Failure      500    {object}  types.HTTPError
+// @Router       /user/email/verify [patch]
 func (h *Handler) verifyEmail(w http.ResponseWriter, r *http.Request) {
 	token := r.URL.Query().Get("token")
 	if token == "" {
