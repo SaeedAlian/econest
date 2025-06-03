@@ -132,6 +132,7 @@ api/
 ├── api/               # API routes & subroutes declarations
 ├── config/            # Configuration management
 ├── db/                # Database migrations and DB manager
+├── docs/              # Swagger documentations
 ├── lib/               # Shared internal libraries (such as dynamic menu)
 ├── services/          # Core services logic (auth, products, etc.)
 ├── types/             # Type definitions
@@ -164,7 +165,19 @@ From the `api` directory, you can use:
 
 ## API Documentation
 
-- Soon!
+Interactive API docs are available via Swagger UI.
+
+- Swagger UI: http://localhost:5000/swagger/index.html
+- Swagger JSON spec: http://localhost:5000/swagger/doc.json
+
+**NOTE**: You can replace '5000' with your defined port in the config variables
+
+Documentation is generated using swaggo/swag. To regenerate docs after updating annotations:
+
+```bash
+go install github.com/swaggo/swag/cmd/swag@latest
+swag init
+```
 
 ---
 
