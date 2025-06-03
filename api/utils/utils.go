@@ -86,7 +86,11 @@ func WriteErrorInResponse(w http.ResponseWriter, status int, err error) error {
 		}
 	}
 
-	return WriteJSONInResponse(w, status, map[string]string{"message": formattedErr.Error()}, nil)
+	res := types.HTTPError{
+		Message: formattedErr.Error(),
+	}
+
+	return WriteJSONInResponse(w, status, res, nil)
 }
 
 func DeleteCookie(w http.ResponseWriter, cookie *http.Cookie) {
@@ -305,8 +309,8 @@ func FileUploadHandler(
 			return
 		}
 
-		WriteJSONInResponse(w, http.StatusOK, map[string]string{
-			"fileName": filename,
+		WriteJSONInResponse(w, http.StatusOK, types.FileUploadResponse{
+			FileName: filename,
 		}, nil)
 	}
 }

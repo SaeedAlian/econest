@@ -291,8 +291,8 @@ func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxProductsInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -451,8 +451,8 @@ func (h *Handler) getProductCategoriesPages(w http.ResponseWriter, r *http.Reque
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxProductCategoriesInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -536,8 +536,8 @@ func (h *Handler) getProductTagsPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxProductTagsInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -625,8 +625,8 @@ func (h *Handler) getProductOffersPages(w http.ResponseWriter, r *http.Request) 
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxProductOffersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -729,8 +729,8 @@ func (h *Handler) getProductAttributesPages(w http.ResponseWriter, r *http.Reque
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxProductAttributesInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -826,8 +826,8 @@ func (h *Handler) getProductCommentsPages(w http.ResponseWriter, r *http.Request
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxProductCommentsInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -923,12 +923,11 @@ func (h *Handler) createProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"productId": createdProduct},
-		nil,
-	)
+	res := types.NewProductResponse{
+		ProductId: createdProduct,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
@@ -1237,12 +1236,11 @@ func (h *Handler) createProductOffer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"offerId": createdOffer},
-		nil,
-	)
+	res := types.NewProductOfferResponse{
+		OfferId: createdOffer,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) updateProductOffer(w http.ResponseWriter, r *http.Request) {
@@ -1388,12 +1386,11 @@ func (h *Handler) createProductAttribute(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"attributeId": createdAttribute},
-		nil,
-	)
+	res := types.NewProductAttributeResponse{
+		AttributeId: createdAttribute,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) updateProductAttribute(w http.ResponseWriter, r *http.Request) {
@@ -1480,12 +1477,11 @@ func (h *Handler) createProductComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"commentId": createdComment},
-		nil,
-	)
+	res := types.NewProductCommentResponse{
+		CommentId: createdComment,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) editMyComment(w http.ResponseWriter, r *http.Request) {
@@ -1643,12 +1639,11 @@ func (h *Handler) createProductCategory(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"categoryId": createdCategory},
-		nil,
-	)
+	res := types.NewProductCategoryResponse{
+		CategoryId: createdCategory,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) updateProductCategory(w http.ResponseWriter, r *http.Request) {
@@ -1730,12 +1725,11 @@ func (h *Handler) createProductTag(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"tagId": createdTag},
-		nil,
-	)
+	res := types.NewProductTagResponse{
+		TagId: createdTag,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) updateProductTag(w http.ResponseWriter, r *http.Request) {

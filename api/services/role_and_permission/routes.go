@@ -246,12 +246,11 @@ func (h *Handler) createRole(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"roleId": createdRole},
-		nil,
-	)
+	res := types.NewRoleResponse{
+		RoleId: createdRole,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) addPermissionGroupsToRole(w http.ResponseWriter, r *http.Request) {
@@ -437,12 +436,11 @@ func (h *Handler) createPermissionGroup(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	utils.WriteJSONInResponse(
-		w,
-		http.StatusCreated,
-		map[string]int{"pgroupId": createdPG},
-		nil,
-	)
+	res := types.NewPermissionGroupResponse{
+		PermissionGroupId: createdPG,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) addResourcePermissionsToGroup(w http.ResponseWriter, r *http.Request) {

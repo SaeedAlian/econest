@@ -220,8 +220,8 @@ func (h *Handler) getOrdersPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxOrdersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -366,8 +366,8 @@ func (h *Handler) getStoreOrdersPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxOrdersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -512,8 +512,8 @@ func (h *Handler) getUserOrdersPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxOrdersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -720,8 +720,8 @@ func (h *Handler) getMyStoreOrdersPages(w http.ResponseWriter, r *http.Request) 
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxOrdersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -884,8 +884,8 @@ func (h *Handler) getMyOrdersPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxOrdersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -1210,7 +1210,11 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"orderId": createdOrder}, nil)
+	res := types.NewOrderResponse{
+		OrderId: createdOrder,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) completeOrderPayment(w http.ResponseWriter, r *http.Request) {

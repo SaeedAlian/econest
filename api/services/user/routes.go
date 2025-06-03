@@ -144,7 +144,11 @@ func (h *Handler) register(roleName string, w *http.ResponseWriter, r **http.Req
 		return
 	}
 
-	utils.WriteJSONInResponse(*w, http.StatusCreated, map[string]int{"userId": createdUser}, nil)
+	res := types.NewUserResponse{
+		UserId: createdUser,
+	}
+
+	utils.WriteJSONInResponse(*w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) registerWithRole(w http.ResponseWriter, r *http.Request) {
@@ -497,7 +501,11 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"addressId": addrId}, nil)
+	res := types.NewAddressResponse{
+		AddressId: addrId,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
@@ -531,7 +539,11 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"phoneNumberId": phoneId}, nil)
+	res := types.NewPhoneNumberResponse{
+		PhoneNumberId: phoneId,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) getMyAddresses(w http.ResponseWriter, r *http.Request) {
@@ -1126,8 +1138,8 @@ func (h *Handler) getUsersPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxUsersInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 

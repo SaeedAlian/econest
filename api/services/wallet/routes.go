@@ -121,7 +121,11 @@ func (h *Handler) createDepositTransaction(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"txId": createdTx}, nil)
+	res := types.NewWalletTransactionResponse{
+		TxId: createdTx,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) createWithdrawTransaction(w http.ResponseWriter, r *http.Request) {
@@ -166,7 +170,11 @@ func (h *Handler) createWithdrawTransaction(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"txId": createdTx}, nil)
+	res := types.NewWalletTransactionResponse{
+		TxId: createdTx,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) getMyWallet(w http.ResponseWriter, r *http.Request) {
@@ -306,8 +314,8 @@ func (h *Handler) getMyTransactionsPages(w http.ResponseWriter, r *http.Request)
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxWalletTransactionsInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
@@ -473,8 +481,8 @@ func (h *Handler) getUserTransactionsPages(w http.ResponseWriter, r *http.Reques
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxWalletTransactionsInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 

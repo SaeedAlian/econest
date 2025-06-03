@@ -152,7 +152,11 @@ func (h *Handler) register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"storeId": createdStore}, nil)
+	res := types.NewStoreResponse{
+		StoreId: createdStore,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
@@ -211,7 +215,11 @@ func (h *Handler) createAddress(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"addressId": addrId}, nil)
+	res := types.NewAddressResponse{
+		AddressId: addrId,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
@@ -267,7 +275,11 @@ func (h *Handler) createPhoneNumber(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	utils.WriteJSONInResponse(w, http.StatusCreated, map[string]int{"phoneNumberId": phoneId}, nil)
+	res := types.NewPhoneNumberResponse{
+		PhoneNumberId: phoneId,
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusCreated, res, nil)
 }
 
 func (h *Handler) getMyStoreAddresses(w http.ResponseWriter, r *http.Request) {
@@ -969,8 +981,8 @@ func (h *Handler) getStoresPages(w http.ResponseWriter, r *http.Request) {
 
 	pageCount := utils.GetPageCount(int64(count), int64(config.Env.MaxStoresInPage))
 
-	utils.WriteJSONInResponse(w, http.StatusOK, map[string]int32{
-		"pages": pageCount,
+	utils.WriteJSONInResponse(w, http.StatusOK, types.TotalPageCountResponse{
+		Pages: pageCount,
 	}, nil)
 }
 
