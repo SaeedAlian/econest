@@ -33,7 +33,7 @@ func NewHandler(
 }
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
-	router.HandleFunc("/", h.getProducts).Methods("GET")
+	router.HandleFunc("", h.getProducts).Methods("GET")
 	router.HandleFunc("/pages", h.getProductsPages).Methods("GET")
 	router.HandleFunc("/{productId}", h.getProduct).Methods("GET")
 	router.HandleFunc("/image/{filename}", h.getProductImage).Methods("GET")
@@ -65,7 +65,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 		Methods("GET")
 
 	withAuthRouter := router.Methods("GET", "POST", "PUT", "PATCH", "DELETE").Subrouter()
-	withAuthRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	withAuthRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createProduct,
 		h.db,
 		[]types.Action{types.ActionCanAddProduct},
@@ -120,7 +120,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 
 	productAttributeRouter := withAuthRouter.PathPrefix("/attribute").Subrouter()
-	productAttributeRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	productAttributeRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createProductAttribute,
 		h.db,
 		[]types.Action{types.ActionCanAddProductAttribute},
@@ -147,7 +147,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	productCommentRouter.HandleFunc("/me/{commentId}", h.deleteMyComment).Methods("DELETE")
 
 	productCategoryRouter := withAuthRouter.PathPrefix("/category").Subrouter()
-	productCategoryRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	productCategoryRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createProductCategory,
 		h.db,
 		[]types.Action{types.ActionCanAddProductCategory},
@@ -171,7 +171,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 
 	productTagRouter := withAuthRouter.PathPrefix("/tag").Subrouter()
-	productTagRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	productTagRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createProductTag,
 		h.db,
 		[]types.Action{types.ActionCanAddProductTag},

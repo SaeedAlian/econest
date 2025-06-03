@@ -34,7 +34,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 
 	roleRouter := withAuthRouter.PathPrefix("/role").Subrouter()
-	roleRouter.HandleFunc("/", h.authHandler.WithResourcePermissionAuth(
+	roleRouter.HandleFunc("", h.authHandler.WithResourcePermissionAuth(
 		h.getRoles,
 		h.db,
 		[]types.Resource{types.ResourceRolesAndPermissions},
@@ -54,7 +54,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 		h.db,
 		[]types.Resource{types.ResourceRolesAndPermissions},
 	)).Methods("GET")
-	roleRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	roleRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createRole,
 		h.db,
 		[]types.Action{types.ActionCanAddRole},
@@ -81,7 +81,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	)).Methods("DELETE")
 
 	permissionGroupRouter := withAuthRouter.PathPrefix("/pgroup").Subrouter()
-	permissionGroupRouter.HandleFunc("/", h.authHandler.WithResourcePermissionAuth(
+	permissionGroupRouter.HandleFunc("", h.authHandler.WithResourcePermissionAuth(
 		h.getPermissionGroups,
 		h.db,
 		[]types.Resource{types.ResourceRolesAndPermissions},
@@ -102,7 +102,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 		[]types.Resource{types.ResourceRolesAndPermissions},
 	)).
 		Methods("GET")
-	permissionGroupRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	permissionGroupRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createPermissionGroup,
 		h.db,
 		[]types.Action{types.ActionCanAddPermissionGroup},

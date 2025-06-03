@@ -29,7 +29,7 @@ func NewHandler(
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	withAuthRouter := router.Methods("GET", "POST", "PUT", "PATCH", "DELETE").Subrouter()
-	withAuthRouter.HandleFunc("/", h.authHandler.WithResourcePermissionAuth(
+	withAuthRouter.HandleFunc("", h.authHandler.WithResourcePermissionAuth(
 		h.getOrders,
 		h.db,
 		[]types.Resource{types.ResourceOrdersFullAccess},
@@ -78,7 +78,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	withAuthRouter.HandleFunc("/me/pages", h.getMyOrdersPages).Methods("GET")
 	withAuthRouter.HandleFunc("/me/{orderId}", h.getMyOrder).Methods("GET")
 	withAuthRouter.HandleFunc("/me/{orderId}/products", h.getMyOrderProducts).Methods("GET")
-	withAuthRouter.HandleFunc("/", h.authHandler.WithActionPermissionAuth(
+	withAuthRouter.HandleFunc("", h.authHandler.WithActionPermissionAuth(
 		h.createOrder,
 		h.db,
 		[]types.Action{types.ActionCanCreateOrder},

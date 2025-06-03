@@ -59,7 +59,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	withAuthRouter.Use(h.authHandler.WithUnbannedProfile(h.db))
 
 	withdrawRouter := withAuthRouter.PathPrefix("/withdraw").Subrouter()
-	withdrawRouter.HandleFunc("/", h.createWithdrawTransaction).Methods("POST")
+	withdrawRouter.HandleFunc("", h.createWithdrawTransaction).Methods("POST")
 	withdrawRouter.HandleFunc("/complete/{txId}", h.authHandler.WithActionPermissionAuth(
 		h.completeWithdrawTransaction,
 		h.db,
@@ -74,7 +74,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 		Methods("PATCH")
 
 	depositRouter := withAuthRouter.PathPrefix("/deposit").Subrouter()
-	depositRouter.HandleFunc("/", h.createDepositTransaction).Methods("POST")
+	depositRouter.HandleFunc("", h.createDepositTransaction).Methods("POST")
 	depositRouter.HandleFunc("/complete/{txId}", h.completeDepositTransaction).Methods("PATCH")
 	depositRouter.HandleFunc("/cancel/{txId}", h.cancelDepositTransaction).Methods("PATCH")
 }

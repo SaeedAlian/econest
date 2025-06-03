@@ -26,7 +26,7 @@ func NewHandler(
 
 func (h *Handler) RegisterRoutes(router *mux.Router) {
 	optionalAuthRouter := router.Methods("GET", "POST", "PATCH", "DELETE").Subrouter()
-	optionalAuthRouter.HandleFunc("/", h.getStores).Methods("GET")
+	optionalAuthRouter.HandleFunc("", h.getStores).Methods("GET")
 	optionalAuthRouter.HandleFunc("/pages", h.getStoresPages).Methods("GET")
 	optionalAuthRouter.HandleFunc("/{storeId}", h.getStore).Methods("GET")
 	optionalAuthRouter.HandleFunc("/settings/{storeId}", h.getStoreSettings).Methods("GET")
@@ -35,7 +35,7 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	optionalAuthRouter.Use(h.authHandler.WithJWTAuthOptional(h.db))
 
 	registerRouter := router.PathPrefix("/register").Methods("POST").Subrouter()
-	registerRouter.HandleFunc("/",
+	registerRouter.HandleFunc("",
 		h.authHandler.WithActionPermissionAuth(
 			h.register,
 			h.db,
