@@ -189,4 +189,4 @@ Feel free to submit issues or pull requests. Make sure to follow the coding conv
 
 ## License
 
-This project is licensed under the GNU GPL V3.0. See the [LICENSE](./LICENSE) file for more information.
+This project is licensed under the GNU GPL V3.0. See the [LICENSE](../LICENSE) file for more information.
