@@ -1,5 +1,6 @@
 import * as React from "react";
 import { Slot } from "@radix-ui/react-slot";
+import { IconType } from "react-icons/lib";
 import { cva, VariantProps } from "class-variance-authority";
 import { PanelLeftIcon } from "lucide-react";
 
@@ -38,6 +39,10 @@ type SidebarContextProps = {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
+};
+
+type SidebarTriggerProps = React.ComponentProps<typeof Button> & {
+  Icon?: IconType;
 };
 
 const SidebarContext = React.createContext<SidebarContextProps | null>(null);
@@ -254,8 +259,9 @@ function Sidebar({
 function SidebarTrigger({
   className,
   onClick,
+  Icon,
   ...props
-}: React.ComponentProps<typeof Button>) {
+}: SidebarTriggerProps) {
   const { toggleSidebar } = useSidebar();
 
   return (
@@ -271,7 +277,7 @@ function SidebarTrigger({
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      {Icon ? <Icon /> : <PanelLeftIcon />}
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
