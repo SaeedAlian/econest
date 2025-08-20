@@ -28,14 +28,17 @@ function Navbar({ links }: NavbarProps) {
 
   return (
     <nav className="flex items-center flex-row gap-2 w-full justify-between px-5 py-2">
-      <Link to="/">
+      <Link
+        to="/"
+        className={cn(
+          "flex items-center justify-center m-[-20px]",
+          isMobile ? "m-[-25px]" : "",
+        )}
+      >
         <img
           src={logo}
           alt="EcoNest"
-          className={cn(
-            "w-24 h-24 m-[-20px]",
-            isMobile ? "w-20 h-20 m-[-25px]" : "",
-          )}
+          className={cn("w-24 h-24", isMobile ? "w-20 h-20" : "")}
         />
       </Link>
       {isMobile ? (
