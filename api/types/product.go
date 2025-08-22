@@ -490,8 +490,8 @@ type ProductSearchQuery struct {
 	CategoryId *int `json:"categoryId"`
 	// Filter by tag name
 	TagName *string `json:"tagName"`
-	// Filter by tag ID
-	TagId *int `json:"tagId"`
+	// Filter by tag IDs (separated by comma ',')
+	TagIds *string `json:"tagIds"`
 	// Maximum price
 	PriceLessThan *float32 `json:"priceLessThan"`
 	// Minimum price

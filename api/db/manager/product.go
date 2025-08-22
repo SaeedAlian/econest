@@ -4,8 +4,11 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
+
+	"github.com/lib/pq"
 
 	"github.com/SaeedAlian/econest/api/types"
 )
@@ -3165,15 +3168,29 @@ func buildProductSearchQuery(
 		argsPos++
 	}
 
-	if query.TagId != nil {
-		clauses = append(clauses, fmt.Sprintf(`
-      EXISTS (
-        SELECT 1 FROM product_tag_assignments pta
-        WHERE pta.product_id = p.id AND pta.tag_id = $%d
-      )
-    `, argsPos))
-		args = append(args, *query.TagId)
-		argsPos++
+	if query.TagIds != nil {
+		split := strings.Split(*query.TagIds, ",")
+		splitLen := len(split)
+
+		if splitLen > 0 {
+			tagIds := make([]int, 0, splitLen)
+
+			for _, val := range split {
+				v, err := strconv.Atoi(strings.TrimSpace(val))
+				if err == nil {
+					tagIds = append(tagIds, v)
+				}
+			}
+
+			clauses = append(clauses, fmt.Sprintf(`(
+				SELECT COALESCE(array_agg(DISTINCT pta.tag_id), '{}'::int[])
+				FROM product_tag_assignments pta
+				WHERE pta.product_id = p.id
+			) @> $%d::int[]`, argsPos))
+
+			args = append(args, pq.Array(tagIds))
+			argsPos++
+		}
 	}
 
 	if query.TagName != nil {

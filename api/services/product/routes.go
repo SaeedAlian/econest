@@ -281,7 +281,7 @@ func (h *Handler) getProductCategoryImage(w http.ResponseWriter, r *http.Request
 // @Param        minq   query     int     false  "Minimum quantity filter"
 // @Param        offr   query     bool    false  "Filter products with offers"
 // @Param        cat    query     int     false  "Filter by category ID"
-// @Param        tag    query     int     false  "Filter by tag ID"
+// @Param        tags   query     string  false  "Filter by tag IDs (separated by comma ',')"
 // @Param        pmt    query     int     false  "Filter products with price more than value"
 // @Param        plt    query     int     false  "Filter products with price less than value"
 // @Param        store  query     int     false  "Filter by store ID"
@@ -299,7 +299,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 		"minq":  &query.MinQuantity,
 		"offr":  &query.HasOffer,
 		"cat":   &query.CategoryId,
-		"tag":   &query.TagId,
+		"tags":  &query.TagIds,
 		"pmt":   &query.PriceMoreThan,
 		"plt":   &query.PriceLessThan,
 		"store": &query.StoreId,
@@ -340,7 +340,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 // @Param        minq   query     int     false  "Minimum quantity filter"
 // @Param        offr   query     bool    false  "Filter products with offers"
 // @Param        cat    query     int     false  "Filter by category ID"
-// @Param        tag    query     int     false  "Filter by tag ID"
+// @Param        tags   query     string  false  "Filter by tag IDs (separated by comma ',')"
 // @Param        pmt    query     int     false  "Filter products with price more than value"
 // @Param        plt    query     int     false  "Filter products with price less than value"
 // @Param        store  query     int     false  "Filter by store ID"
@@ -356,7 +356,7 @@ func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 		"minq":  &query.MinQuantity,
 		"offr":  &query.HasOffer,
 		"cat":   &query.CategoryId,
-		"tag":   &query.TagId,
+		"tags":  &query.TagIds,
 		"pmt":   &query.PriceMoreThan,
 		"plt":   &query.PriceLessThan,
 		"store": &query.StoreId,
