@@ -45,7 +45,7 @@ function ProductCard({
   onAddToCart: (id: number) => void;
 }) {
   return (
-    <Card className="min-w-[280px] py-4" {...props}>
+    <Card className={cn("min-w-[280px] py-4", className)} {...props}>
       <CardHeader
         className="px-4 relative group cursor-pointer !flex flex-col items-center"
         onClick={() => onAddToCart(productId)}
