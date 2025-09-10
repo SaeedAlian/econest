@@ -1,4 +1,5 @@
 import * as React from "react";
+import { Link } from "react-router";
 import { FaRegStar } from "react-icons/fa";
 import { BsShop } from "react-icons/bs";
 import {
@@ -45,20 +46,24 @@ function ProductCard({
   onAddToCart: (id: number) => void;
 }) {
   return (
-    <Card className={cn("min-w-[280px] py-4", className)} {...props}>
-      <CardHeader
-        className="px-4 relative group cursor-pointer !flex flex-col items-center"
-        onClick={() => onAddToCart(productId)}
-      >
-        <img src={image} alt={title} className="w-40 h-40 object-contain" />
+    <Card className={cn("min-w-[280px] py-4 h-full", className)} {...props}>
+      <CardHeader className="px-4 relative group cursor-pointer !flex flex-col items-center">
+        <Link to={`/product/${productId}`}>
+          <img
+            src={image}
+            alt={title}
+            className="w-40 h-40 object-contain select-none"
+          />
+        </Link>
         <div className="absolute left-4 bottom-0 flex items-center">
           <div
             className={cn(
-              "flex items-center rounded-full px-3 py-1 transition-all duration-300 ease-in-out",
+              "flex items-center rounded-full px-3 py-1 transition-all duration-300 ease-in-out cursor-pointer",
               inCart
                 ? "bg-muted text-muted-foreground"
                 : "bg-primary text-primary-foreground",
             )}
+            onClick={() => onAddToCart(productId)}
           >
             <div className="flex items-center justify-center rounded-full">
               {inCart ? (
@@ -106,14 +111,16 @@ function ProductCard({
         <div className="ml-auto flex flex-col items-end">
           {discount != null && discount > 0 ? (
             <p className="text-sm font-extrabold line-through text-card-foreground/20 mb-1">
-              ${price.toLocaleString("en")}
+              ${price.toLocaleString("en", { maximumFractionDigits: 2 })}
             </p>
           ) : null}
           <p className="text-sm font-extrabold leading-3">
             $
             {discount != null && discount > 0
-              ? (price * discount).toLocaleString("en")
-              : price.toLocaleString("en")}
+              ? (price * (1 - discount)).toLocaleString("en", {
+                  maximumFractionDigits: 2,
+                })
+              : price.toLocaleString("en", { maximumFractionDigits: 2 })}
           </p>
         </div>
       </CardFooter>
