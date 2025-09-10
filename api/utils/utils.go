@@ -407,9 +407,9 @@ func ParseURLQuery(mapping map[string]any, values url.Values) error {
 			{
 				var boolVal bool
 
-				if rawValue == "1" {
+				if rawValue == "1" || rawValue == "true" {
 					boolVal = true
-				} else if rawValue == "0" {
+				} else if rawValue == "0" || rawValue == "false" {
 					boolVal = false
 				} else {
 					return types.ErrInvalidQueryValue(key)
