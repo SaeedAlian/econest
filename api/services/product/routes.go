@@ -282,6 +282,7 @@ func (h *Handler) getProductCategoryImage(w http.ResponseWriter, r *http.Request
 // @Param        k      query     string  false  "Search keyword"
 // @Param        avgscr query     float32 false  "Minimum average score"
 // @Param        minq   query     int     false  "Minimum quantity filter"
+// @Param        maxq   query     int     false  "Maximum quantity filter"
 // @Param        offr   query     bool    false  "Filter products with offers"
 // @Param        cat    query     int     false  "Filter by category ID"
 // @Param        tags   query     string  false  "Filter by tag IDs (separated by comma ',')"
@@ -301,6 +302,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 		"k":      &query.Keyword,
 		"avgscr": &query.AverageScore,
 		"minq":   &query.MinQuantity,
+		"maxq":   &query.MaxQuantity,
 		"offr":   &query.HasOffer,
 		"cat":    &query.CategoryId,
 		"tags":   &query.TagIds,
@@ -343,6 +345,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 // @Param        k      query     string  false  "Search keyword"
 // @Param        avgscr query     float32 false  "Minimum average score"
 // @Param        minq   query     int     false  "Minimum quantity filter"
+// @Param        maxq   query     int     false  "Maximum quantity filter"
 // @Param        offr   query     bool    false  "Filter products with offers"
 // @Param        cat    query     int     false  "Filter by category ID"
 // @Param        tags   query     string  false  "Filter by tag IDs (separated by comma ',')"
@@ -360,6 +363,7 @@ func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 		"k":      &query.Keyword,
 		"avgscr": &query.AverageScore,
 		"minq":   &query.MinQuantity,
+		"maxq":   &query.MaxQuantity,
 		"offr":   &query.HasOffer,
 		"cat":    &query.CategoryId,
 		"tags":   &query.TagIds,

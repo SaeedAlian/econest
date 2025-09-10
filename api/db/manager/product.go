@@ -3226,6 +3226,14 @@ func buildProductSearchQuery(
 		argsPos++
 	}
 
+	if query.MaxQuantity != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      (SELECT COALESCE(SUM(quantity), 0) FROM product_variants pv WHERE pv.product_id = p.id) <= $%d
+    `, argsPos))
+		args = append(args, *query.MaxQuantity)
+		argsPos++
+	}
+
 	if query.AverageScore != nil {
 		clauses = append(clauses, fmt.Sprintf(`
       (SELECT COALESCE(AVG(scoring), 0) FROM product_comments pc WHERE pc.product_id = p.id) >= $%d

@@ -490,6 +490,8 @@ type ProductSearchQuery struct {
 	Slug *string `json:"slug"`
 	// Minimum available quantity
 	MinQuantity *int `json:"minQuantity"`
+	// Maximum available quantity
+	MaxQuantity *int `json:"maxQuantity"`
 	// Whether product has an active offer
 	HasOffer *bool `json:"hasOffer"`
 	// Filter by category ID
