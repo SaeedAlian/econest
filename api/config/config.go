@@ -6,6 +6,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/joho/godotenv"
 
@@ -23,6 +24,8 @@ type Config struct {
 	DBPort                                string
 	KeyServerRedisAddr                    string
 	AuthRedisAddr                         string
+	CORSAllowedOrigins                    []string
+	CORSAllowedMethods                    []string
 	RotateKeyDays                         int64
 	AccessTokenExpirationInMin            float64
 	RefreshTokenExpirationInMin           float64
@@ -98,6 +101,8 @@ func InitConfig() Config {
 		DBPort:                                getEnv("DB_PORT", "5432"),
 		KeyServerRedisAddr:                    getEnv("KEY_SERVER_REDIS_ADDRESS", "localhost:6379"),
 		AuthRedisAddr:                         getEnv("AUTH_REDIS_ADDRESS", "localhost:6379"),
+		CORSAllowedOrigins:                    getEnvStrList("CORS_ALLOWED_ORIGINS", []string{}),
+		CORSAllowedMethods:                    getEnvStrList("CORS_ALLOWED_METHODS", []string{"GET", "HEAD", "POST", "PUT", "OPTIONS"}),
 		RotateKeyDays:                         getEnvAsInt("ROTATE_KEY_DAYS", 2),
 		AccessTokenExpirationInMin:            float64(15),
 		RefreshTokenExpirationInMin:           float64(60 * 24 * 7),
@@ -138,6 +143,21 @@ func InitConfig() Config {
 func getEnv(key string, fallback string) string {
 	if val, ok := os.LookupEnv(key); ok && len(val) > 0 {
 		return val
+	}
+
+	return fallback
+}
+
+func getEnvStrList(key string, fallback []string) []string {
+	if val, ok := os.LookupEnv(key); ok && len(val) > 0 {
+		arr := []string{}
+		sp := strings.Split(val, ",")
+
+		for _, s := range sp {
+			arr = append(arr, s)
+		}
+
+		return arr
 	}
 
 	return fallback

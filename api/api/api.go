@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/redis/go-redis/v9"
 	"github.com/swaggo/http-swagger"
@@ -86,5 +87,8 @@ func (s *Server) Run() error {
 
 	log.Println("API Listening on ", s.addr)
 
-	return http.ListenAndServe(s.addr, router)
+	originsOk := handlers.AllowedOrigins(config.Env.CORSAllowedOrigins)
+	methodsOk := handlers.AllowedMethods(config.Env.CORSAllowedMethods)
+
+	return http.ListenAndServe(s.addr, handlers.CORS(originsOk, methodsOk)(router))
 }
