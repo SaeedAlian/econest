@@ -229,6 +229,10 @@ type ProductCommentWithUser struct {
 // @model Product
 type Product struct {
 	ProductBase
+	// Product leaf subcategory info
+	Subcategory ProductCategory `json:"subcategory" exposure:"public"`
+	// Average score of the product based on the comments
+	AverageScore float32 `json:"averageScore" exposure:"public"`
 	// Total available quantity across all variants (public)
 	TotalQuantity int `json:"totalQuantity"       exposure:"public"`
 	// Current offer/discount, if any (public, optional)
@@ -498,6 +502,8 @@ type ProductSearchQuery struct {
 	PriceMoreThan *float32 `json:"priceMoreThan"`
 	// Filter by store ID
 	StoreId *int `json:"storeId"`
+	// Minimum average score
+	AverageScore *float32 `json:"averageScore"`
 	// Filter by active status
 	IsActive *bool `json:"isActive"`
 	// Maximum number of results

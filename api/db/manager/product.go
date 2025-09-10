@@ -429,6 +429,15 @@ func (m *Manager) GetProducts(
 			return nil, err
 		}
 
+		var averageScore float32
+		err = m.db.QueryRow(
+			"SELECT COALESCE(AVG(scoring), 0) FROM product_comments WHERE product_id = $1;",
+			productBase.Id,
+		).Scan(&averageScore)
+		if err != nil {
+			return nil, err
+		}
+
 		var offer *types.ProductOffer
 		offerRows, err := m.db.Query(
 			"SELECT * FROM product_offers WHERE product_id = $1;",
@@ -478,8 +487,25 @@ func (m *Manager) GetProducts(
 			}
 		}
 
+		var subcategory *types.ProductCategory
+		subcategoryRows, err := m.db.Query(
+			`SELECT * FROM product_categories WHERE id = $1`, productBase.SubcategoryId,
+		)
+		if err != nil {
+			return nil, err
+		}
+		defer subcategoryRows.Close()
+		if subcategoryRows.Next() {
+			subcategory, err = scanProductCategoryRow(subcategoryRows)
+			if err != nil {
+				return nil, err
+			}
+		}
+
 		products = append(products, types.Product{
 			ProductBase:   *productBase,
+			Subcategory:   *subcategory,
+			AverageScore:  averageScore,
 			TotalQuantity: totalQuantity,
 			Offer:         offer,
 			MainImage:     mainImage,
@@ -1198,6 +1224,15 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 		return nil, err
 	}
 
+	var averageScore float32
+	err = m.db.QueryRow(
+		"SELECT COALESCE(AVG(scoring), 0) FROM product_comments WHERE product_id = $1;",
+		productBase.Id,
+	).Scan(&averageScore)
+	if err != nil {
+		return nil, err
+	}
+
 	var offer *types.ProductOffer
 	offerRows, err := m.db.Query(
 		"SELECT * FROM product_offers WHERE product_id = $1;",
@@ -1247,8 +1282,25 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 		}
 	}
 
+	var subcategory *types.ProductCategory
+	subcategoryRows, err := m.db.Query(
+		`SELECT * FROM product_categories WHERE id = $1`, productBase.SubcategoryId,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer subcategoryRows.Close()
+	if subcategoryRows.Next() {
+		subcategory, err = scanProductCategoryRow(subcategoryRows)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return &types.Product{
 		ProductBase:   *productBase,
+		Subcategory:   *subcategory,
+		AverageScore:  averageScore,
 		TotalQuantity: totalQuantity,
 		Offer:         offer,
 		MainImage:     mainImage,
@@ -3153,6 +3205,14 @@ func buildProductSearchQuery(
       (SELECT COALESCE(SUM(quantity), 0) FROM product_variants pv WHERE pv.product_id = p.id) >= $%d
     `, argsPos))
 		args = append(args, *query.MinQuantity)
+		argsPos++
+	}
+
+	if query.AverageScore != nil {
+		clauses = append(clauses, fmt.Sprintf(`
+      (SELECT COALESCE(AVG(scoring), 0) FROM product_comments pc WHERE pc.product_id = p.id) >= $%d
+    `, argsPos))
+		args = append(args, *query.AverageScore)
 		argsPos++
 	}
 

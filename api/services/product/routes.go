@@ -278,6 +278,7 @@ func (h *Handler) getProductCategoryImage(w http.ResponseWriter, r *http.Request
 // @Tags         product
 // @Produce      json
 // @Param        k      query     string  false  "Search keyword"
+// @Param        avgscr query     float32 false  "Minimum average score"
 // @Param        minq   query     int     false  "Minimum quantity filter"
 // @Param        offr   query     bool    false  "Filter products with offers"
 // @Param        cat    query     int     false  "Filter by category ID"
@@ -295,15 +296,16 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 	var page *int = nil
 
 	queryMapping := map[string]any{
-		"k":     &query.Keyword,
-		"minq":  &query.MinQuantity,
-		"offr":  &query.HasOffer,
-		"cat":   &query.CategoryId,
-		"tags":  &query.TagIds,
-		"pmt":   &query.PriceMoreThan,
-		"plt":   &query.PriceLessThan,
-		"store": &query.StoreId,
-		"p":     &page,
+		"k":      &query.Keyword,
+		"avgscr": &query.AverageScore,
+		"minq":   &query.MinQuantity,
+		"offr":   &query.HasOffer,
+		"cat":    &query.CategoryId,
+		"tags":   &query.TagIds,
+		"pmt":    &query.PriceMoreThan,
+		"plt":    &query.PriceLessThan,
+		"store":  &query.StoreId,
+		"p":      &page,
 	}
 
 	queryValues := r.URL.Query()
@@ -337,6 +339,7 @@ func (h *Handler) getProducts(w http.ResponseWriter, r *http.Request) {
 // @Tags         product
 // @Produce      json
 // @Param        k      query     string  false  "Search keyword"
+// @Param        avgscr query     float32 false  "Minimum average score"
 // @Param        minq   query     int     false  "Minimum quantity filter"
 // @Param        offr   query     bool    false  "Filter products with offers"
 // @Param        cat    query     int     false  "Filter by category ID"
@@ -352,14 +355,15 @@ func (h *Handler) getProductsPages(w http.ResponseWriter, r *http.Request) {
 	query := types.ProductSearchQuery{}
 
 	queryMapping := map[string]any{
-		"k":     &query.Keyword,
-		"minq":  &query.MinQuantity,
-		"offr":  &query.HasOffer,
-		"cat":   &query.CategoryId,
-		"tags":  &query.TagIds,
-		"pmt":   &query.PriceMoreThan,
-		"plt":   &query.PriceLessThan,
-		"store": &query.StoreId,
+		"k":      &query.Keyword,
+		"avgscr": &query.AverageScore,
+		"minq":   &query.MinQuantity,
+		"offr":   &query.HasOffer,
+		"cat":    &query.CategoryId,
+		"tags":   &query.TagIds,
+		"pmt":    &query.PriceMoreThan,
+		"plt":    &query.PriceLessThan,
+		"store":  &query.StoreId,
 	}
 
 	queryValues := r.URL.Query()
