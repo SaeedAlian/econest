@@ -148,12 +148,12 @@ func runCli(db *sql.DB) error {
 
 	if len(superAdmins) == 0 {
 		fmt.Println("No super admin found. Creating initial super admin account...")
-		err := createSuperAdmin(menu, dbManager)
+		err = createSuperAdmin(menu, dbManager)
 		if err != nil {
 			return err
 		}
 	} else {
-		err := cliLogin(menu, dbManager)
+		err = cliLogin(menu, dbManager)
 		if err != nil {
 			return err
 		}
