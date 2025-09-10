@@ -783,3 +783,13 @@ func formatEnumViolation(e *pq.Error) error {
 		return types.ErrInvalidInputFormat
 	}
 }
+
+func RoundToNDecimals(val float64, n int) float64 {
+	factor := math.Pow(10, float64(n))
+	return math.Round(val*factor) / factor
+}
+
+func RoundToNDecimals32(val float32, n int) float32 {
+	factor := float32(math.Pow(10, float64(n)))
+	return float32(math.Round(float64(val)*float64(factor)) / float64(factor))
+}

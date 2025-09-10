@@ -11,6 +11,7 @@ import (
 	"github.com/lib/pq"
 
 	"github.com/SaeedAlian/econest/api/types"
+	"github.com/SaeedAlian/econest/api/utils"
 )
 
 func (m *Manager) CreateProduct(p types.CreateProductPayload) (int, error) {
@@ -505,7 +506,7 @@ func (m *Manager) GetProducts(
 		products = append(products, types.Product{
 			ProductBase:   *productBase,
 			Subcategory:   *subcategory,
-			AverageScore:  averageScore,
+			AverageScore:  utils.RoundToNDecimals32(averageScore, 2),
 			TotalQuantity: totalQuantity,
 			Offer:         offer,
 			MainImage:     mainImage,
@@ -1300,7 +1301,7 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 	return &types.Product{
 		ProductBase:   *productBase,
 		Subcategory:   *subcategory,
-		AverageScore:  averageScore,
+		AverageScore:  utils.RoundToNDecimals32(averageScore, 2),
 		TotalQuantity: totalQuantity,
 		Offer:         offer,
 		MainImage:     mainImage,
