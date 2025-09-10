@@ -1445,6 +1445,8 @@ func (m *Manager) GetProductExtendedById(id int) (*types.ProductExtended, error)
 	defer variantRows.Close()
 
 	variants := make([]types.ProductVariantWithAttributeSet, 0)
+	attributesMap := make(map[int]types.ProductAttributeWithOptions, 0)
+	attributes := make([]types.ProductAttributeWithOptions, 0)
 
 	for variantRows.Next() {
 		variant, err := scanProductVariantRow(variantRows)
@@ -1498,6 +1500,16 @@ func (m *Manager) GetProductExtendedById(id int) (*types.ProductExtended, error)
 				opt, err = scanProductAttributeOptionRow(optRows)
 				if err != nil {
 					return nil, err
+				}
+			}
+
+			if val, ok := attributesMap[attr.Id]; ok {
+				val.Options = append(val.Options, *opt)
+				attributesMap[attr.Id] = val
+			} else {
+				attributesMap[attr.Id] = types.ProductAttributeWithOptions{
+					ProductAttribute: *attr,
+					Options:          []types.ProductAttributeOption{*opt},
 				}
 			}
 
@@ -1566,12 +1578,17 @@ func (m *Manager) GetProductExtendedById(id int) (*types.ProductExtended, error)
 	}
 	storeInfoRows.Close()
 
+	for _, v := range attributesMap {
+		attributes = append(attributes, v)
+	}
+
 	return &types.ProductExtended{
 		ProductBase: *productBase,
 		Subcategory: subcategory,
 		Specs:       specs,
 		Tags:        tags,
 		Variants:    variants,
+		Attributes:  attributes,
 		Offer:       offer,
 		Images:      images,
 		Store:       *storeInfo,

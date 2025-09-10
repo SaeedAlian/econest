@@ -255,6 +255,8 @@ type ProductExtended struct {
 	Tags []ProductTag `json:"tags"            exposure:"public"`
 	// List of available variants with attributes (public)
 	Variants []ProductVariantWithAttributeSet `json:"variants"        exposure:"public"`
+	// List of available attributes with their available options based on the product variants (public)
+	Attributes []ProductAttributeWithOptions `json:"attributes"  exposure:"public"`
 	// Current offer/discount, if any (public, optional)
 	Offer *ProductOffer `json:"offer,omitempty" exposure:"public"`
 	// List of product images (public)
