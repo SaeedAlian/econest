@@ -135,21 +135,23 @@ function Sidebar({
                     className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
                   >
                     <DropdownMenuTrigger asChild>
-                      <Avatar className="h-8 w-8 rounded-lg grayscale">
-                        {user?.avatar != null ? (
-                          <AvatarImage src={user.avatar} alt={user.name} />
-                        ) : null}
-                        <AvatarFallback className="rounded-lg">
-                          {user.name.slice(0, 2).toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-medium">
-                          {user.name}
-                        </span>
-                        <span className="text-muted-foreground truncate text-xs">
-                          {user.email}
-                        </span>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-8 w-8 rounded-lg grayscale">
+                          {user?.avatar != null ? (
+                            <AvatarImage src={user.avatar} alt={user.name} />
+                          ) : null}
+                          <AvatarFallback className="rounded-lg">
+                            {user.name.slice(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="grid flex-1 text-left text-sm leading-tight">
+                          <span className="truncate font-medium">
+                            {user.name}
+                          </span>
+                          <span className="text-muted-foreground truncate text-xs">
+                            {user.email}
+                          </span>
+                        </div>
                       </div>
                     </DropdownMenuTrigger>
                   </SidebarMenuButton>
@@ -196,7 +198,7 @@ function Sidebar({
                               onClick={i.onClick ? i.onClick : () => null}
                               asChild={i.isLink}
                             >
-                              {i.isLink ? (
+                              {i.isLink && i.href != null ? (
                                 <Link to={i.href}>
                                   {i.icon && <i.icon />}
                                   <span>{i.title}</span>

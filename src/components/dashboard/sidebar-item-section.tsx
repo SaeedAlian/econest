@@ -23,7 +23,7 @@ export type SidebarSubItem = {
   isLink?: boolean;
   icon?: IconType;
   onClick?: DOMAttributes<HTMLDivElement>["onClick"];
-  href: string;
+  href?: string;
   target?: string;
 };
 
@@ -55,7 +55,7 @@ function SidebarItemSection({ label, items }: SidebarItemSectionProps) {
                       onClick={i.onClick ? i.onClick : () => null}
                       asChild={i.isLink}
                     >
-                      {i.isLink ? (
+                      {i.isLink && i.href != null ? (
                         <Link to={i.href}>
                           {i.icon && <i.icon />}
                           <span>{i.title}</span>
@@ -83,7 +83,7 @@ function SidebarItemSection({ label, items }: SidebarItemSectionProps) {
                           onClick={si.onClick ? si.onClick : () => null}
                           asChild={si.isLink}
                         >
-                          {si.isLink ? (
+                          {si.isLink && si.href != null ? (
                             <Link to={si.href}>
                               {si.icon && <si.icon />}
                               <span>{si.title}</span>
@@ -105,7 +105,7 @@ function SidebarItemSection({ label, items }: SidebarItemSectionProps) {
                   onClick={i.onClick ? i.onClick : () => null}
                   asChild={i.isLink}
                 >
-                  {i.isLink ? (
+                  {i.isLink && i.href != null ? (
                     <Link to={i.href}>
                       {i.icon && <i.icon />}
                       <span>{i.title}</span>
