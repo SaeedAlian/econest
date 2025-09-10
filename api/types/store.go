@@ -32,6 +32,8 @@ type StoreInfo struct {
 	Id int `json:"id"   exposure:"public"`
 	// Store name
 	Name string `json:"name" exposure:"public"`
+	// Store description
+	Description string `json:"description" exposure:"public"`
 }
 
 // StoreSettings contains store configuration

@@ -473,7 +473,7 @@ func (m *Manager) GetProducts(
 
 		var storeInfo *types.StoreInfo
 		storeInfoRows, err := m.db.Query(`
-      SELECT s.id, s.name FROM stores s WHERE s.id IN (
+      SELECT s.id, s.name, s.description FROM stores s WHERE s.id IN (
         SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
       )
     `, productBase.Id)
@@ -1268,7 +1268,7 @@ func (m *Manager) GetProductById(id int) (*types.Product, error) {
 
 	var storeInfo *types.StoreInfo
 	storeInfoRows, err := m.db.Query(`
-    SELECT s.id, s.name FROM stores s WHERE s.id IN (
+    SELECT s.id, s.name, s.description FROM stores s WHERE s.id IN (
       SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
     )
   `, productBase.Id)
@@ -1550,7 +1550,7 @@ func (m *Manager) GetProductExtendedById(id int) (*types.ProductExtended, error)
 
 	var storeInfo *types.StoreInfo
 	storeInfoRows, err := m.db.Query(`
-      SELECT s.id, s.name FROM stores s WHERE s.id IN (
+      SELECT s.id, s.name, s.description FROM stores s WHERE s.id IN (
         SELECT sop.store_id FROM store_owned_products sop WHERE sop.product_id = $1
       )
     `, productBase.Id)

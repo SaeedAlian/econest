@@ -797,6 +797,7 @@ func scanStoreInfoRow(rows *sql.Rows) (*types.StoreInfo, error) {
 	err := rows.Scan(
 		&n.Id,
 		&n.Name,
+		&n.Description,
 	)
 	if err != nil {
 		return nil, err
