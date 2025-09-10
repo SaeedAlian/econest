@@ -60,7 +60,9 @@ func (h *Handler) RegisterRoutes(router *mux.Router) {
 	router.HandleFunc("/attribute/{attributeId}", h.getProductAttribute).Methods("GET")
 
 	router.HandleFunc("/comment/{commentId}", h.getProductComment).Methods("GET")
+	router.HandleFunc("/comment/withuser/{commentId}", h.getProductCommentWithUser).Methods("GET")
 	router.HandleFunc("/comment/product/{productId}", h.getProductComments).Methods("GET")
+	router.HandleFunc("/comment/withuser/product/{productId}", h.getProductCommentsWithUser).Methods("GET")
 	router.HandleFunc("/comment/product/{productId}/pages", h.getProductCommentsPages).
 		Methods("GET")
 
@@ -1093,6 +1095,60 @@ func (h *Handler) getProductComments(w http.ResponseWriter, r *http.Request) {
 	utils.WriteJSONInResponse(w, http.StatusOK, comments, nil)
 }
 
+// getProductCommentsWithUser godoc
+// @Summary      Get product comments with commenter user info
+// @Description  Retrieves a paginated list of comments with its user info for a specific product with optional filtering
+// @Tags         product
+// @Produce      json
+// @Param        productId  path      int     true   "Product ID"
+// @Param        slt        query     int     false  "Filter comments with score less than value"
+// @Param        smt        query     int     false  "Filter comments with score more than value"
+// @Param        p          query     int     false  "Page number (default: 1)"
+// @Success      200        {array}   types.ProductCommentWithUser
+// @Failure      400        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/comment/withuser/product/{productId} [get]
+func (h *Handler) getProductCommentsWithUser(w http.ResponseWriter, r *http.Request) {
+	productId, err := utils.ParseIntURLParam("productId", mux.Vars(r))
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	query := types.ProductCommentSearchQuery{}
+	var page *int = nil
+
+	queryMapping := map[string]any{
+		"slt": &query.ScoringLessThan,
+		"smt": &query.ScoringMoreThan,
+		"p":   &page,
+	}
+
+	queryValues := r.URL.Query()
+
+	err = utils.ParseURLQuery(queryMapping, queryValues)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	query.Limit = utils.Ptr(int(config.Env.MaxProductCommentsInPage))
+
+	if page != nil {
+		query.Offset = utils.Ptr((*query.Limit) * (*page - 1))
+	} else {
+		query.Offset = utils.Ptr(0)
+	}
+
+	comments, err := h.db.GetProductCommentsWithUserByProductId(productId, query)
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, comments, nil)
+}
+
 // getProductCommentsPages godoc
 // @Summary      Get product comments page count
 // @Description  Returns the total number of pages available for product comments based on filters
@@ -1159,6 +1215,38 @@ func (h *Handler) getProductComment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	comment, err := h.db.GetProductCommentById(commentId)
+	if err != nil {
+		if err == types.ErrProductCommentNotFound {
+			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
+		} else {
+			utils.WriteErrorInResponse(w, http.StatusInternalServerError, err)
+		}
+
+		return
+	}
+
+	utils.WriteJSONInResponse(w, http.StatusOK, comment, nil)
+}
+
+// getProductCommentWithUser godoc
+// @Summary      Get a product comment with its user info
+// @Description  Retrieves details of a specific product comment with its user info by ID
+// @Tags         product
+// @Produce      json
+// @Param        commentId  path      int  true  "Comment ID"
+// @Success      200        {object}  types.ProductCommentWithUser
+// @Failure      400        {object}  types.HTTPError
+// @Failure      404        {object}  types.HTTPError
+// @Failure      500        {object}  types.HTTPError
+// @Router       /product/comment/withuser/{commentId} [get]
+func (h *Handler) getProductCommentWithUser(w http.ResponseWriter, r *http.Request) {
+	commentId, err := utils.ParseIntURLParam("commentId", mux.Vars(r))
+	if err != nil {
+		utils.WriteErrorInResponse(w, http.StatusBadRequest, err)
+		return
+	}
+
+	comment, err := h.db.GetProductCommentWithUserById(commentId)
 	if err != nil {
 		if err == types.ErrProductCommentNotFound {
 			utils.WriteErrorInResponse(w, http.StatusNotFound, err)
