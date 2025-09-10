@@ -1414,12 +1414,14 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if payload.Base.Name != nil {
-		payload.Base.Slug = utils.Ptr(utils.CreateSlug(*payload.Base.Name))
-	}
+	if payload.Base != nil {
+		if payload.Base.Name != nil {
+			payload.Base.Slug = utils.Ptr(utils.CreateSlug(*payload.Base.Name))
+		}
 
-	if payload.Base.Name == nil && payload.Base.Slug != nil {
-		payload.Base.Slug = nil
+		if payload.Base.Name == nil && payload.Base.Slug != nil {
+			payload.Base.Slug = nil
+		}
 	}
 
 	if payload.NewImages != nil {
@@ -1445,14 +1447,20 @@ func (h *Handler) updateProduct(w http.ResponseWriter, r *http.Request) {
 
 	// TODO: delete images
 
-	err = h.db.UpdateProduct(productId, types.UpdateProductPayload{
-		Base: &types.UpdateProductBasePayload{
+	var base *types.UpdateProductBasePayload = nil
+
+	if payload.Base != nil {
+		base = &types.UpdateProductBasePayload{
 			Name:          payload.Base.Name,
 			Slug:          payload.Base.Slug,
 			Price:         payload.Base.Price,
 			Description:   payload.Base.Description,
 			SubcategoryId: payload.Base.SubcategoryId,
-		},
+		}
+	}
+
+	err = h.db.UpdateProduct(productId, types.UpdateProductPayload{
+		Base:            base,
 		NewTagIds:       payload.NewTagIds,
 		DelTagIds:       payload.DelTagIds,
 		NewImages:       payload.NewImages,
